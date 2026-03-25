@@ -54,6 +54,9 @@ type PersistedTipsState = {
   specialPredictions: SpecialPredictions
 }
 
+const tipsSectionTabs = ['Gruppspel', 'Grupplaceringar', 'Slutspel', 'Special', 'Extrafrågor'] as const
+type TipsSectionTab = (typeof tipsSectionTabs)[number]
+
 const navItems: NavItem[] = [
   { id: 'start', label: 'Start' },
   { id: 'tips', label: 'Lämna tips' },
@@ -524,7 +527,7 @@ function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession)
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <p className="eyebrow">VM2026 tipset</p>
+          <p className="eyebrow">Tipset</p>
           <h1>Åtkomst</h1>
           <p className="lead-text">Ange ditt namn och åtkomstkoden för att komma igång.</p>
         </div>
@@ -638,26 +641,24 @@ function renderPage(
 function StartPage() {
   return (
     <div className="page-stack">
-      <section className="hero-card">
-        <div className="hero-copy">
-          <p className="eyebrow">VM2026 tipset</p>
-          <h1>VM2026 Tipset</h1>
-          <p className="hero-text">Lägg dina tips för VM 2026 och följ turneringen hela vägen till finalen.</p>
-          <div className="hero-actions">
-            <button className="primary-button" type="button">Lämna tips</button>
-            <button className="ghost-button" type="button">Se regler</button>
+      <section className="panel panel-split start-overview">
+        <div>
+          <div className="section-heading compact">
+            <p className="eyebrow">Start</p>
+            <h1>Lägg dina tips för VM 2026</h1>
           </div>
+          <p className="lead-text">Allt du behöver finns samlat här: lämna tips, följ dina framsteg och håll koll på vad som låser härnäst.</p>
         </div>
-        <div className="hero-panel">
-          <div className="hero-stat">
+        <div className="start-stats">
+          <div className="start-stat">
             <span>Nedräkning</span>
             <strong>79 dagar kvar</strong>
           </div>
-          <div className="hero-stat">
+          <div className="start-stat">
             <span>Senast sparad</span>
             <strong>2 minuter sedan</strong>
           </div>
-          <div className="hero-stat">
+          <div className="start-stat">
             <span>Status</span>
             <strong>Inloggad</strong>
           </div>
@@ -764,6 +765,7 @@ function TipsPage({
 }) {
   const [expandedManualEditor, setExpandedManualEditor] = useState<Record<string, boolean>>({})
   const [activeKnockoutField, setActiveKnockoutField] = useState<{ roundTitle: string; index: number } | null>(null)
+  const [activeSection, setActiveSection] = useState<TipsSectionTab>('Gruppspel')
   const enableKnockoutTypeahead = !isTouchDevice
 
   const getInlineKnockoutSuggestions = (options: string[], inputValue: string): string[] => {
@@ -807,13 +809,19 @@ function TipsPage({
       </section>
 
       <section className="tab-row" aria-label="Sektioner">
-        {['Gruppspel', 'Gruppplaceringar', 'Slutspel', 'Special', 'Extrafrågor'].map((tab, index) => (
-          <button className={index === 0 ? 'tab-button active' : 'tab-button'} key={tab} type="button">
+        {tipsSectionTabs.map((tab) => (
+          <button
+            className={activeSection === tab ? 'tab-button active' : 'tab-button'}
+            key={tab}
+            type="button"
+            onClick={() => setActiveSection(tab)}
+          >
             {tab}
           </button>
         ))}
       </section>
 
+      {activeSection === 'Gruppspel' ? (
       <section className="panel">
         <div className="section-heading compact">
           <p className="eyebrow">Gruppspel</p>
@@ -949,11 +957,13 @@ function TipsPage({
           </table>
         </div>
       </section>
+      ) : null}
 
+      {activeSection === 'Grupplaceringar' ? (
       <section className="panel">
         <div className="section-heading compact">
-          <p className="eyebrow">Gruppplaceringar</p>
-          <h2>Gruppplaceringar</h2>
+          <p className="eyebrow">Grupplaceringar</p>
+          <h2>Grupplaceringar</h2>
         </div>
         <div className="group-grid">
           {groupPlacements.map((placement) => (
@@ -983,7 +993,9 @@ function TipsPage({
           ))}
         </div>
       </section>
+      ) : null}
 
+      {activeSection === 'Slutspel' ? (
       <section className="panel">
         <div className="section-heading compact">
           <p className="eyebrow">Slutspel</p>
@@ -1072,11 +1084,13 @@ function TipsPage({
           })}
         </div>
       </section>
+      ) : null}
 
+      {activeSection === 'Special' ? (
       <section className="panel">
         <div className="section-heading compact">
-          <p className="eyebrow">Special och extrafrågor</p>
-          <h2>Special och dynamiska frågor</h2>
+          <p className="eyebrow">Special</p>
+          <h2>Specialfrågor</h2>
         </div>
         <div className="stacked-cards">
           <article className="mini-card">
@@ -1099,6 +1113,17 @@ function TipsPage({
               onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
             />
           </article>
+        </div>
+      </section>
+      ) : null}
+
+      {activeSection === 'Extrafrågor' ? (
+      <section className="panel">
+        <div className="section-heading compact">
+          <p className="eyebrow">Extrafrågor</p>
+          <h2>Dynamiska frågor</h2>
+        </div>
+        <div className="stacked-cards">
           <article className="mini-card">
             <span className="mini-label">Extrafråga</span>
             <strong>Vilken grupp gör flest mål totalt?</strong>
@@ -1106,6 +1131,7 @@ function TipsPage({
           </article>
         </div>
       </section>
+      ) : null}
 
       <section className="action-bar">
         <button className="ghost-button" type="button" onClick={onClear} disabled={isSaving}>Rensa sparade</button>

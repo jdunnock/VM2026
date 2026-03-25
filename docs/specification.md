@@ -154,6 +154,9 @@ Each admin-managed question must support:
 	- Slutspel inputs use type-ahead suggestions: users can type first letters and pick only participating teams.
 	- Slutspel suggestions are round-aware: first round uses participating teams, later rounds suggest picks from the previous round.
 	- Slutspel input surface now covers all 5 rounds in UI with full slot counts: 32 (Sextondelsfinal), 16 (Åttondelsfinal), 8 (Kvartsfinal), 4 (Semifinal), 2 (Final).
+	- Lämna tips section buttons now drive a tabbed card flow where one section is visible at a time (`Gruppspel`, `Gruppplaceringar`, `Slutspel`, `Special`, `Extrafrågor`) to reduce scroll length on mobile.
+	- `Special` and `Extrafrågor` are shown in separate section cards, aligned with their own tab buttons.
+	- Start page uses one neutral overview panel instead of a second stacked green hero block, and redundant start-page CTA buttons/copy variants are removed.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -205,3 +208,6 @@ Each admin-managed question must support:
 	- Expanded Slutspel prediction templates to all five rounds with full participant slot counts (32/16/8/4/2) for each knockout round.
 	- Fixed desktop Slutspel layout so knockout round cards no longer stretch to the height of the largest card in the same grid row.
 	- Updated tips page section flow so all Slutspel rounds (including Semifinal and Final) stay in the same knockout panel, while `Special och dynamiska frågor` is rendered in a separate panel below.
+	- Updated Lämna tips UX to tab-driven section cards so only the selected section is shown at a time, and split `Special` + `Extrafrågor` into separate panels matching their buttons.
+	- Updated Lämna tips tab copy for `Grupplaceringar` and added clearer heading-to-content spacing in compact section panels.
+	- Simplified start page UI: removed the separate green hero block, reduced repeated `VM2026 Tipset` branding on page-level headings, and removed redundant start-page CTA buttons.
