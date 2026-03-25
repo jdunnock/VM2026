@@ -158,6 +158,7 @@ Each admin-managed question must support:
 	- `Special` and `Extrafrågor` are shown in separate section cards, aligned with their own tab buttons.
 	- Start page uses one neutral overview panel instead of a second stacked green hero block, and redundant start-page CTA buttons/copy variants are removed.
 	- Mobile header uses a compact layout: horizontally scrollable main navigation and condensed status cards to reduce wrapping and vertical crowding.
+	- Mobile main navigation pills use tighter spacing and smaller padding so the tab row stays easier to scan without growing the header height.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -213,3 +214,4 @@ Each admin-managed question must support:
 	- Updated Lämna tips tab copy for `Grupplaceringar` and added clearer heading-to-content spacing in compact section panels.
 	- Simplified start page UI: removed the separate green hero block, reduced repeated `VM2026 Tipset` branding on page-level headings, and removed redundant start-page CTA buttons.
 	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.
+	- Tightened mobile main navigation pill spacing and padding so the horizontally scrollable tab row reads lighter on small screens.

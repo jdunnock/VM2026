@@ -837,8 +837,10 @@ strong {
   .nav-tabs {
     flex-wrap: nowrap;
     justify-content: flex-start;
+    gap: 8px;
     overflow-x: auto;
-    padding-bottom: 2px;
+    padding: 0 2px 2px;
+    scroll-snap-type: x proximity;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -850,6 +852,9 @@ strong {
   .nav-button {
     flex: 0 0 auto;
     white-space: nowrap;
+    scroll-snap-align: start;
+    padding: 8px 14px;
+    font-size: 0.95rem;
   }
 
   .utility-panel {
@@ -970,6 +975,15 @@ strong {
 }
 
 @media (max-width: 560px) {
+  .nav-tabs {
+    gap: 6px;
+  }
+
+  .nav-button {
+    padding: 7px 12px;
+    font-size: 0.9rem;
+  }
+
   .utility-panel {
     grid-template-columns: 1fr;
   }
