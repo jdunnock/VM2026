@@ -149,6 +149,8 @@ Each admin-managed question must support:
 	- Desktop: grouped quick-pick score buttons + manual `+More` fallback.
 	- Mobile: spinner-only score entry for cleaner thumb interaction.
 	- Auto-derived `1/X/2` from selected score with manual override still available.
+	- Gruppplaceringar uses guided group-specific team selectors instead of free text, so each position only offers teams from that group.
+	- The same team can only be selected once inside a single group ranking.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -190,3 +192,5 @@ Each admin-managed question must support:
 	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
 	- Locked the tips input UX model as default and removed temporary A/B trial instrumentation.
 	- Extended tips persistence end-to-end to include Gruppplaceringar and Special predictions, and updated Mina tips to show these from saved data.
+	- Replaced Gruppplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
+	- Fixed Gruppplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.

@@ -91,6 +91,21 @@ const groupPlacementTemplates: GroupPlacement[] = [
   { group: 'Grupp C', picks: ['Argentina', 'Nederländerna', 'Nigeria', 'Costa Rica'] },
 ]
 
+const groupTeamOptions = Object.fromEntries(
+  groupPlacementTemplates.map((template) => [template.group, template.picks]),
+) as Record<string, string[]>
+
+function getAvailableGroupTeams(placement: GroupPlacement, index: number): string[] {
+  const currentPick = placement.picks[index]
+  const availableTeams = [...(groupTeamOptions[placement.group] ?? [])]
+
+  if (currentPick.trim() && !availableTeams.includes(currentPick)) {
+    return [currentPick, ...availableTeams]
+  }
+
+  return availableTeams
+}
+
 const defaultSpecialPredictions: SpecialPredictions = {
   winner: 'Argentina',
   topScorer: 'Kylian Mbappé',
@@ -803,13 +818,20 @@ function TipsPage({
               <ol>
                 {placement.picks.map((pick, index) => (
                   <li key={`${placement.group}-${index}`}>
-                    <input
+                    <select
                       className="group-pick-input"
-                      type="text"
                       value={pick}
                       disabled={isSaving}
+                      aria-label={`${placement.group} placering ${index + 1}`}
                       onChange={(e) => onChangeGroupPlacement(placement.group, index, e.target.value)}
-                    />
+                    >
+                      <option value="">Välj lag</option>
+                      {getAvailableGroupTeams(placement, index).map((team) => (
+                        <option key={`${placement.group}-${index}-${team}`} value={team}>
+                          {team}
+                        </option>
+                      ))}
+                    </select>
                   </li>
                 ))}
               </ol>
@@ -1231,9 +1253,29 @@ export function App() {
           return item
         }
 
+        const nextPicks = [...item.picks]
+        const previousValue = nextPicks[index]
+
+        if (!value) {
+          nextPicks[index] = ''
+
+          return {
+            ...item,
+            picks: nextPicks,
+          }
+        }
+
+        const existingIndex = nextPicks.findIndex((pick, pickIndex) => pickIndex !== index && pick === value)
+
+        if (existingIndex >= 0) {
+          nextPicks[existingIndex] = previousValue
+        }
+
+        nextPicks[index] = value
+
         return {
           ...item,
-          picks: item.picks.map((pick, pickIndex) => (pickIndex === index ? value : pick)),
+          picks: nextPicks,
         }
       }),
     )
