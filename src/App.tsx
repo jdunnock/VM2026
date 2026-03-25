@@ -37,6 +37,16 @@ type FixtureTip = {
   status: string
 }
 
+type TipsInputVariant = 'A' | 'B'
+
+type TipsEvent = {
+  ts: string
+  variant: TipsInputVariant
+  action: string
+  match?: string
+  meta?: Record<string, string | number | boolean>
+}
+
 const navItems: NavItem[] = [
   { id: 'start', label: 'Start' },
   { id: 'tips', label: 'Lämna tips' },
@@ -75,6 +85,42 @@ const fixtureTemplates: Array<{ match: string; date: string; status: string; def
 ]
 
 const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
+const TIPS_VARIANT_STORAGE_KEY = 'vm2026.tips.inputVariant'
+const TIPS_EVENTS_STORAGE_KEY = 'vm2026.tips.events'
+const QUICK_SCORE_PRESETS: Array<{ home: number; away: number }> = [
+  { home: 0, away: 0 },
+  { home: 1, away: 0 },
+  { home: 1, away: 1 },
+  { home: 2, away: 1 },
+  { home: 2, away: 0 },
+  { home: 3, away: 1 },
+]
+
+function getOrCreateTipsInputVariant(): TipsInputVariant {
+  const existing = localStorage.getItem(TIPS_VARIANT_STORAGE_KEY)
+  if (existing === 'A' || existing === 'B') {
+    return existing
+  }
+
+  const nextVariant: TipsInputVariant = Math.random() < 0.5 ? 'A' : 'B'
+  localStorage.setItem(TIPS_VARIANT_STORAGE_KEY, nextVariant)
+  return nextVariant
+}
+
+function logTipsEvent(event: TipsEvent) {
+  try {
+    const raw = localStorage.getItem(TIPS_EVENTS_STORAGE_KEY)
+    const list: TipsEvent[] = raw ? JSON.parse(raw) : []
+    list.push(event)
+    localStorage.setItem(TIPS_EVENTS_STORAGE_KEY, JSON.stringify(list.slice(-300)))
+  } catch {
+    // Ignore telemetry storage errors to keep UX responsive.
+  }
+}
+
+function isTipRowComplete(tip: FixtureTip): boolean {
+  return Number.isInteger(tip.homeScore) && Number.isInteger(tip.awayScore) && tip.sign !== ''
+}
 
 function createDefaultFixtureTips(): FixtureTip[] {
   return fixtureTemplates.map((row) => {
@@ -311,7 +357,14 @@ function renderPage(
   activePage: PageId,
   pageProps: {
     fixtureTips: FixtureTip[]
-    onChangeTip: (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => void
+    inputVariant: TipsInputVariant
+    onChangeTip: (
+      match: string,
+      key: 'homeScore' | 'awayScore' | 'sign',
+      value: number | '' | '1' | 'X' | '2',
+      source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
+    ) => void
+    onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
     onSaveTips: () => void
     onClearTips: () => void
     isSavingTips: boolean
@@ -328,7 +381,9 @@ function renderPage(
       return (
         <TipsPage
           fixtureTips={pageProps.fixtureTips}
+          inputVariant={pageProps.inputVariant}
           onChangeTip={pageProps.onChangeTip}
+          onSetScorePreset={pageProps.onSetScorePreset}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
           isSaving={pageProps.isSavingTips}
@@ -439,19 +494,37 @@ function StartPage() {
 
 function TipsPage({
   fixtureTips,
+  inputVariant,
   onChangeTip,
+  onSetScorePreset,
   onSave,
   onClear,
   isSaving,
   saveMessage,
 }: {
   fixtureTips: FixtureTip[]
-  onChangeTip: (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => void
+  inputVariant: TipsInputVariant
+  onChangeTip: (
+    match: string,
+    key: 'homeScore' | 'awayScore' | 'sign',
+    value: number | '' | '1' | 'X' | '2',
+    source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
+  ) => void
+  onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
   onSave: () => void
   onClear: () => void
   isSaving: boolean
   saveMessage: string
 }) {
+  const [expandedManualEditor, setExpandedManualEditor] = useState<Record<string, boolean>>({})
+
+  const toggleManualEditor = (match: string) => {
+    setExpandedManualEditor((current) => ({
+      ...current,
+      [match]: !current[match],
+    }))
+  }
+
   return (
     <div className="page-stack">
       <section className="panel panel-sticky-head">
@@ -460,7 +533,7 @@ function TipsPage({
           <h1 className="section-title">Lämna dina tips</h1>
         </div>
         <div className="inline-actions">
-          <span className="save-pill">{saveMessage}</span>
+          <span className="save-pill">{saveMessage} · UX {inputVariant}</span>
           <button className="primary-button" type="button" onClick={onSave} disabled={isSaving}>
             {isSaving ? 'Sparar...' : 'Spara'}
           </button>
@@ -500,38 +573,104 @@ function TipsPage({
                   <td data-label="Match">{row.match}</td>
                   <td data-label="Datum/tid">{row.date}</td>
                   <td data-label="H - B">
-                    <div className="score-editor">
-                      <input
-                        className="tip-input"
-                        type="number"
-                        min={0}
-                        value={row.homeScore}
-                        disabled={isLocked || isSaving}
-                        onChange={(e) => onChangeTip(row.match, 'homeScore', e.target.value === '' ? '' : Number(e.target.value))}
-                      />
-                      <span>-</span>
-                      <input
-                        className="tip-input"
-                        type="number"
-                        min={0}
-                        value={row.awayScore}
-                        disabled={isLocked || isSaving}
-                        onChange={(e) => onChangeTip(row.match, 'awayScore', e.target.value === '' ? '' : Number(e.target.value))}
-                      />
-                    </div>
+                    {inputVariant === 'A' ? (
+                      <div className="score-editor">
+                        <input
+                          className="tip-input"
+                          type="number"
+                          min={0}
+                          value={row.homeScore}
+                          disabled={isLocked || isSaving}
+                          onChange={(e) => onChangeTip(row.match, 'homeScore', e.target.value === '' ? '' : Number(e.target.value), 'input')}
+                        />
+                        <span>-</span>
+                        <input
+                          className="tip-input"
+                          type="number"
+                          min={0}
+                          value={row.awayScore}
+                          disabled={isLocked || isSaving}
+                          onChange={(e) => onChangeTip(row.match, 'awayScore', e.target.value === '' ? '' : Number(e.target.value), 'input')}
+                        />
+                      </div>
+                    ) : (
+                      <div className="quick-score-wrap">
+                        <div className="quick-score-grid" role="group" aria-label={`Snabbval resultat ${row.match}`}>
+                          {QUICK_SCORE_PRESETS.map((preset) => {
+                            const active = row.homeScore === preset.home && row.awayScore === preset.away
+                            return (
+                              <button
+                                key={`${row.match}-${preset.home}-${preset.away}`}
+                                type="button"
+                                className={active ? 'quick-score-button active' : 'quick-score-button'}
+                                disabled={isLocked || isSaving}
+                                onClick={() => onSetScorePreset(row.match, preset.home, preset.away, 'quick-score')}
+                              >
+                                {preset.home}-{preset.away}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          className="ghost-button quick-more-button"
+                          disabled={isLocked || isSaving}
+                          onClick={() => toggleManualEditor(row.match)}
+                        >
+                          {expandedManualEditor[row.match] ? 'Stäng +More' : '+More'}
+                        </button>
+                        {expandedManualEditor[row.match] && (
+                          <div className="score-editor">
+                            <input
+                              className="tip-input"
+                              type="number"
+                              min={0}
+                              value={row.homeScore}
+                              disabled={isLocked || isSaving}
+                              onChange={(e) => onChangeTip(row.match, 'homeScore', e.target.value === '' ? '' : Number(e.target.value), 'fallback-score')}
+                            />
+                            <span>-</span>
+                            <input
+                              className="tip-input"
+                              type="number"
+                              min={0}
+                              value={row.awayScore}
+                              disabled={isLocked || isSaving}
+                              onChange={(e) => onChangeTip(row.match, 'awayScore', e.target.value === '' ? '' : Number(e.target.value), 'fallback-score')}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td data-label="Välj">
-                    <select
-                      className="tip-select"
-                      value={row.sign}
-                      disabled={isLocked || isSaving}
-                      onChange={(e) => onChangeTip(row.match, 'sign', e.target.value as '' | '1' | 'X' | '2')}
-                    >
-                      <option value="">Välj</option>
-                      <option value="1">1</option>
-                      <option value="X">X</option>
-                      <option value="2">2</option>
-                    </select>
+                    {inputVariant === 'A' ? (
+                      <select
+                        className="tip-select"
+                        value={row.sign}
+                        disabled={isLocked || isSaving}
+                        onChange={(e) => onChangeTip(row.match, 'sign', e.target.value as '' | '1' | 'X' | '2', 'select')}
+                      >
+                        <option value="">Välj</option>
+                        <option value="1">1</option>
+                        <option value="X">X</option>
+                        <option value="2">2</option>
+                      </select>
+                    ) : (
+                      <div className="sign-segment" role="group" aria-label={`Utfall ${row.match}`}>
+                        {(['1', 'X', '2'] as const).map((signOption) => (
+                          <button
+                            key={`${row.match}-${signOption}`}
+                            type="button"
+                            className={row.sign === signOption ? 'segment-button active' : 'segment-button'}
+                            disabled={isLocked || isSaving}
+                            onClick={() => onChangeTip(row.match, 'sign', signOption, 'quick-sign')}
+                          >
+                            {signOption}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td data-label="Status">
                     <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>{row.status}</span>
@@ -862,10 +1001,13 @@ export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [participant, setParticipant] = useState<ParticipantSession | null>(null)
   const [activePage, setActivePage] = useState<PageId>('start')
+  const [tipsInputVariant] = useState<TipsInputVariant>(() => getOrCreateTipsInputVariant())
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
   const [isTipsSaving, setIsTipsSaving] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
+  const [tipsFlowStartedAt, setTipsFlowStartedAt] = useState<number | null>(null)
+  const [hasLoggedFirstCompleteRow, setHasLoggedFirstCompleteRow] = useState(false)
 
   useEffect(() => {
     try {
@@ -892,15 +1034,27 @@ export function App() {
     }
 
     localStorage.setItem(PARTICIPANT_STORAGE_KEY, JSON.stringify(participant))
-  }, [participant])
+  }, [participant, tipsInputVariant])
 
   useEffect(() => {
     if (!participant) {
       setFixtureTips(createDefaultFixtureTips())
       setTipsSaveMessage('Inte sparad ännu')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+      setTipsFlowStartedAt(null)
+      setHasLoggedFirstCompleteRow(false)
       return
     }
+
+    const startedAt = Date.now()
+    setTipsFlowStartedAt(startedAt)
+    setHasLoggedFirstCompleteRow(false)
+    logTipsEvent({
+      ts: new Date(startedAt).toISOString(),
+      variant: tipsInputVariant,
+      action: 'tips_session_started',
+      meta: { participantId: participant.participantId },
+    })
 
     const loadTips = async () => {
       try {
@@ -930,7 +1084,42 @@ export function App() {
     loadTips()
   }, [participant])
 
-  const onChangeTip = (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => {
+  useEffect(() => {
+    if (!participant || hasLoggedFirstCompleteRow || !tipsFlowStartedAt) {
+      return
+    }
+
+    const hasCompletedRow = fixtureTips.some((tip) => tip.status !== 'Låst' && isTipRowComplete(tip))
+    if (!hasCompletedRow) {
+      return
+    }
+
+    const elapsedMs = Date.now() - tipsFlowStartedAt
+    logTipsEvent({
+      ts: new Date().toISOString(),
+      variant: tipsInputVariant,
+      action: 'first_row_completed',
+      meta: { elapsedMs, participantId: participant.participantId },
+    })
+    setHasLoggedFirstCompleteRow(true)
+  }, [fixtureTips, hasLoggedFirstCompleteRow, participant, tipsFlowStartedAt, tipsInputVariant])
+
+  const onChangeTip = (
+    match: string,
+    key: 'homeScore' | 'awayScore' | 'sign',
+    value: number | '' | '1' | 'X' | '2',
+    source: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score' = 'input',
+  ) => {
+    if (participant) {
+      logTipsEvent({
+        ts: new Date().toISOString(),
+        variant: tipsInputVariant,
+        action: 'tip_changed',
+        match,
+        meta: { key, source, participantId: participant.participantId },
+      })
+    }
+
     setFixtureTips((current) =>
       current.map((tip) => {
         if (tip.match !== match || tip.status === 'Låst') {
@@ -940,6 +1129,32 @@ export function App() {
         return {
           ...tip,
           [key]: value,
+        }
+      }),
+    )
+  }
+
+  const onSetScorePreset = (match: string, home: number, away: number, source: 'quick-score' | 'fallback-score' = 'quick-score') => {
+    if (participant) {
+      logTipsEvent({
+        ts: new Date().toISOString(),
+        variant: tipsInputVariant,
+        action: 'score_preset_selected',
+        match,
+        meta: { home, away, source, participantId: participant.participantId },
+      })
+    }
+
+    setFixtureTips((current) =>
+      current.map((tip) => {
+        if (tip.match !== match || tip.status === 'Låst') {
+          return tip
+        }
+
+        return {
+          ...tip,
+          homeScore: home,
+          awayScore: away,
         }
       }),
     )
@@ -973,6 +1188,12 @@ export function App() {
       const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
       setTipsSaveMessage(`Sparad: ${formatted}`)
       setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
+      logTipsEvent({
+        ts: new Date().toISOString(),
+        variant: tipsInputVariant,
+        action: 'tips_saved',
+        meta: { participantId: participant.participantId },
+      })
     } catch {
       setTipsSaveMessage('Kunde inte spara tips')
     } finally {
@@ -1000,6 +1221,12 @@ export function App() {
       setFixtureTips(createDefaultFixtureTips())
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+      logTipsEvent({
+        ts: new Date().toISOString(),
+        variant: tipsInputVariant,
+        action: 'tips_cleared',
+        meta: { participantId: participant.participantId },
+      })
     } catch {
       setTipsSaveMessage('Kunde inte rensa tips')
     } finally {
@@ -1061,7 +1288,9 @@ export function App() {
       <main className="content-shell">
         {renderPage(activePage, {
           fixtureTips,
+          inputVariant: tipsInputVariant,
           onChangeTip,
+          onSetScorePreset,
           onSaveTips,
           onClearTips,
           isSavingTips: isTipsSaving,

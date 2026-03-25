@@ -141,6 +141,17 @@ Each admin-managed question must support:
 	- Admin question persistence.
 	- Full production auth/token/session implementation.
 
+### 7.3 Tips input UX trial scope (2026-03-25)
+
+- Included in this step:
+	- A/B-style tips input interaction trial in frontend for cross-device usability.
+	- Variant A: current numeric score inputs + sign dropdown.
+	- Variant B: quick-pick score buttons + segmented 1/X/2 controls with manual fallback.
+	- Lightweight localStorage event logging for interaction comparison.
+- Excluded from this step:
+	- Tips API/schema changes.
+	- Admin UX changes.
+
 ## 8. Workflow
 
 - Default workflow mode for this project: Fast (as agreed).
@@ -170,3 +181,4 @@ Each admin-managed question must support:
 	- Added backend MVP scope for participant persistence and `POST /api/auth/sign-in` sign-in/create flow.
 	- Added session persistence for signed-in participant via localStorage.
 	- Added participantId-based tips CRUD backend scope and frontend integration for loading/saving tips.
+	- Added tips input UX trial scope with Variant A/B model for desktop+mobile comparison.
