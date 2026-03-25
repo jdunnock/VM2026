@@ -157,6 +157,7 @@ Each admin-managed question must support:
 	- Lämna tips section buttons now drive a tabbed card flow where one section is visible at a time (`Gruppspel`, `Gruppplaceringar`, `Slutspel`, `Special`, `Extrafrågor`) to reduce scroll length on mobile.
 	- `Special` and `Extrafrågor` are shown in separate section cards, aligned with their own tab buttons.
 	- Start page uses one neutral overview panel instead of a second stacked green hero block, and redundant start-page CTA buttons/copy variants are removed.
+	- Mobile header uses a compact layout: horizontally scrollable main navigation and condensed status cards to reduce wrapping and vertical crowding.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -211,3 +212,4 @@ Each admin-managed question must support:
 	- Updated Lämna tips UX to tab-driven section cards so only the selected section is shown at a time, and split `Special` + `Extrafrågor` into separate panels matching their buttons.
 	- Updated Lämna tips tab copy for `Grupplaceringar` and added clearer heading-to-content spacing in compact section panels.
 	- Simplified start page UI: removed the separate green hero block, reduced repeated `VM2026 Tipset` branding on page-level headings, and removed redundant start-page CTA buttons.
+	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.

@@ -1725,15 +1725,15 @@ export function App() {
         </nav>
 
         <div className="utility-panel">
-          <div>
+          <div className="utility-item">
             <span className="utility-label">Inloggad som</span>
             <strong>{participant?.name ?? 'Deltagare'}</strong>
           </div>
-          <div>
+          <div className="utility-item">
             <span className="utility-label">Nedräkning</span>
             <strong>79 dagar kvar</strong>
           </div>
-          <div>
+          <div className="utility-item">
             <span className="utility-label">Senast sparad</span>
             <strong>{tipsSaveMessage.replace('Sparad: ', '')}</strong>
           </div>
