@@ -114,11 +114,22 @@ Each admin-managed question must support:
 
 ## 7. Architecture and Data Flow (phase-level)
 
-- Backend: TBD (Node.js or Python)
-- Frontend: TBD
-- Storage: TBD
+- Backend: Node.js (Express)
+- Frontend: React + Vite
+- Storage: SQLite (local MVP database)
 - External integrations:
 	- FIFA standings and fixtures as reference truth for tournament structure and result resolution
+
+### 7.1 Backend MVP scope (2026-03-25)
+
+- Included in this step:
+	- `POST /api/auth/sign-in` endpoint for participant sign-in/create flow.
+	- `participants` storage with fields: `id`, `name`, `access_code_hash`, `created_at`, `last_seen_at`.
+	- Frontend Sign-in page integration against the backend endpoint.
+- Excluded from this step:
+	- Tips persistence CRUD.
+	- Admin question persistence CRUD.
+	- Advanced auth/session stack.
 
 ## 8. Workflow
 
@@ -129,7 +140,7 @@ Each admin-managed question must support:
 ## 9. Open Questions
 
 - Final Poangsattning values per prediction category.
-- Decide final tech stack (Node.js vs Python) before backend scaffolding.
+- Decide production hosting model for backend and database.
 
 ## 10. Changelog
 
@@ -145,3 +156,5 @@ Each admin-managed question must support:
 	- Added mobile readiness pass: all major data tables now transform into stacked card layouts on small screens, and tips actions keep sticky bottom accessibility for phone testing.
 - 2026-03-25
 	- Added Sign-in / access code page: users enter Namn and Åtkomstkod before accessing main tips interface. Error messaging for incorrect codes included.
+	- Chosen backend stack for MVP: Node.js (Express) + SQLite.
+	- Added backend MVP scope for participant persistence and `POST /api/auth/sign-in` sign-in/create flow.

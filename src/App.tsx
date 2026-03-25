@@ -23,6 +23,11 @@ type RuleRow = {
   lockTime: string
 }
 
+type ParticipantSession = {
+  participantId: number
+  name: string
+}
+
 const navItems: NavItem[] = [
   { id: 'start', label: 'Start' },
   { id: 'tips', label: 'Lämna tips' },
@@ -145,18 +150,54 @@ const adminQuestions = [
   },
 ]
 
-function LoginPage({ onSuccess }: { onSuccess: () => void }) {
+function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession) => void }) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (code === '1234') {
-      onSuccess()
-    } else {
-      setError('Fel kod. Försök igen.')
-      setCode('')
+
+    const normalizedName = name.trim().replace(/\s+/g, ' ')
+    const normalizedCode = code.trim()
+
+    if (!normalizedName || !normalizedCode) {
+      setError('Namn och åtkomstkod krävs.')
+      return
+    }
+
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: normalizedName,
+          code: normalizedCode,
+        }),
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        setError(payload.error ?? 'Ett oväntat fel inträffade. Försök igen.')
+        setCode('')
+        return
+      }
+
+      onSuccess({
+        participantId: payload.participantId,
+        name: payload.name,
+      })
+    } catch {
+      setError('Kunde inte ansluta till servern. Försök igen.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -178,6 +219,8 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ditt namn"
+              autoComplete="name"
+              required
             />
           </div>
 
@@ -189,13 +232,15 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Åtkomstkod"
+              autoComplete="current-password"
+              required
             />
           </div>
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="primary-button">
-            Gå vidare
+          <button type="submit" className="primary-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Kontrollerar...' : 'Gå vidare'}
           </button>
         </form>
       </div>
@@ -209,6 +254,7 @@ function renderPage(activePage: PageId) {
       return null
     case 'start':
       return <StartPage />
+    case 'tips':
       return <TipsPage />
     case 'mine':
       return <MyTipsPage />
@@ -679,12 +725,18 @@ function AdminPage() {
 
 export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [participant, setParticipant] = useState<ParticipantSession | null>(null)
   const [activePage, setActivePage] = useState<PageId>('start')
 
   if (!isLoggedIn) {
     return (
       <div className="app-shell">
-        <LoginPage onSuccess={() => setIsLoggedIn(true)} />
+        <LoginPage
+          onSuccess={(nextParticipant) => {
+            setParticipant(nextParticipant)
+            setIsLoggedIn(true)
+          }}
+        />
       </div>
     )
   }
@@ -711,6 +763,10 @@ export function App() {
         </nav>
 
         <div className="utility-panel">
+          <div>
+            <span className="utility-label">Inloggad som</span>
+            <strong>{participant?.name ?? 'Deltagare'}</strong>
+          </div>
           <div>
             <span className="utility-label">Nedräkning</span>
             <strong>79 dagar kvar</strong>
