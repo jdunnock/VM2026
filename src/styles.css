@@ -261,6 +261,24 @@ strong {
   font: inherit;
 }
 
+.group-pick-input,
+.special-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.group-pick-input:focus,
+.special-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+}
+
 .tip-input {
   width: 58px;
 }

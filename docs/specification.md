@@ -136,6 +136,7 @@ Each admin-managed question must support:
 - Included in this step:
 	- Session persistence in frontend via localStorage for signed-in participant.
 	- Participant-based tips persistence API (`participantId` keyed storage).
+	- Persisted tips state now includes group placements and special predictions in addition to match tips.
 	- Backend routes for tips read/write/delete operations.
 - Excluded from this step:
 	- Admin question persistence.
@@ -188,3 +189,4 @@ Each admin-managed question must support:
 	- Simplified mobile Variant B further: removed score quick-picks on mobile so score entry is spinner-only for cleaner thumb flow.
 	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
 	- Locked the tips input UX model as default and removed temporary A/B trial instrumentation.
+	- Extended tips persistence end-to-end to include Gruppplaceringar and Special predictions, and updated Mina tips to show these from saved data.

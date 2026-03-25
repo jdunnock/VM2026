@@ -12,11 +12,6 @@ type SummaryCard = {
   detail: string
 }
 
-type GroupCard = {
-  group: string
-  picks: string[]
-}
-
 type RuleRow = {
   category: string
   prediction: string
@@ -35,6 +30,22 @@ type FixtureTip = {
   awayScore: number | ''
   sign: '' | '1' | 'X' | '2'
   status: string
+}
+
+type GroupPlacement = {
+  group: string
+  picks: string[]
+}
+
+type SpecialPredictions = {
+  winner: string
+  topScorer: string
+}
+
+type PersistedTipsState = {
+  fixtureTips: FixtureTip[]
+  groupPlacements: GroupPlacement[]
+  specialPredictions: SpecialPredictions
 }
 
 const navItems: NavItem[] = [
@@ -73,6 +84,17 @@ const fixtureTemplates: Array<{ match: string; date: string; status: string; def
   { match: 'MEX - GER', date: '2026-06-11 21:00', status: 'Öppet', defaultScore: '1-1', defaultSign: 'X' },
   { match: 'BRA - ARG', date: '2026-06-12 18:00', status: 'Låst', defaultScore: '', defaultSign: '' },
 ]
+
+const groupPlacementTemplates: GroupPlacement[] = [
+  { group: 'Grupp A', picks: ['Kanada', 'SWE/POL/ALB/UKR', 'Ghana', 'Peru'] },
+  { group: 'Grupp B', picks: ['Spanien', 'Japan', 'Marocko', 'Ecuador'] },
+  { group: 'Grupp C', picks: ['Argentina', 'Nederländerna', 'Nigeria', 'Costa Rica'] },
+]
+
+const defaultSpecialPredictions: SpecialPredictions = {
+  winner: 'Argentina',
+  topScorer: 'Kylian Mbappé',
+}
 
 const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
 const QUICK_SCORE_GROUPS: Array<{
@@ -188,11 +210,65 @@ function normalizeFixtureTips(rawTips: unknown): FixtureTip[] {
   })
 }
 
-const groupCards: GroupCard[] = [
-  { group: 'Grupp A', picks: ['1. Kanada', '2. Sverige/Polen/Albanien/Ukraina', '3. Ghana', '4. Peru'] },
-  { group: 'Grupp B', picks: ['1. Spanien', '2. Japan', '3. Marocko', '4. Ecuador'] },
-  { group: 'Grupp C', picks: ['1. Argentina', '2. Nederländerna', '3. Nigeria', '4. Costa Rica'] },
-]
+function normalizeGroupPlacements(rawPlacements: unknown): GroupPlacement[] {
+  if (!Array.isArray(rawPlacements)) {
+    return groupPlacementTemplates
+  }
+
+  return groupPlacementTemplates.map((template) => {
+    const found = rawPlacements.find(
+      (item) => item && typeof item === 'object' && 'group' in item && (item as { group?: string }).group === template.group,
+    ) as Partial<GroupPlacement> | undefined
+
+    if (!found || !Array.isArray(found.picks) || found.picks.length !== 4) {
+      return template
+    }
+
+    return {
+      group: template.group,
+      picks: found.picks.map((pick, index) => (typeof pick === 'string' && pick.trim() ? pick : template.picks[index])),
+    }
+  })
+}
+
+function normalizeSpecialPredictions(rawSpecial: unknown): SpecialPredictions {
+  if (!rawSpecial || typeof rawSpecial !== 'object') {
+    return defaultSpecialPredictions
+  }
+
+  const candidate = rawSpecial as Partial<SpecialPredictions>
+
+  return {
+    winner: typeof candidate.winner === 'string' && candidate.winner.trim() ? candidate.winner : defaultSpecialPredictions.winner,
+    topScorer: typeof candidate.topScorer === 'string' && candidate.topScorer.trim() ? candidate.topScorer : defaultSpecialPredictions.topScorer,
+  }
+}
+
+function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
+  if (Array.isArray(rawTips)) {
+    return {
+      fixtureTips: normalizeFixtureTips(rawTips),
+      groupPlacements: groupPlacementTemplates,
+      specialPredictions: defaultSpecialPredictions,
+    }
+  }
+
+  if (!rawTips || typeof rawTips !== 'object') {
+    return {
+      fixtureTips: createDefaultFixtureTips(),
+      groupPlacements: groupPlacementTemplates,
+      specialPredictions: defaultSpecialPredictions,
+    }
+  }
+
+  const candidate = rawTips as Partial<PersistedTipsState>
+
+  return {
+    fixtureTips: normalizeFixtureTips(candidate.fixtureTips),
+    groupPlacements: normalizeGroupPlacements(candidate.groupPlacements),
+    specialPredictions: normalizeSpecialPredictions(candidate.specialPredictions),
+  }
+}
 
 const knockoutRounds = [
   {
@@ -369,6 +445,8 @@ function renderPage(
   activePage: PageId,
   pageProps: {
     fixtureTips: FixtureTip[]
+    groupPlacements: GroupPlacement[]
+    specialPredictions: SpecialPredictions
     onChangeTip: (
       match: string,
       key: 'homeScore' | 'awayScore' | 'sign',
@@ -376,6 +454,8 @@ function renderPage(
       source?: 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
     ) => void
     onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
+    onChangeGroupPlacement: (group: string, index: number, value: string) => void
+    onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
     onSaveTips: () => void
     onClearTips: () => void
     isSavingTips: boolean
@@ -392,8 +472,12 @@ function renderPage(
       return (
         <TipsPage
           fixtureTips={pageProps.fixtureTips}
+          groupPlacements={pageProps.groupPlacements}
+          specialPredictions={pageProps.specialPredictions}
           onChangeTip={pageProps.onChangeTip}
           onSetScorePreset={pageProps.onSetScorePreset}
+          onChangeGroupPlacement={pageProps.onChangeGroupPlacement}
+          onChangeSpecialPrediction={pageProps.onChangeSpecialPrediction}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
           isSaving={pageProps.isSavingTips}
@@ -401,7 +485,14 @@ function renderPage(
         />
       )
     case 'mine':
-      return <MyTipsPage fixtureTips={pageProps.fixtureTips} lastSavedLabel={pageProps.myTipsSavedLabel} />
+      return (
+        <MyTipsPage
+          fixtureTips={pageProps.fixtureTips}
+          groupPlacements={pageProps.groupPlacements}
+          specialPredictions={pageProps.specialPredictions}
+          lastSavedLabel={pageProps.myTipsSavedLabel}
+        />
+      )
     case 'rules':
       return <RulesPage />
     case 'admin':
@@ -504,14 +595,20 @@ function StartPage() {
 
 function TipsPage({
   fixtureTips,
+  groupPlacements,
+  specialPredictions,
   onChangeTip,
   onSetScorePreset,
+  onChangeGroupPlacement,
+  onChangeSpecialPrediction,
   onSave,
   onClear,
   isSaving,
   saveMessage,
 }: {
   fixtureTips: FixtureTip[]
+  groupPlacements: GroupPlacement[]
+  specialPredictions: SpecialPredictions
   onChangeTip: (
     match: string,
     key: 'homeScore' | 'awayScore' | 'sign',
@@ -519,6 +616,8 @@ function TipsPage({
     source?: 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
   ) => void
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
+  onChangeGroupPlacement: (group: string, index: number, value: string) => void
+  onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
   onSave: () => void
   onClear: () => void
   isSaving: boolean
@@ -695,15 +794,23 @@ function TipsPage({
       <section className="panel">
         <div className="section-heading compact">
           <p className="eyebrow">Gruppplaceringar</p>
-          <h2>Grupp A - slutlig ordning</h2>
+          <h2>Gruppplaceringar</h2>
         </div>
         <div className="group-grid">
-          {groupCards.map((card) => (
-            <article className="group-card" key={card.group}>
-              <h3>{card.group}</h3>
+          {groupPlacements.map((placement) => (
+            <article className="group-card" key={placement.group}>
+              <h3>{placement.group}</h3>
               <ol>
-                {card.picks.map((pick) => (
-                  <li key={pick}>{pick}</li>
+                {placement.picks.map((pick, index) => (
+                  <li key={`${placement.group}-${index}`}>
+                    <input
+                      className="group-pick-input"
+                      type="text"
+                      value={pick}
+                      disabled={isSaving}
+                      onChange={(e) => onChangeGroupPlacement(placement.group, index, e.target.value)}
+                    />
+                  </li>
                 ))}
               </ol>
             </article>
@@ -739,11 +846,23 @@ function TipsPage({
           <div className="stacked-cards">
             <article className="mini-card">
               <span className="mini-label">Slutsegrare</span>
-              <strong>Argentina</strong>
+              <input
+                className="special-input"
+                type="text"
+                value={specialPredictions.winner}
+                disabled={isSaving}
+                onChange={(e) => onChangeSpecialPrediction('winner', e.target.value)}
+              />
             </article>
             <article className="mini-card">
               <span className="mini-label">Skytteligavinnare</span>
-              <strong>Kylian Mbappé</strong>
+              <input
+                className="special-input"
+                type="text"
+                value={specialPredictions.topScorer}
+                disabled={isSaving}
+                onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
+              />
             </article>
             <article className="mini-card">
               <span className="mini-label">Extrafråga</span>
@@ -764,7 +883,17 @@ function TipsPage({
   )
 }
 
-function MyTipsPage({ fixtureTips, lastSavedLabel }: { fixtureTips: FixtureTip[]; lastSavedLabel: string }) {
+function MyTipsPage({
+  fixtureTips,
+  groupPlacements,
+  specialPredictions,
+  lastSavedLabel,
+}: {
+  fixtureTips: FixtureTip[]
+  groupPlacements: GroupPlacement[]
+  specialPredictions: SpecialPredictions
+  lastSavedLabel: string
+}) {
   return (
     <div className="page-stack">
       <section className="panel panel-sticky-head">
@@ -813,6 +942,17 @@ function MyTipsPage({ fixtureTips, lastSavedLabel }: { fixtureTips: FixtureTip[]
                   </tbody>
                 </table>
               </div>
+            ) : section.title === 'Gruppplaceringar' ? (
+              <ul>
+                {groupPlacements.map((group) => (
+                  <li key={group.group}>{group.group}: {group.picks.join(', ')}</li>
+                ))}
+              </ul>
+            ) : section.title === 'Special' ? (
+              <ul>
+                <li>Slutsegrare: {specialPredictions.winner}</li>
+                <li>Skytteligavinnare: {specialPredictions.topScorer}</li>
+              </ul>
             ) : section.items.length > 0 ? (
               <ul>
                 {section.items.map((item) => (
@@ -1011,6 +1151,8 @@ export function App() {
   const [participant, setParticipant] = useState<ParticipantSession | null>(null)
   const [activePage, setActivePage] = useState<PageId>('start')
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
+  const [groupPlacements, setGroupPlacements] = useState<GroupPlacement[]>(groupPlacementTemplates)
+  const [specialPredictions, setSpecialPredictions] = useState<SpecialPredictions>(defaultSpecialPredictions)
   const [isTipsSaving, setIsTipsSaving] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
@@ -1045,6 +1187,8 @@ export function App() {
   useEffect(() => {
     if (!participant) {
       setFixtureTips(createDefaultFixtureTips())
+      setGroupPlacements(groupPlacementTemplates)
+      setSpecialPredictions(defaultSpecialPredictions)
       setTipsSaveMessage('Inte sparad ännu')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
       return
@@ -1059,8 +1203,10 @@ export function App() {
         }
 
         const payload = await response.json()
-        const normalizedTips = normalizeFixtureTips(payload.tips)
-        setFixtureTips(normalizedTips)
+        const normalizedState = normalizePersistedTipsState(payload.tips)
+        setFixtureTips(normalizedState.fixtureTips)
+        setGroupPlacements(normalizedState.groupPlacements)
+        setSpecialPredictions(normalizedState.specialPredictions)
 
         if (payload.updatedAt) {
           const formatted = new Date(payload.updatedAt).toLocaleString('sv-SE')
@@ -1077,6 +1223,28 @@ export function App() {
 
     loadTips()
   }, [participant])
+
+  const onChangeGroupPlacement = (group: string, index: number, value: string) => {
+    setGroupPlacements((current) =>
+      current.map((item) => {
+        if (item.group !== group) {
+          return item
+        }
+
+        return {
+          ...item,
+          picks: item.picks.map((pick, pickIndex) => (pickIndex === index ? value : pick)),
+        }
+      }),
+    )
+  }
+
+  const onChangeSpecialPrediction = (key: keyof SpecialPredictions, value: string) => {
+    setSpecialPredictions((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
 
   const onChangeTip = (
     match: string,
@@ -1140,7 +1308,13 @@ export function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ tips: fixtureTips }),
+        body: JSON.stringify({
+          tips: {
+            fixtureTips,
+            groupPlacements,
+            specialPredictions,
+          },
+        }),
       })
 
       const payload = await response.json()
@@ -1149,8 +1323,10 @@ export function App() {
         return
       }
 
-      const normalizedTips = normalizeFixtureTips(payload.tips)
-      setFixtureTips(normalizedTips)
+      const normalizedState = normalizePersistedTipsState(payload.tips)
+      setFixtureTips(normalizedState.fixtureTips)
+      setGroupPlacements(normalizedState.groupPlacements)
+      setSpecialPredictions(normalizedState.specialPredictions)
       const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
       setTipsSaveMessage(`Sparad: ${formatted}`)
       setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
@@ -1179,6 +1355,8 @@ export function App() {
       }
 
       setFixtureTips(createDefaultFixtureTips())
+      setGroupPlacements(groupPlacementTemplates)
+      setSpecialPredictions(defaultSpecialPredictions)
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
     } catch {
@@ -1242,8 +1420,12 @@ export function App() {
       <main className="content-shell">
         {renderPage(activePage, {
           fixtureTips,
+          groupPlacements,
+          specialPredictions,
           onChangeTip,
           onSetScorePreset,
+          onChangeGroupPlacement,
+          onChangeSpecialPrediction,
           onSaveTips,
           onClearTips,
           isSavingTips: isTipsSaving,

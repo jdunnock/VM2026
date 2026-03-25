@@ -28,7 +28,7 @@ function parseParticipantId(value) {
   return Number.isInteger(id) && id > 0 ? id : null
 }
 
-function isValidTipsPayload(tips) {
+function isValidFixtureTips(tips) {
   if (!Array.isArray(tips) || tips.length > 200) {
     return false
   }
@@ -49,6 +49,78 @@ function isValidTipsPayload(tips) {
 
     return isMatchValid && isDateValid && isSignValid && isStatusValid && hasValidScore
   })
+}
+
+function isValidGroupPlacements(groupPlacements) {
+  if (!Array.isArray(groupPlacements) || groupPlacements.length > 12) {
+    return false
+  }
+
+  return groupPlacements.every((group) => {
+    if (!group || typeof group !== 'object') {
+      return false
+    }
+
+    if (typeof group.group !== 'string' || !Array.isArray(group.picks) || group.picks.length !== 4) {
+      return false
+    }
+
+    return group.picks.every((pick) => typeof pick === 'string')
+  })
+}
+
+function isValidSpecialPredictions(specialPredictions) {
+  if (!specialPredictions || typeof specialPredictions !== 'object') {
+    return false
+  }
+
+  return (
+    typeof specialPredictions.winner === 'string' &&
+    typeof specialPredictions.topScorer === 'string'
+  )
+}
+
+function normalizeTipsPayload(tips) {
+  if (Array.isArray(tips)) {
+    if (!isValidFixtureTips(tips)) {
+      return null
+    }
+
+    return {
+      fixtureTips: tips,
+      groupPlacements: [],
+      specialPredictions: {
+        winner: '',
+        topScorer: '',
+      },
+    }
+  }
+
+  if (!tips || typeof tips !== 'object') {
+    return null
+  }
+
+  const fixtureTips = tips.fixtureTips
+  const groupPlacements = tips.groupPlacements
+  const specialPredictions = tips.specialPredictions
+
+  if (!isValidFixtureTips(fixtureTips)) {
+    return null
+  }
+
+  if (!isValidGroupPlacements(groupPlacements)) {
+    return null
+  }
+
+  if (!isValidSpecialPredictions(specialPredictions)) {
+    return null
+  }
+
+  return {
+    fixtureTips,
+    groupPlacements,
+    specialPredictions,
+  }
 }
 
 app.use(express.json())
@@ -128,8 +200,8 @@ app.put('/api/tips/:participantId', async (req, res) => {
     return
   }
 
-  const tips = req.body?.tips
-  if (!isValidTipsPayload(tips)) {
+  const tipsPayload = normalizeTipsPayload(req.body?.tips)
+  if (!tipsPayload) {
     res.status(400).json({ error: 'Ogiltigt tipsformat.' })
     return
   }
@@ -141,7 +213,7 @@ app.put('/api/tips/:participantId', async (req, res) => {
       return
     }
 
-    const savedState = await upsertTipsByParticipantId(participantId, tips)
+    const savedState = await upsertTipsByParticipantId(participantId, tipsPayload)
 
     res.json({
       participantId,
