@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-type PageId = 'start' | 'tips' | 'mine' | 'rules' | 'admin'
+type PageId = 'login' | 'start' | 'tips' | 'mine' | 'rules' | 'admin'
 
 type NavItem = {
   id: PageId
@@ -145,11 +145,70 @@ const adminQuestions = [
   },
 ]
 
+function LoginPage({ onSuccess }: { onSuccess: () => void }) {
+  const [name, setName] = useState('')
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code === '1234') {
+      onSuccess()
+    } else {
+      setError('Fel kod. Försök igen.')
+      setCode('')
+    }
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-header">
+          <p className="eyebrow">VM2026 tipset</p>
+          <h1>Åtkomst</h1>
+          <p className="lead-text">Ange ditt namn och åtkomstkoden för att komma igång.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="name">Namn</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ditt namn"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="code">Åtkomstkod</label>
+            <input
+              id="code"
+              type="password"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Åtkomstkod"
+            />
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <button type="submit" className="primary-button">
+            Gå vidare
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function renderPage(activePage: PageId) {
   switch (activePage) {
+    case 'login':
+      return null
     case 'start':
       return <StartPage />
-    case 'tips':
       return <TipsPage />
     case 'mine':
       return <MyTipsPage />
@@ -619,7 +678,16 @@ function AdminPage() {
 }
 
 export function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [activePage, setActivePage] = useState<PageId>('start')
+
+  if (!isLoggedIn) {
+    return (
+      <div className="app-shell">
+        <LoginPage onSuccess={() => setIsLoggedIn(true)} />
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">

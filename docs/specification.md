@@ -143,3 +143,5 @@ Each admin-managed question must support:
 	- Updated selected navigation/section button background to gray in the static prototype.
 	- Updated hero section CTA buttons to gray tones for consistent button styling.
 	- Added mobile readiness pass: all major data tables now transform into stacked card layouts on small screens, and tips actions keep sticky bottom accessibility for phone testing.
+- 2026-03-25
+	- Added Sign-in / access code page: users enter Namn and Åtkomstkod before accessing main tips interface. Error messaging for incorrect codes included.
