@@ -245,6 +245,36 @@ strong {
   flex-wrap: wrap;
 }
 
+.score-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip-input,
+.tip-select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.tip-input {
+  width: 58px;
+}
+
+.tip-select {
+  min-width: 68px;
+}
+
+.tip-input:disabled,
+.tip-select:disabled {
+  background: #f5f7fb;
+  color: var(--muted);
+}
+
 .primary-button,
 .ghost-button {
   padding: 12px 18px;

@@ -131,6 +131,16 @@ Each admin-managed question must support:
 	- Admin question persistence CRUD.
 	- Advanced auth/session stack.
 
+### 7.2 Persistence scope extension (2026-03-25)
+
+- Included in this step:
+	- Session persistence in frontend via localStorage for signed-in participant.
+	- Participant-based tips persistence API (`participantId` keyed storage).
+	- Backend routes for tips read/write/delete operations.
+- Excluded from this step:
+	- Admin question persistence.
+	- Full production auth/token/session implementation.
+
 ## 8. Workflow
 
 - Default workflow mode for this project: Fast (as agreed).
@@ -158,3 +168,5 @@ Each admin-managed question must support:
 	- Added Sign-in / access code page: users enter Namn and Åtkomstkod before accessing main tips interface. Error messaging for incorrect codes included.
 	- Chosen backend stack for MVP: Node.js (Express) + SQLite.
 	- Added backend MVP scope for participant persistence and `POST /api/auth/sign-in` sign-in/create flow.
+	- Added session persistence for signed-in participant via localStorage.
+	- Added participantId-based tips CRUD backend scope and frontend integration for loading/saving tips.

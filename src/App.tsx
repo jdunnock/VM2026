@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type PageId = 'login' | 'start' | 'tips' | 'mine' | 'rules' | 'admin'
 
@@ -26,6 +26,15 @@ type RuleRow = {
 type ParticipantSession = {
   participantId: number
   name: string
+}
+
+type FixtureTip = {
+  match: string
+  date: string
+  homeScore: number | ''
+  awayScore: number | ''
+  sign: '' | '1' | 'X' | '2'
+  status: string
 }
 
 const navItems: NavItem[] = [
@@ -59,17 +68,67 @@ const progressItems = [
   { label: 'Extrafrågor', value: 50 },
 ]
 
-const fixtureRows = [
-  { match: 'USA - CAN', date: '2026-06-11 18:00', score: '2-1', sign: '1', status: 'Öppet' },
-  { match: 'MEX - GER', date: '2026-06-11 21:00', score: '1-1', sign: 'X', status: 'Öppet' },
-  { match: 'BRA - ARG', date: '2026-06-12 18:00', score: '—', sign: '—', status: 'Låst' },
+const fixtureTemplates: Array<{ match: string; date: string; status: string; defaultScore: string; defaultSign: '' | '1' | 'X' | '2' }> = [
+  { match: 'USA - CAN', date: '2026-06-11 18:00', status: 'Öppet', defaultScore: '2-1', defaultSign: '1' },
+  { match: 'MEX - GER', date: '2026-06-11 21:00', status: 'Öppet', defaultScore: '1-1', defaultSign: 'X' },
+  { match: 'BRA - ARG', date: '2026-06-12 18:00', status: 'Låst', defaultScore: '', defaultSign: '' },
 ]
 
-const myTipsFixtures = [
-  { match: 'USA - CAN', date: '2026-06-11 18:00', score: '2-1', sign: '1', status: 'Ändringsbar' },
-  { match: 'MEX - GER', date: '2026-06-11 21:00', score: '1-3', sign: '2', status: 'Ändringsbar' },
-  { match: 'BRA - ARG', date: '2026-06-12 18:00', score: '—', sign: '—', status: 'Låst' },
-]
+const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
+
+function createDefaultFixtureTips(): FixtureTip[] {
+  return fixtureTemplates.map((row) => {
+    const [home, away] = row.defaultScore ? row.defaultScore.split('-') : ['', '']
+
+    return {
+      match: row.match,
+      date: row.date,
+      status: row.status,
+      homeScore: home === '' ? '' : Number(home),
+      awayScore: away === '' ? '' : Number(away),
+      sign: row.defaultSign,
+    }
+  })
+}
+
+function normalizeFixtureTips(rawTips: unknown): FixtureTip[] {
+  if (!Array.isArray(rawTips)) {
+    return createDefaultFixtureTips()
+  }
+
+  return fixtureTemplates.map((template) => {
+    const found = rawTips.find(
+      (item) =>
+        item &&
+        typeof item === 'object' &&
+        'match' in item &&
+        'date' in item &&
+        (item as { match?: string }).match === template.match &&
+        (item as { date?: string }).date === template.date,
+    ) as Partial<FixtureTip> | undefined
+
+    if (!found) {
+      const [home, away] = template.defaultScore ? template.defaultScore.split('-') : ['', '']
+      return {
+        match: template.match,
+        date: template.date,
+        status: template.status,
+        homeScore: home === '' ? '' : Number(home),
+        awayScore: away === '' ? '' : Number(away),
+        sign: template.defaultSign,
+      }
+    }
+
+    return {
+      match: template.match,
+      date: template.date,
+      status: template.status,
+      homeScore: Number.isInteger(found.homeScore) ? found.homeScore : '',
+      awayScore: Number.isInteger(found.awayScore) ? found.awayScore : '',
+      sign: found.sign === '1' || found.sign === 'X' || found.sign === '2' ? found.sign : '',
+    }
+  })
+}
 
 const groupCards: GroupCard[] = [
   { group: 'Grupp A', picks: ['1. Kanada', '2. Sverige/Polen/Albanien/Ukraina', '3. Ghana', '4. Peru'] },
@@ -248,16 +307,36 @@ function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession)
   )
 }
 
-function renderPage(activePage: PageId) {
+function renderPage(
+  activePage: PageId,
+  pageProps: {
+    fixtureTips: FixtureTip[]
+    onChangeTip: (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => void
+    onSaveTips: () => void
+    onClearTips: () => void
+    isSavingTips: boolean
+    tipsSaveMessage: string
+    myTipsSavedLabel: string
+  },
+) {
   switch (activePage) {
     case 'login':
       return null
     case 'start':
       return <StartPage />
     case 'tips':
-      return <TipsPage />
+      return (
+        <TipsPage
+          fixtureTips={pageProps.fixtureTips}
+          onChangeTip={pageProps.onChangeTip}
+          onSave={pageProps.onSaveTips}
+          onClear={pageProps.onClearTips}
+          isSaving={pageProps.isSavingTips}
+          saveMessage={pageProps.tipsSaveMessage}
+        />
+      )
     case 'mine':
-      return <MyTipsPage />
+      return <MyTipsPage fixtureTips={pageProps.fixtureTips} lastSavedLabel={pageProps.myTipsSavedLabel} />
     case 'rules':
       return <RulesPage />
     case 'admin':
@@ -358,7 +437,21 @@ function StartPage() {
   )
 }
 
-function TipsPage() {
+function TipsPage({
+  fixtureTips,
+  onChangeTip,
+  onSave,
+  onClear,
+  isSaving,
+  saveMessage,
+}: {
+  fixtureTips: FixtureTip[]
+  onChangeTip: (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => void
+  onSave: () => void
+  onClear: () => void
+  isSaving: boolean
+  saveMessage: string
+}) {
   return (
     <div className="page-stack">
       <section className="panel panel-sticky-head">
@@ -367,8 +460,10 @@ function TipsPage() {
           <h1 className="section-title">Lämna dina tips</h1>
         </div>
         <div className="inline-actions">
-          <span className="save-pill">Sparad för 2 minuter sedan</span>
-          <button className="primary-button" type="button">Spara</button>
+          <span className="save-pill">{saveMessage}</span>
+          <button className="primary-button" type="button" onClick={onSave} disabled={isSaving}>
+            {isSaving ? 'Sparar...' : 'Spara'}
+          </button>
         </div>
       </section>
 
@@ -397,17 +492,53 @@ function TipsPage() {
               </tr>
             </thead>
             <tbody>
-              {fixtureRows.map((row) => (
+              {fixtureTips.map((row) => {
+                const isLocked = row.status === 'Låst'
+
+                return (
                 <tr key={row.match}>
                   <td data-label="Match">{row.match}</td>
                   <td data-label="Datum/tid">{row.date}</td>
-                  <td data-label="H - B">{row.score}</td>
-                  <td data-label="Välj">{row.sign}</td>
+                  <td data-label="H - B">
+                    <div className="score-editor">
+                      <input
+                        className="tip-input"
+                        type="number"
+                        min={0}
+                        value={row.homeScore}
+                        disabled={isLocked || isSaving}
+                        onChange={(e) => onChangeTip(row.match, 'homeScore', e.target.value === '' ? '' : Number(e.target.value))}
+                      />
+                      <span>-</span>
+                      <input
+                        className="tip-input"
+                        type="number"
+                        min={0}
+                        value={row.awayScore}
+                        disabled={isLocked || isSaving}
+                        onChange={(e) => onChangeTip(row.match, 'awayScore', e.target.value === '' ? '' : Number(e.target.value))}
+                      />
+                    </div>
+                  </td>
+                  <td data-label="Välj">
+                    <select
+                      className="tip-select"
+                      value={row.sign}
+                      disabled={isLocked || isSaving}
+                      onChange={(e) => onChangeTip(row.match, 'sign', e.target.value as '' | '1' | 'X' | '2')}
+                    >
+                      <option value="">Välj</option>
+                      <option value="1">1</option>
+                      <option value="X">X</option>
+                      <option value="2">2</option>
+                    </select>
+                  </td>
                   <td data-label="Status">
                     <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>{row.status}</span>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -476,14 +607,16 @@ function TipsPage() {
       </section>
 
       <section className="action-bar">
-        <button className="ghost-button" type="button">Spara utkast</button>
-        <button className="primary-button" type="button">Skicka in tips</button>
+        <button className="ghost-button" type="button" onClick={onClear} disabled={isSaving}>Rensa sparade</button>
+        <button className="primary-button" type="button" onClick={onSave} disabled={isSaving}>
+          {isSaving ? 'Sparar...' : 'Skicka in tips'}
+        </button>
       </section>
     </div>
   )
 }
 
-function MyTipsPage() {
+function MyTipsPage({ fixtureTips, lastSavedLabel }: { fixtureTips: FixtureTip[]; lastSavedLabel: string }) {
   return (
     <div className="page-stack">
       <section className="panel panel-sticky-head">
@@ -491,7 +624,7 @@ function MyTipsPage() {
           <p className="eyebrow">Mina tips</p>
           <h1 className="section-title">Dina inskickade tips</h1>
         </div>
-        <span className="save-pill">Senast uppdaterad: 2026-06-10 18:45</span>
+        <span className="save-pill">{lastSavedLabel}</span>
       </section>
 
       <p className="lead-text" style={{ padding: '0 4px' }}>Här ser du exakt vad du har skickat in. Tips med status Låst kan inte redigeras.</p>
@@ -516,14 +649,16 @@ function MyTipsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {myTipsFixtures.map((row) => (
+                    {fixtureTips.map((row) => (
                       <tr key={row.match}>
                         <td data-label="Match">{row.match}</td>
                         <td data-label="Datum/tid">{row.date}</td>
-                        <td data-label="Resultat">{row.score}</td>
-                        <td data-label="1/X/2">{row.sign}</td>
+                        <td data-label="Resultat">{row.homeScore === '' || row.awayScore === '' ? '—' : `${row.homeScore}-${row.awayScore}`}</td>
+                        <td data-label="1/X/2">{row.sign || '—'}</td>
                         <td data-label="Status">
-                          <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>{row.status}</span>
+                          <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>
+                            {row.status === 'Låst' ? 'Låst' : 'Ändringsbar'}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -727,6 +862,150 @@ export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [participant, setParticipant] = useState<ParticipantSession | null>(null)
   const [activePage, setActivePage] = useState<PageId>('start')
+  const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
+  const [isTipsSaving, setIsTipsSaving] = useState(false)
+  const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
+  const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
+
+  useEffect(() => {
+    try {
+      const rawParticipant = localStorage.getItem(PARTICIPANT_STORAGE_KEY)
+      if (!rawParticipant) {
+        return
+      }
+
+      const parsed = JSON.parse(rawParticipant) as ParticipantSession
+
+      if (parsed?.participantId && parsed?.name) {
+        setParticipant(parsed)
+        setIsLoggedIn(true)
+      }
+    } catch {
+      localStorage.removeItem(PARTICIPANT_STORAGE_KEY)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!participant) {
+      localStorage.removeItem(PARTICIPANT_STORAGE_KEY)
+      return
+    }
+
+    localStorage.setItem(PARTICIPANT_STORAGE_KEY, JSON.stringify(participant))
+  }, [participant])
+
+  useEffect(() => {
+    if (!participant) {
+      setFixtureTips(createDefaultFixtureTips())
+      setTipsSaveMessage('Inte sparad ännu')
+      setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+      return
+    }
+
+    const loadTips = async () => {
+      try {
+        const response = await fetch(`/api/tips/${participant.participantId}`)
+        if (!response.ok) {
+          setTipsSaveMessage('Kunde inte hämta sparade tips')
+          return
+        }
+
+        const payload = await response.json()
+        const normalizedTips = normalizeFixtureTips(payload.tips)
+        setFixtureTips(normalizedTips)
+
+        if (payload.updatedAt) {
+          const formatted = new Date(payload.updatedAt).toLocaleString('sv-SE')
+          setTipsSaveMessage(`Sparad: ${formatted}`)
+          setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
+        } else {
+          setTipsSaveMessage('Inte sparad ännu')
+          setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+        }
+      } catch {
+        setTipsSaveMessage('Kunde inte hämta sparade tips')
+      }
+    }
+
+    loadTips()
+  }, [participant])
+
+  const onChangeTip = (match: string, key: 'homeScore' | 'awayScore' | 'sign', value: number | '' | '1' | 'X' | '2') => {
+    setFixtureTips((current) =>
+      current.map((tip) => {
+        if (tip.match !== match || tip.status === 'Låst') {
+          return tip
+        }
+
+        return {
+          ...tip,
+          [key]: value,
+        }
+      }),
+    )
+  }
+
+  const onSaveTips = async () => {
+    if (!participant) {
+      return
+    }
+
+    setIsTipsSaving(true)
+    setTipsSaveMessage('Sparar...')
+
+    try {
+      const response = await fetch(`/api/tips/${participant.participantId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tips: fixtureTips }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        setTipsSaveMessage(payload.error ?? 'Kunde inte spara tips')
+        return
+      }
+
+      const normalizedTips = normalizeFixtureTips(payload.tips)
+      setFixtureTips(normalizedTips)
+      const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
+      setTipsSaveMessage(`Sparad: ${formatted}`)
+      setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
+    } catch {
+      setTipsSaveMessage('Kunde inte spara tips')
+    } finally {
+      setIsTipsSaving(false)
+    }
+  }
+
+  const onClearTips = async () => {
+    if (!participant) {
+      return
+    }
+
+    setIsTipsSaving(true)
+
+    try {
+      const response = await fetch(`/api/tips/${participant.participantId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        setTipsSaveMessage('Kunde inte rensa tips')
+        return
+      }
+
+      setFixtureTips(createDefaultFixtureTips())
+      setTipsSaveMessage('Sparade tips rensade')
+      setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+    } catch {
+      setTipsSaveMessage('Kunde inte rensa tips')
+    } finally {
+      setIsTipsSaving(false)
+    }
+  }
 
   if (!isLoggedIn) {
     return (
@@ -735,6 +1014,7 @@ export function App() {
           onSuccess={(nextParticipant) => {
             setParticipant(nextParticipant)
             setIsLoggedIn(true)
+            setActivePage('start')
           }}
         />
       </div>
@@ -773,12 +1053,22 @@ export function App() {
           </div>
           <div>
             <span className="utility-label">Senast sparad</span>
-            <strong>18:45</strong>
+            <strong>{tipsSaveMessage.replace('Sparad: ', '')}</strong>
           </div>
         </div>
       </header>
 
-      <main className="content-shell">{renderPage(activePage)}</main>
+      <main className="content-shell">
+        {renderPage(activePage, {
+          fixtureTips,
+          onChangeTip,
+          onSaveTips,
+          onClearTips,
+          isSavingTips: isTipsSaving,
+          tipsSaveMessage,
+          myTipsSavedLabel,
+        })}
+      </main>
     </div>
   )
 }
