@@ -280,6 +280,19 @@ strong {
   gap: 8px;
 }
 
+.quick-score-group {
+  display: grid;
+  gap: 6px;
+}
+
+.quick-score-group-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .quick-score-grid {
   display: flex;
   flex-wrap: wrap;
@@ -307,6 +320,47 @@ strong {
   width: fit-content;
   padding: 6px 12px;
   border-radius: 999px;
+}
+
+.mobile-spinner-row {
+  display: none;
+  gap: 8px;
+}
+
+.spinner-field {
+  display: grid;
+  gap: 4px;
+}
+
+.spinner-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.spinner-control {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.spinner-button {
+  border: none;
+  background: transparent;
+  width: 40px;
+  height: 40px;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.spinner-value {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .sign-segment {
@@ -762,6 +816,15 @@ strong {
   .quick-score-button,
   .segment-button,
   .quick-more-button {
+    min-height: 44px;
+  }
+
+  .mobile-spinner-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .spinner-control {
     min-height: 44px;
   }
 

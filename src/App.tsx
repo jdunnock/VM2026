@@ -87,13 +87,47 @@ const fixtureTemplates: Array<{ match: string; date: string; status: string; def
 const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
 const TIPS_VARIANT_STORAGE_KEY = 'vm2026.tips.inputVariant'
 const TIPS_EVENTS_STORAGE_KEY = 'vm2026.tips.events'
-const QUICK_SCORE_PRESETS: Array<{ home: number; away: number }> = [
-  { home: 0, away: 0 },
-  { home: 1, away: 0 },
-  { home: 1, away: 1 },
-  { home: 2, away: 1 },
-  { home: 2, away: 0 },
-  { home: 3, away: 1 },
+const QUICK_SCORE_GROUPS: Array<{
+  key: 'home-win' | 'draw' | 'away-win'
+  label: string
+  presets: Array<{ home: number; away: number }>
+}> = [
+  {
+    key: 'home-win',
+    label: 'Kotivoitto',
+    presets: [
+      { home: 1, away: 0 },
+      { home: 2, away: 0 },
+      { home: 2, away: 1 },
+      { home: 3, away: 0 },
+      { home: 3, away: 1 },
+      { home: 4, away: 1 },
+    ],
+  },
+  {
+    key: 'draw',
+    label: 'Tasa',
+    presets: [
+      { home: 0, away: 0 },
+      { home: 1, away: 1 },
+      { home: 2, away: 2 },
+      { home: 3, away: 3 },
+      { home: 4, away: 4 },
+      { home: 5, away: 5 },
+    ],
+  },
+  {
+    key: 'away-win',
+    label: 'Vierasvoitto',
+    presets: [
+      { home: 0, away: 1 },
+      { home: 0, away: 2 },
+      { home: 1, away: 2 },
+      { home: 0, away: 3 },
+      { home: 1, away: 3 },
+      { home: 1, away: 4 },
+    ],
+  },
 ]
 
 function getOrCreateTipsInputVariant(): TipsInputVariant {
@@ -365,6 +399,7 @@ function renderPage(
       source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
     ) => void
     onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
+    onAdjustTipScore: (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => void
     onSaveTips: () => void
     onClearTips: () => void
     isSavingTips: boolean
@@ -384,6 +419,7 @@ function renderPage(
           inputVariant={pageProps.inputVariant}
           onChangeTip={pageProps.onChangeTip}
           onSetScorePreset={pageProps.onSetScorePreset}
+          onAdjustTipScore={pageProps.onAdjustTipScore}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
           isSaving={pageProps.isSavingTips}
@@ -497,6 +533,7 @@ function TipsPage({
   inputVariant,
   onChangeTip,
   onSetScorePreset,
+  onAdjustTipScore,
   onSave,
   onClear,
   isSaving,
@@ -511,6 +548,7 @@ function TipsPage({
     source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
   ) => void
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
+  onAdjustTipScore: (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => void
   onSave: () => void
   onClear: () => void
   isSaving: boolean
@@ -595,21 +633,72 @@ function TipsPage({
                       </div>
                     ) : (
                       <div className="quick-score-wrap">
-                        <div className="quick-score-grid" role="group" aria-label={`Snabbval resultat ${row.match}`}>
-                          {QUICK_SCORE_PRESETS.map((preset) => {
-                            const active = row.homeScore === preset.home && row.awayScore === preset.away
-                            return (
+                        {QUICK_SCORE_GROUPS.map((group) => (
+                          <div className="quick-score-group" key={`${row.match}-${group.key}`}>
+                            <span className="quick-score-group-label">{group.label}</span>
+                            <div className="quick-score-grid" role="group" aria-label={`${group.label} ${row.match}`}>
+                              {group.presets.map((preset) => {
+                                const active = row.homeScore === preset.home && row.awayScore === preset.away
+                                return (
+                                  <button
+                                    key={`${row.match}-${group.key}-${preset.home}-${preset.away}`}
+                                    type="button"
+                                    className={active ? 'quick-score-button active' : 'quick-score-button'}
+                                    disabled={isLocked || isSaving}
+                                    onClick={() => onSetScorePreset(row.match, preset.home, preset.away, 'quick-score')}
+                                  >
+                                    {preset.home}-{preset.away}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                        <div className="mobile-spinner-row" role="group" aria-label={`Mobil spinner ${row.match}`}>
+                          <div className="spinner-field">
+                            <span className="spinner-label">Koti</span>
+                            <div className="spinner-control">
                               <button
-                                key={`${row.match}-${preset.home}-${preset.away}`}
                                 type="button"
-                                className={active ? 'quick-score-button active' : 'quick-score-button'}
-                                disabled={isLocked || isSaving}
-                                onClick={() => onSetScorePreset(row.match, preset.home, preset.away, 'quick-score')}
+                                className="spinner-button"
+                                disabled={isLocked || isSaving || row.homeScore === '' || row.homeScore <= 0}
+                                onClick={() => onAdjustTipScore(row.match, 'homeScore', -1)}
                               >
-                                {preset.home}-{preset.away}
+                                -
                               </button>
-                            )
-                          })}
+                              <span className="spinner-value">{row.homeScore === '' ? '0' : row.homeScore}</span>
+                              <button
+                                type="button"
+                                className="spinner-button"
+                                disabled={isLocked || isSaving}
+                                onClick={() => onAdjustTipScore(row.match, 'homeScore', 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div className="spinner-field">
+                            <span className="spinner-label">Borta</span>
+                            <div className="spinner-control">
+                              <button
+                                type="button"
+                                className="spinner-button"
+                                disabled={isLocked || isSaving || row.awayScore === '' || row.awayScore <= 0}
+                                onClick={() => onAdjustTipScore(row.match, 'awayScore', -1)}
+                              >
+                                -
+                              </button>
+                              <span className="spinner-value">{row.awayScore === '' ? '0' : row.awayScore}</span>
+                              <button
+                                type="button"
+                                className="spinner-button"
+                                disabled={isLocked || isSaving}
+                                onClick={() => onAdjustTipScore(row.match, 'awayScore', 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -1160,6 +1249,34 @@ export function App() {
     )
   }
 
+  const onAdjustTipScore = (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => {
+    if (participant) {
+      logTipsEvent({
+        ts: new Date().toISOString(),
+        variant: tipsInputVariant,
+        action: 'score_spinner_adjusted',
+        match,
+        meta: { key, delta, participantId: participant.participantId },
+      })
+    }
+
+    setFixtureTips((current) =>
+      current.map((tip) => {
+        if (tip.match !== match || tip.status === 'Låst') {
+          return tip
+        }
+
+        const currentValue = tip[key] === '' ? 0 : tip[key]
+        const nextValue = Math.max(0, Number(currentValue) + delta)
+
+        return {
+          ...tip,
+          [key]: nextValue,
+        }
+      }),
+    )
+  }
+
   const onSaveTips = async () => {
     if (!participant) {
       return
@@ -1291,6 +1408,7 @@ export function App() {
           inputVariant: tipsInputVariant,
           onChangeTip,
           onSetScorePreset,
+          onAdjustTipScore,
           onSaveTips,
           onClearTips,
           isSavingTips: isTipsSaving,
