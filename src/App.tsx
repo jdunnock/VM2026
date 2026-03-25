@@ -92,9 +92,18 @@ const fixtureTemplates: Array<{ match: string; date: string; status: string; def
 ]
 
 const groupPlacementTemplates: GroupPlacement[] = [
-  { group: 'Grupp A', picks: ['Kanada', 'SWE/POL/ALB/UKR', 'Ghana', 'Peru'] },
-  { group: 'Grupp B', picks: ['Spanien', 'Japan', 'Marocko', 'Ecuador'] },
-  { group: 'Grupp C', picks: ['Argentina', 'Nederländerna', 'Nigeria', 'Costa Rica'] },
+  { group: 'Grupp A', picks: ['Kanada', 'Japan', 'Ghana', 'Nya Zeeland'] },
+  { group: 'Grupp B', picks: ['Mexiko', 'Schweiz', 'Sydkorea', 'Ecuador'] },
+  { group: 'Grupp C', picks: ['USA', 'Danmark', 'Senegal', 'Peru'] },
+  { group: 'Grupp D', picks: ['Spanien', 'Österrike', 'Egypten', 'Costa Rica'] },
+  { group: 'Grupp E', picks: ['England', 'Ungern', 'Kamerun', 'Honduras'] },
+  { group: 'Grupp F', picks: ['Frankrike', 'Tjeckien', 'Algeriet', 'Panama'] },
+  { group: 'Grupp G', picks: ['Brasilien', 'Serbien', 'Elfenbenskusten', 'NCL/JAM/COD'] },
+  { group: 'Grupp H', picks: ['Argentina', 'Kroatien', 'Marocko', 'Paraguay'] },
+  { group: 'Grupp I', picks: ['Tyskland', 'SWE/POL/ALB/UKR', 'Nigeria', 'Venezuela'] },
+  { group: 'Grupp J', picks: ['ITA/NIR/WAL/BIH', 'Nederländerna', 'Mali', 'Irak'] },
+  { group: 'Grupp K', picks: ['Belgien', 'Portugal', 'Tunisien', 'KAZ/UZB/JOR/IRQ'] },
+  { group: 'Grupp L', picks: ['Uruguay', 'Colombia', 'Turkiet', 'DEN/MKD/CZE/IRL'] },
 ]
 
 const groupTeamOptions = Object.fromEntries(

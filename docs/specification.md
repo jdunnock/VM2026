@@ -200,3 +200,4 @@ Each admin-managed question must support:
 	- Added Slutspel type-ahead suggestions with round-aware team filtering so users can type to narrow choices instead of scrolling long lists.
 	- Fixed mobile overlap issue where the floating action bar could cover active tips input fields. Initial fix used max-width: 720px breakpoint; extended to also apply @media (hover: none) and (pointer: coarse) to cover landscape iPhones and tablets whose CSS viewport width exceeds 720px.
 	- Fixed touch-device Slutspel input overlap where native datalist suggestion popups could cover the next text field; desktop keeps datalist type-ahead and touch devices now show inline suggestion chips directly under the active field.
+	- Expanded Gruppplaceringar source-of-truth data from sample Groups A-C to full Groups A-L (48 team slots) with placeholder entries where qualifiers are still pending.
