@@ -391,15 +391,23 @@ function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
 const knockoutPredictionTemplates: KnockoutPredictionRound[] = [
   {
     title: 'Sextondelsfinal',
-    picks: ['Kanada', 'Spanien', 'Argentina'],
+    picks: Array.from({ length: 32 }, () => ''),
   },
   {
     title: 'Åttondelsfinal',
-    picks: ['Kanada', 'Spanien', 'Argentina'],
+    picks: Array.from({ length: 16 }, () => ''),
   },
   {
     title: 'Kvartsfinal',
-    picks: ['Kanada', 'Argentina'],
+    picks: Array.from({ length: 8 }, () => ''),
+  },
+  {
+    title: 'Semifinal',
+    picks: Array.from({ length: 4 }, () => ''),
+  },
+  {
+    title: 'Final',
+    picks: Array.from({ length: 2 }, () => ''),
   },
 ]
 
@@ -976,128 +984,126 @@ function TipsPage({
         </div>
       </section>
 
-      <section className="panel panel-split">
-        <div>
-          <div className="section-heading compact">
-            <p className="eyebrow">Slutspel</p>
-            <h2>Runda för runda</h2>
-          </div>
-          <div className="knockout-grid">
-            {knockoutPredictions.map((round, roundIndex) => {
-              const roundOptions = getRoundKnockoutTeams(knockoutPredictions, groupPlacements, roundIndex)
-              const activeRoundOptions = [...roundOptions]
-
-              round.picks.forEach((pick) => {
-                const normalized = normalizeKnockoutPickLabel(pick)
-                if (normalized && !activeRoundOptions.includes(normalized)) {
-                  activeRoundOptions.push(normalized)
-                }
-              })
-
-              return (
-                <article className="round-card" key={round.title}>
-                  <h3>{round.title}</h3>
-                  {enableKnockoutTypeahead ? (
-                    <datalist id={getKnockoutListId(round.title)}>
-                      {activeRoundOptions.map((option) => (
-                        <option key={`${round.title}-${option}`} value={option} />
-                      ))}
-                    </datalist>
-                  ) : null}
-                  <ul>
-                    {round.picks.map((pick, index) => (
-                      <li className="knockout-pick-item" key={`${round.title}-${index}`}>
-                        <input
-                          className="special-input"
-                          type="text"
-                          list={enableKnockoutTypeahead ? getKnockoutListId(round.title) : undefined}
-                          value={pick}
-                          disabled={isSaving}
-                          onFocus={() => {
-                            if (isTouchDevice) {
-                              setActiveKnockoutField({ roundTitle: round.title, index })
-                            }
-                          }}
-                          onBlur={() => {
-                            if (isTouchDevice) {
-                              setTimeout(() => {
-                                setActiveKnockoutField((current) => {
-                                  if (current?.roundTitle === round.title && current.index === index) {
-                                    return null
-                                  }
-
-                                  return current
-                                })
-                              }, 120)
-                            }
-                          }}
-                          onChange={(e) => {
-                            onChangeKnockoutPrediction(round.title, index, e.target.value)
-
-                            if (isTouchDevice) {
-                              setActiveKnockoutField({ roundTitle: round.title, index })
-                            }
-                          }}
-                        />
-                        {isTouchDevice && activeKnockoutField?.roundTitle === round.title && activeKnockoutField.index === index ? (
-                          <div className="knockout-suggestions" role="listbox" aria-label={`${round.title} förslag`}>
-                            {getInlineKnockoutSuggestions(activeRoundOptions, pick).map((option) => (
-                              <button
-                                className="knockout-suggestion-button"
-                                key={`${round.title}-${index}-${option}`}
-                                type="button"
-                                onMouseDown={(event) => {
-                                  event.preventDefault()
-                                  onChangeKnockoutPrediction(round.title, index, option)
-                                  setActiveKnockoutField(null)
-                                }}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              )
-            })}
-          </div>
+      <section className="panel">
+        <div className="section-heading compact">
+          <p className="eyebrow">Slutspel</p>
+          <h2>Runda för runda</h2>
         </div>
+        <div className="knockout-grid">
+          {knockoutPredictions.map((round, roundIndex) => {
+            const roundOptions = getRoundKnockoutTeams(knockoutPredictions, groupPlacements, roundIndex)
+            const activeRoundOptions = [...roundOptions]
 
-        <div>
-          <div className="section-heading compact">
-            <p className="eyebrow">Special och extrafrågor</p>
-            <h2>Special och dynamiska frågor</h2>
-          </div>
-          <div className="stacked-cards">
-            <article className="mini-card">
-              <span className="mini-label">Slutsegrare</span>
-              <input
-                className="special-input"
-                type="text"
-                value={specialPredictions.winner}
-                disabled={isSaving}
-                onChange={(e) => onChangeSpecialPrediction('winner', e.target.value)}
-              />
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Skytteligavinnare</span>
-              <input
-                className="special-input"
-                type="text"
-                value={specialPredictions.topScorer}
-                disabled={isSaving}
-                onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
-              />
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Extrafråga</span>
-              <strong>Vilken grupp gör flest mål totalt?</strong>
-              <span className="status-note">Låstid: 14 juni 2026, 17.59</span>
-            </article>
-          </div>
+            round.picks.forEach((pick) => {
+              const normalized = normalizeKnockoutPickLabel(pick)
+              if (normalized && !activeRoundOptions.includes(normalized)) {
+                activeRoundOptions.push(normalized)
+              }
+            })
+
+            return (
+              <article className="round-card" key={round.title}>
+                <h3>{round.title}</h3>
+                {enableKnockoutTypeahead ? (
+                  <datalist id={getKnockoutListId(round.title)}>
+                    {activeRoundOptions.map((option) => (
+                      <option key={`${round.title}-${option}`} value={option} />
+                    ))}
+                  </datalist>
+                ) : null}
+                <ul>
+                  {round.picks.map((pick, index) => (
+                    <li className="knockout-pick-item" key={`${round.title}-${index}`}>
+                      <input
+                        className="special-input"
+                        type="text"
+                        list={enableKnockoutTypeahead ? getKnockoutListId(round.title) : undefined}
+                        value={pick}
+                        disabled={isSaving}
+                        onFocus={() => {
+                          if (isTouchDevice) {
+                            setActiveKnockoutField({ roundTitle: round.title, index })
+                          }
+                        }}
+                        onBlur={() => {
+                          if (isTouchDevice) {
+                            setTimeout(() => {
+                              setActiveKnockoutField((current) => {
+                                if (current?.roundTitle === round.title && current.index === index) {
+                                  return null
+                                }
+
+                                return current
+                              })
+                            }, 120)
+                          }
+                        }}
+                        onChange={(e) => {
+                          onChangeKnockoutPrediction(round.title, index, e.target.value)
+
+                          if (isTouchDevice) {
+                            setActiveKnockoutField({ roundTitle: round.title, index })
+                          }
+                        }}
+                      />
+                      {isTouchDevice && activeKnockoutField?.roundTitle === round.title && activeKnockoutField.index === index ? (
+                        <div className="knockout-suggestions" role="listbox" aria-label={`${round.title} förslag`}>
+                          {getInlineKnockoutSuggestions(activeRoundOptions, pick).map((option) => (
+                            <button
+                              className="knockout-suggestion-button"
+                              key={`${round.title}-${index}-${option}`}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                onChangeKnockoutPrediction(round.title, index, option)
+                                setActiveKnockoutField(null)
+                              }}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading compact">
+          <p className="eyebrow">Special och extrafrågor</p>
+          <h2>Special och dynamiska frågor</h2>
+        </div>
+        <div className="stacked-cards">
+          <article className="mini-card">
+            <span className="mini-label">Slutsegrare</span>
+            <input
+              className="special-input"
+              type="text"
+              value={specialPredictions.winner}
+              disabled={isSaving}
+              onChange={(e) => onChangeSpecialPrediction('winner', e.target.value)}
+            />
+          </article>
+          <article className="mini-card">
+            <span className="mini-label">Skytteligavinnare</span>
+            <input
+              className="special-input"
+              type="text"
+              value={specialPredictions.topScorer}
+              disabled={isSaving}
+              onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
+            />
+          </article>
+          <article className="mini-card">
+            <span className="mini-label">Extrafråga</span>
+            <strong>Vilken grupp gör flest mål totalt?</strong>
+            <span className="status-note">Låstid: 14 juni 2026, 17.59</span>
+          </article>
         </div>
       </section>
 

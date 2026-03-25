@@ -153,6 +153,7 @@ Each admin-managed question must support:
 	- The same team can only be selected once inside a single group ranking.
 	- Slutspel inputs use type-ahead suggestions: users can type first letters and pick only participating teams.
 	- Slutspel suggestions are round-aware: first round uses participating teams, later rounds suggest picks from the previous round.
+	- Slutspel input surface now covers all 5 rounds in UI with full slot counts: 32 (Sextondelsfinal), 16 (Åttondelsfinal), 8 (Kvartsfinal), 4 (Semifinal), 2 (Final).
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -201,3 +202,6 @@ Each admin-managed question must support:
 	- Fixed mobile overlap issue where the floating action bar could cover active tips input fields. Initial fix used max-width: 720px breakpoint; extended to also apply @media (hover: none) and (pointer: coarse) to cover landscape iPhones and tablets whose CSS viewport width exceeds 720px.
 	- Fixed touch-device Slutspel input overlap where native datalist suggestion popups could cover the next text field; desktop keeps datalist type-ahead and touch devices now show inline suggestion chips directly under the active field.
 	- Expanded Gruppplaceringar source-of-truth data from sample Groups A-C to full Groups A-L (48 team slots) with placeholder entries where qualifiers are still pending.
+	- Expanded Slutspel prediction templates to all five rounds with full participant slot counts (32/16/8/4/2) for each knockout round.
+	- Fixed desktop Slutspel layout so knockout round cards no longer stretch to the height of the largest card in the same grid row.
+	- Updated tips page section flow so all Slutspel rounds (including Semifinal and Final) stay in the same knockout panel, while `Special och dynamiska frågor` is rendered in a separate panel below.
