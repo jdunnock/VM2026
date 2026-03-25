@@ -816,6 +816,11 @@ strong {
     flex-wrap: wrap;
   }
 
+  .quick-score-group,
+  .quick-more-button {
+    display: none;
+  }
+
   .wheel-select {
     min-height: 48px;
     min-width: 100px;
