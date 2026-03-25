@@ -69,6 +69,24 @@ function isValidGroupPlacements(groupPlacements) {
   })
 }
 
+function isValidKnockoutPredictions(knockoutPredictions) {
+  if (!Array.isArray(knockoutPredictions) || knockoutPredictions.length > 8) {
+    return false
+  }
+
+  return knockoutPredictions.every((round) => {
+    if (!round || typeof round !== 'object') {
+      return false
+    }
+
+    if (typeof round.title !== 'string' || !Array.isArray(round.picks) || round.picks.length > 16) {
+      return false
+    }
+
+    return round.picks.every((pick) => typeof pick === 'string')
+  })
+}
+
 function isValidSpecialPredictions(specialPredictions) {
   if (!specialPredictions || typeof specialPredictions !== 'object') {
     return false
@@ -89,6 +107,7 @@ function normalizeTipsPayload(tips) {
     return {
       fixtureTips: tips,
       groupPlacements: [],
+      knockoutPredictions: [],
       specialPredictions: {
         winner: '',
         topScorer: '',
@@ -102,6 +121,7 @@ function normalizeTipsPayload(tips) {
 
   const fixtureTips = tips.fixtureTips
   const groupPlacements = tips.groupPlacements
+  const knockoutPredictions = Array.isArray(tips.knockoutPredictions) ? tips.knockoutPredictions : []
   const specialPredictions = tips.specialPredictions
 
   if (!isValidFixtureTips(fixtureTips)) {
@@ -112,6 +132,10 @@ function normalizeTipsPayload(tips) {
     return null
   }
 
+  if (!isValidKnockoutPredictions(knockoutPredictions)) {
+    return null
+  }
+
   if (!isValidSpecialPredictions(specialPredictions)) {
     return null
   }
@@ -119,6 +143,7 @@ function normalizeTipsPayload(tips) {
   return {
     fixtureTips,
     groupPlacements,
+    knockoutPredictions,
     specialPredictions,
   }
 }

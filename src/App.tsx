@@ -37,6 +37,11 @@ type GroupPlacement = {
   picks: string[]
 }
 
+type KnockoutPredictionRound = {
+  title: string
+  picks: string[]
+}
+
 type SpecialPredictions = {
   winner: string
   topScorer: string
@@ -45,6 +50,7 @@ type SpecialPredictions = {
 type PersistedTipsState = {
   fixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
+  knockoutPredictions: KnockoutPredictionRound[]
   specialPredictions: SpecialPredictions
 }
 
@@ -259,11 +265,33 @@ function normalizeSpecialPredictions(rawSpecial: unknown): SpecialPredictions {
   }
 }
 
+function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): KnockoutPredictionRound[] {
+  if (!Array.isArray(rawKnockoutPredictions)) {
+    return knockoutPredictionTemplates
+  }
+
+  return knockoutPredictionTemplates.map((template) => {
+    const found = rawKnockoutPredictions.find(
+      (item) => item && typeof item === 'object' && 'title' in item && (item as { title?: string }).title === template.title,
+    ) as Partial<KnockoutPredictionRound> | undefined
+
+    if (!found || !Array.isArray(found.picks) || found.picks.length !== template.picks.length) {
+      return template
+    }
+
+    return {
+      title: template.title,
+      picks: found.picks.map((pick, index) => (typeof pick === 'string' && pick.trim() ? pick : template.picks[index])),
+    }
+  })
+}
+
 function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
   if (Array.isArray(rawTips)) {
     return {
       fixtureTips: normalizeFixtureTips(rawTips),
       groupPlacements: groupPlacementTemplates,
+      knockoutPredictions: knockoutPredictionTemplates,
       specialPredictions: defaultSpecialPredictions,
     }
   }
@@ -272,6 +300,7 @@ function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
     return {
       fixtureTips: createDefaultFixtureTips(),
       groupPlacements: groupPlacementTemplates,
+      knockoutPredictions: knockoutPredictionTemplates,
       specialPredictions: defaultSpecialPredictions,
     }
   }
@@ -281,11 +310,12 @@ function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
   return {
     fixtureTips: normalizeFixtureTips(candidate.fixtureTips),
     groupPlacements: normalizeGroupPlacements(candidate.groupPlacements),
+    knockoutPredictions: normalizeKnockoutPredictions(candidate.knockoutPredictions),
     specialPredictions: normalizeSpecialPredictions(candidate.specialPredictions),
   }
 }
 
-const knockoutRounds = [
+const knockoutPredictionTemplates: KnockoutPredictionRound[] = [
   {
     title: 'Sextondelsfinal',
     picks: ['Vinnare Match 1: Kanada', 'Vinnare Match 2: Spanien', 'Vinnare Match 3: Argentina'],
@@ -461,6 +491,7 @@ function renderPage(
   pageProps: {
     fixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
+    knockoutPredictions: KnockoutPredictionRound[]
     specialPredictions: SpecialPredictions
     onChangeTip: (
       match: string,
@@ -470,6 +501,7 @@ function renderPage(
     ) => void
     onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
     onChangeGroupPlacement: (group: string, index: number, value: string) => void
+    onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
     onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
     onSaveTips: () => void
     onClearTips: () => void
@@ -488,10 +520,12 @@ function renderPage(
         <TipsPage
           fixtureTips={pageProps.fixtureTips}
           groupPlacements={pageProps.groupPlacements}
+          knockoutPredictions={pageProps.knockoutPredictions}
           specialPredictions={pageProps.specialPredictions}
           onChangeTip={pageProps.onChangeTip}
           onSetScorePreset={pageProps.onSetScorePreset}
           onChangeGroupPlacement={pageProps.onChangeGroupPlacement}
+          onChangeKnockoutPrediction={pageProps.onChangeKnockoutPrediction}
           onChangeSpecialPrediction={pageProps.onChangeSpecialPrediction}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
@@ -504,6 +538,7 @@ function renderPage(
         <MyTipsPage
           fixtureTips={pageProps.fixtureTips}
           groupPlacements={pageProps.groupPlacements}
+          knockoutPredictions={pageProps.knockoutPredictions}
           specialPredictions={pageProps.specialPredictions}
           lastSavedLabel={pageProps.myTipsSavedLabel}
         />
@@ -611,10 +646,12 @@ function StartPage() {
 function TipsPage({
   fixtureTips,
   groupPlacements,
+  knockoutPredictions,
   specialPredictions,
   onChangeTip,
   onSetScorePreset,
   onChangeGroupPlacement,
+  onChangeKnockoutPrediction,
   onChangeSpecialPrediction,
   onSave,
   onClear,
@@ -623,6 +660,7 @@ function TipsPage({
 }: {
   fixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
+  knockoutPredictions: KnockoutPredictionRound[]
   specialPredictions: SpecialPredictions
   onChangeTip: (
     match: string,
@@ -632,6 +670,7 @@ function TipsPage({
   ) => void
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
   onChangeGroupPlacement: (group: string, index: number, value: string) => void
+  onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
   onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
   onSave: () => void
   onClear: () => void
@@ -847,12 +886,20 @@ function TipsPage({
             <h2>Runda för runda</h2>
           </div>
           <div className="knockout-grid">
-            {knockoutRounds.map((round) => (
+            {knockoutPredictions.map((round) => (
               <article className="round-card" key={round.title}>
                 <h3>{round.title}</h3>
                 <ul>
-                  {round.picks.map((pick) => (
-                    <li key={pick}>{pick}</li>
+                  {round.picks.map((pick, index) => (
+                    <li key={`${round.title}-${index}`}>
+                      <input
+                        className="special-input"
+                        type="text"
+                        value={pick}
+                        disabled={isSaving}
+                        onChange={(e) => onChangeKnockoutPrediction(round.title, index, e.target.value)}
+                      />
+                    </li>
                   ))}
                 </ul>
               </article>
@@ -908,11 +955,13 @@ function TipsPage({
 function MyTipsPage({
   fixtureTips,
   groupPlacements,
+  knockoutPredictions,
   specialPredictions,
   lastSavedLabel,
 }: {
   fixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
+  knockoutPredictions: KnockoutPredictionRound[]
   specialPredictions: SpecialPredictions
   lastSavedLabel: string
 }) {
@@ -968,6 +1017,12 @@ function MyTipsPage({
               <ul>
                 {groupPlacements.map((group) => (
                   <li key={group.group}>{group.group}: {group.picks.join(', ')}</li>
+                ))}
+              </ul>
+            ) : section.title === 'Slutspel' ? (
+              <ul>
+                {knockoutPredictions.map((round) => (
+                  <li key={round.title}>{round.title}: {round.picks.join(', ')}</li>
                 ))}
               </ul>
             ) : section.title === 'Special' ? (
@@ -1174,6 +1229,7 @@ export function App() {
   const [activePage, setActivePage] = useState<PageId>('start')
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
   const [groupPlacements, setGroupPlacements] = useState<GroupPlacement[]>(groupPlacementTemplates)
+  const [knockoutPredictions, setKnockoutPredictions] = useState<KnockoutPredictionRound[]>(knockoutPredictionTemplates)
   const [specialPredictions, setSpecialPredictions] = useState<SpecialPredictions>(defaultSpecialPredictions)
   const [isTipsSaving, setIsTipsSaving] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
@@ -1210,6 +1266,7 @@ export function App() {
     if (!participant) {
       setFixtureTips(createDefaultFixtureTips())
       setGroupPlacements(groupPlacementTemplates)
+      setKnockoutPredictions(knockoutPredictionTemplates)
       setSpecialPredictions(defaultSpecialPredictions)
       setTipsSaveMessage('Inte sparad ännu')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
@@ -1228,6 +1285,7 @@ export function App() {
         const normalizedState = normalizePersistedTipsState(payload.tips)
         setFixtureTips(normalizedState.fixtureTips)
         setGroupPlacements(normalizedState.groupPlacements)
+        setKnockoutPredictions(normalizedState.knockoutPredictions)
         setSpecialPredictions(normalizedState.specialPredictions)
 
         if (payload.updatedAt) {
@@ -1286,6 +1344,21 @@ export function App() {
       ...current,
       [key]: value,
     }))
+  }
+
+  const onChangeKnockoutPrediction = (roundTitle: string, index: number, value: string) => {
+    setKnockoutPredictions((current) =>
+      current.map((round) => {
+        if (round.title !== roundTitle) {
+          return round
+        }
+
+        return {
+          ...round,
+          picks: round.picks.map((pick, pickIndex) => (pickIndex === index ? value : pick)),
+        }
+      }),
+    )
   }
 
   const onChangeTip = (
@@ -1354,6 +1427,7 @@ export function App() {
           tips: {
             fixtureTips,
             groupPlacements,
+            knockoutPredictions,
             specialPredictions,
           },
         }),
@@ -1368,6 +1442,7 @@ export function App() {
       const normalizedState = normalizePersistedTipsState(payload.tips)
       setFixtureTips(normalizedState.fixtureTips)
       setGroupPlacements(normalizedState.groupPlacements)
+      setKnockoutPredictions(normalizedState.knockoutPredictions)
       setSpecialPredictions(normalizedState.specialPredictions)
       const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
       setTipsSaveMessage(`Sparad: ${formatted}`)
@@ -1398,6 +1473,7 @@ export function App() {
 
       setFixtureTips(createDefaultFixtureTips())
       setGroupPlacements(groupPlacementTemplates)
+      setKnockoutPredictions(knockoutPredictionTemplates)
       setSpecialPredictions(defaultSpecialPredictions)
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
@@ -1463,10 +1539,12 @@ export function App() {
         {renderPage(activePage, {
           fixtureTips,
           groupPlacements,
+          knockoutPredictions,
           specialPredictions,
           onChangeTip,
           onSetScorePreset,
           onChangeGroupPlacement,
+          onChangeKnockoutPrediction,
           onChangeSpecialPrediction,
           onSaveTips,
           onClearTips,

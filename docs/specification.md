@@ -136,7 +136,7 @@ Each admin-managed question must support:
 - Included in this step:
 	- Session persistence in frontend via localStorage for signed-in participant.
 	- Participant-based tips persistence API (`participantId` keyed storage).
-	- Persisted tips state now includes group placements and special predictions in addition to match tips.
+	- Persisted tips state now includes group placements, knockout predictions, and special predictions in addition to match tips.
 	- Backend routes for tips read/write/delete operations.
 - Excluded from this step:
 	- Admin question persistence.
@@ -194,3 +194,4 @@ Each admin-managed question must support:
 	- Extended tips persistence end-to-end to include Gruppplaceringar and Special predictions, and updated Mina tips to show these from saved data.
 	- Replaced Gruppplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
 	- Fixed Gruppplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.
+	- Extended tips persistence to include Slutspel predictions and updated both Lämna tips and Mina tips to edit/show saved knockout picks.
