@@ -265,6 +265,64 @@ function normalizeSpecialPredictions(rawSpecial: unknown): SpecialPredictions {
   }
 }
 
+function normalizeKnockoutPickLabel(rawPick: string): string {
+  const trimmed = rawPick.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const separatorIndex = trimmed.indexOf(':')
+  if (separatorIndex < 0) {
+    return trimmed
+  }
+
+  return trimmed.slice(separatorIndex + 1).trim() || trimmed
+}
+
+function getKnockoutListId(roundTitle: string): string {
+  return `knockout-options-${roundTitle.toLowerCase().replace(/\s+/g, '-')}`
+}
+
+function getBaseKnockoutTeams(groupPlacements: GroupPlacement[]): string[] {
+  const uniqueTeams = new Set<string>()
+
+  groupPlacements.forEach((group) => {
+    group.picks.forEach((pick) => {
+      if (pick.trim()) {
+        uniqueTeams.add(pick)
+      }
+    })
+  })
+
+  return [...uniqueTeams]
+}
+
+function getRoundKnockoutTeams(
+  knockoutPredictions: KnockoutPredictionRound[],
+  groupPlacements: GroupPlacement[],
+  roundIndex: number,
+): string[] {
+  if (roundIndex === 0) {
+    return getBaseKnockoutTeams(groupPlacements)
+  }
+
+  const previousRound = knockoutPredictions[roundIndex - 1]
+  if (!previousRound) {
+    return getBaseKnockoutTeams(groupPlacements)
+  }
+
+  const uniqueTeams = new Set<string>()
+  previousRound.picks.forEach((pick) => {
+    const normalized = normalizeKnockoutPickLabel(pick)
+    if (normalized) {
+      uniqueTeams.add(normalized)
+    }
+  })
+
+  const candidates = [...uniqueTeams]
+  return candidates.length > 0 ? candidates : getBaseKnockoutTeams(groupPlacements)
+}
+
 function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): KnockoutPredictionRound[] {
   if (!Array.isArray(rawKnockoutPredictions)) {
     return knockoutPredictionTemplates
@@ -281,7 +339,13 @@ function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): Knockout
 
     return {
       title: template.title,
-      picks: found.picks.map((pick, index) => (typeof pick === 'string' && pick.trim() ? pick : template.picks[index])),
+      picks: found.picks.map((pick, index) => {
+        if (typeof pick === 'string' && pick.trim()) {
+          return normalizeKnockoutPickLabel(pick)
+        }
+
+        return template.picks[index]
+      }),
     }
   })
 }
@@ -318,15 +382,15 @@ function normalizePersistedTipsState(rawTips: unknown): PersistedTipsState {
 const knockoutPredictionTemplates: KnockoutPredictionRound[] = [
   {
     title: 'Sextondelsfinal',
-    picks: ['Vinnare Match 1: Kanada', 'Vinnare Match 2: Spanien', 'Vinnare Match 3: Argentina'],
+    picks: ['Kanada', 'Spanien', 'Argentina'],
   },
   {
     title: 'Åttondelsfinal',
-    picks: ['Lag 1: Kanada', 'Lag 2: Spanien', 'Lag 3: Argentina'],
+    picks: ['Kanada', 'Spanien', 'Argentina'],
   },
   {
     title: 'Kvartsfinal',
-    picks: ['Lag 1: Kanada', 'Lag 2: Argentina'],
+    picks: ['Kanada', 'Argentina'],
   },
 ]
 
@@ -508,6 +572,7 @@ function renderPage(
     isSavingTips: boolean
     tipsSaveMessage: string
     myTipsSavedLabel: string
+    isTouchDevice: boolean
   },
 ) {
   switch (activePage) {
@@ -531,6 +596,7 @@ function renderPage(
           onClear={pageProps.onClearTips}
           isSaving={pageProps.isSavingTips}
           saveMessage={pageProps.tipsSaveMessage}
+          isTouchDevice={pageProps.isTouchDevice}
         />
       )
     case 'mine':
@@ -657,6 +723,7 @@ function TipsPage({
   onClear,
   isSaving,
   saveMessage,
+  isTouchDevice,
 }: {
   fixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
@@ -676,8 +743,29 @@ function TipsPage({
   onClear: () => void
   isSaving: boolean
   saveMessage: string
+  isTouchDevice: boolean
 }) {
   const [expandedManualEditor, setExpandedManualEditor] = useState<Record<string, boolean>>({})
+  const [activeKnockoutField, setActiveKnockoutField] = useState<{ roundTitle: string; index: number } | null>(null)
+  const enableKnockoutTypeahead = !isTouchDevice
+
+  const getInlineKnockoutSuggestions = (options: string[], inputValue: string): string[] => {
+    const uniqueOptions = Array.from(
+      new Set(options.map((option) => normalizeKnockoutPickLabel(option)).filter((option) => option.length > 0)),
+    )
+
+    const query = normalizeKnockoutPickLabel(inputValue).toLowerCase()
+    if (!query) {
+      return uniqueOptions.slice(0, 8)
+    }
+
+    const startsWith = uniqueOptions.filter((option) => option.toLowerCase().startsWith(query))
+    const contains = uniqueOptions.filter(
+      (option) => !option.toLowerCase().startsWith(query) && option.toLowerCase().includes(query),
+    )
+
+    return [...startsWith, ...contains].slice(0, 8)
+  }
 
   const toggleManualEditor = (match: string) => {
     setExpandedManualEditor((current) => ({
@@ -886,24 +974,86 @@ function TipsPage({
             <h2>Runda för runda</h2>
           </div>
           <div className="knockout-grid">
-            {knockoutPredictions.map((round) => (
-              <article className="round-card" key={round.title}>
-                <h3>{round.title}</h3>
-                <ul>
-                  {round.picks.map((pick, index) => (
-                    <li key={`${round.title}-${index}`}>
-                      <input
-                        className="special-input"
-                        type="text"
-                        value={pick}
-                        disabled={isSaving}
-                        onChange={(e) => onChangeKnockoutPrediction(round.title, index, e.target.value)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+            {knockoutPredictions.map((round, roundIndex) => {
+              const roundOptions = getRoundKnockoutTeams(knockoutPredictions, groupPlacements, roundIndex)
+              const activeRoundOptions = [...roundOptions]
+
+              round.picks.forEach((pick) => {
+                const normalized = normalizeKnockoutPickLabel(pick)
+                if (normalized && !activeRoundOptions.includes(normalized)) {
+                  activeRoundOptions.push(normalized)
+                }
+              })
+
+              return (
+                <article className="round-card" key={round.title}>
+                  <h3>{round.title}</h3>
+                  {enableKnockoutTypeahead ? (
+                    <datalist id={getKnockoutListId(round.title)}>
+                      {activeRoundOptions.map((option) => (
+                        <option key={`${round.title}-${option}`} value={option} />
+                      ))}
+                    </datalist>
+                  ) : null}
+                  <ul>
+                    {round.picks.map((pick, index) => (
+                      <li className="knockout-pick-item" key={`${round.title}-${index}`}>
+                        <input
+                          className="special-input"
+                          type="text"
+                          list={enableKnockoutTypeahead ? getKnockoutListId(round.title) : undefined}
+                          value={pick}
+                          disabled={isSaving}
+                          onFocus={() => {
+                            if (isTouchDevice) {
+                              setActiveKnockoutField({ roundTitle: round.title, index })
+                            }
+                          }}
+                          onBlur={() => {
+                            if (isTouchDevice) {
+                              setTimeout(() => {
+                                setActiveKnockoutField((current) => {
+                                  if (current?.roundTitle === round.title && current.index === index) {
+                                    return null
+                                  }
+
+                                  return current
+                                })
+                              }, 120)
+                            }
+                          }}
+                          onChange={(e) => {
+                            onChangeKnockoutPrediction(round.title, index, e.target.value)
+
+                            if (isTouchDevice) {
+                              setActiveKnockoutField({ roundTitle: round.title, index })
+                            }
+                          }}
+                        />
+                        {isTouchDevice && activeKnockoutField?.roundTitle === round.title && activeKnockoutField.index === index ? (
+                          <div className="knockout-suggestions" role="listbox" aria-label={`${round.title} förslag`}>
+                            {getInlineKnockoutSuggestions(activeRoundOptions, pick).map((option) => (
+                              <button
+                                className="knockout-suggestion-button"
+                                key={`${round.title}-${index}-${option}`}
+                                type="button"
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  onChangeKnockoutPrediction(round.title, index, option)
+                                  setActiveKnockoutField(null)
+                                }}
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              )
+            })}
           </div>
         </div>
 
@@ -1232,8 +1382,22 @@ export function App() {
   const [knockoutPredictions, setKnockoutPredictions] = useState<KnockoutPredictionRound[]>(knockoutPredictionTemplates)
   const [specialPredictions, setSpecialPredictions] = useState<SpecialPredictions>(defaultSpecialPredictions)
   const [isTipsSaving, setIsTipsSaving] = useState(false)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    const media = window.matchMedia('(hover: none) and (pointer: coarse)')
+    const updateTouchMode = () => setIsTouchDevice(media.matches)
+
+    updateTouchMode()
+    media.addEventListener('change', updateTouchMode)
+    return () => media.removeEventListener('change', updateTouchMode)
+  }, [])
 
   useEffect(() => {
     try {
@@ -1551,6 +1715,7 @@ export function App() {
           isSavingTips: isTipsSaving,
           tipsSaveMessage,
           myTipsSavedLabel,
+          isTouchDevice,
         })}
       </main>
     </div>

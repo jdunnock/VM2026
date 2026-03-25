@@ -524,6 +524,33 @@ strong {
   gap: 8px;
 }
 
+.knockout-pick-item {
+  display: grid;
+  gap: 6px;
+}
+
+.knockout-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.knockout-suggestion-button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.knockout-suggestion-button:active,
+.knockout-suggestion-button:hover {
+  border-color: var(--brand);
+  background: rgba(16, 163, 127, 0.08);
+}
+
 .tab-row {
   display: flex;
   gap: 10px;
@@ -845,13 +872,10 @@ strong {
   }
 
   .action-bar {
-    position: sticky;
-    bottom: max(10px, env(safe-area-inset-bottom));
-    z-index: 10;
+    position: static;
     justify-content: stretch;
     gap: 10px;
     padding: 12px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   .action-bar .ghost-button,
@@ -861,6 +885,18 @@ strong {
 
   .accordion-table {
     padding: 0 16px 16px;
+  }
+}
+
+/* Touch devices (phones + tablets, all orientations) */
+@media (hover: none) and (pointer: coarse) {
+  .action-bar {
+    position: static;
+  }
+
+  .action-bar .ghost-button,
+  .action-bar .primary-button {
+    flex: 1 1 100%;
   }
 }
 

@@ -151,6 +151,8 @@ Each admin-managed question must support:
 	- Auto-derived `1/X/2` from selected score with manual override still available.
 	- Gruppplaceringar uses guided group-specific team selectors instead of free text, so each position only offers teams from that group.
 	- The same team can only be selected once inside a single group ranking.
+	- Slutspel inputs use type-ahead suggestions: users can type first letters and pick only participating teams.
+	- Slutspel suggestions are round-aware: first round uses participating teams, later rounds suggest picks from the previous round.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
@@ -195,3 +197,6 @@ Each admin-managed question must support:
 	- Replaced Gruppplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
 	- Fixed Gruppplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.
 	- Extended tips persistence to include Slutspel predictions and updated both Lämna tips and Mina tips to edit/show saved knockout picks.
+	- Added Slutspel type-ahead suggestions with round-aware team filtering so users can type to narrow choices instead of scrolling long lists.
+	- Fixed mobile overlap issue where the floating action bar could cover active tips input fields. Initial fix used max-width: 720px breakpoint; extended to also apply @media (hover: none) and (pointer: coarse) to cover landscape iPhones and tablets whose CSS viewport width exceeds 720px.
+	- Fixed touch-device Slutspel input overlap where native datalist suggestion popups could cover the next text field; desktop keeps datalist type-ahead and touch devices now show inline suggestion chips directly under the active field.
