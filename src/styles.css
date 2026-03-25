@@ -339,28 +339,20 @@ strong {
   color: var(--muted);
 }
 
-.spinner-control {
-  display: inline-flex;
-  align-items: center;
+.wheel-select {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 12px;
+  padding: 8px 10px;
   background: #ffffff;
-}
-
-.spinner-button {
-  border: none;
-  background: transparent;
-  width: 40px;
-  height: 40px;
-  font-size: 1.15rem;
   color: var(--ink);
-}
-
-.spinner-value {
-  min-width: 28px;
-  text-align: center;
+  min-width: 86px;
+  min-height: 44px;
   font-weight: 700;
-  color: var(--ink);
+}
+
+.wheel-select:disabled {
+  background: #f5f7fb;
+  color: var(--muted);
 }
 
 .sign-segment {
@@ -824,8 +816,9 @@ strong {
     flex-wrap: wrap;
   }
 
-  .spinner-control {
-    min-height: 44px;
+  .wheel-select {
+    min-height: 48px;
+    min-width: 100px;
   }
 
   .action-bar {

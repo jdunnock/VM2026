@@ -396,10 +396,9 @@ function renderPage(
       match: string,
       key: 'homeScore' | 'awayScore' | 'sign',
       value: number | '' | '1' | 'X' | '2',
-      source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
+      source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
     ) => void
     onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
-    onAdjustTipScore: (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => void
     onSaveTips: () => void
     onClearTips: () => void
     isSavingTips: boolean
@@ -419,7 +418,6 @@ function renderPage(
           inputVariant={pageProps.inputVariant}
           onChangeTip={pageProps.onChangeTip}
           onSetScorePreset={pageProps.onSetScorePreset}
-          onAdjustTipScore={pageProps.onAdjustTipScore}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
           isSaving={pageProps.isSavingTips}
@@ -533,7 +531,6 @@ function TipsPage({
   inputVariant,
   onChangeTip,
   onSetScorePreset,
-  onAdjustTipScore,
   onSave,
   onClear,
   isSaving,
@@ -545,10 +542,9 @@ function TipsPage({
     match: string,
     key: 'homeScore' | 'awayScore' | 'sign',
     value: number | '' | '1' | 'X' | '2',
-    source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score',
+    source?: 'input' | 'select' | 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
   ) => void
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
-  onAdjustTipScore: (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => void
   onSave: () => void
   onClear: () => void
   isSaving: boolean
@@ -655,50 +651,36 @@ function TipsPage({
                           </div>
                         ))}
                         <div className="mobile-spinner-row" role="group" aria-label={`Mobil spinner ${row.match}`}>
-                          <div className="spinner-field">
+                          <label className="spinner-field">
                             <span className="spinner-label">Koti</span>
-                            <div className="spinner-control">
-                              <button
-                                type="button"
-                                className="spinner-button"
-                                disabled={isLocked || isSaving || row.homeScore === '' || row.homeScore <= 0}
-                                onClick={() => onAdjustTipScore(row.match, 'homeScore', -1)}
-                              >
-                                -
-                              </button>
-                              <span className="spinner-value">{row.homeScore === '' ? '0' : row.homeScore}</span>
-                              <button
-                                type="button"
-                                className="spinner-button"
-                                disabled={isLocked || isSaving}
-                                onClick={() => onAdjustTipScore(row.match, 'homeScore', 1)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div className="spinner-field">
+                            <select
+                              className="wheel-select"
+                              value={row.homeScore === '' ? 0 : row.homeScore}
+                              disabled={isLocked || isSaving}
+                              onChange={(e) => onChangeTip(row.match, 'homeScore', Number(e.target.value), 'wheel-score')}
+                            >
+                              {Array.from({ length: 11 }, (_, index) => (
+                                <option key={`${row.match}-home-wheel-${index}`} value={index}>
+                                  {index}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="spinner-field">
                             <span className="spinner-label">Borta</span>
-                            <div className="spinner-control">
-                              <button
-                                type="button"
-                                className="spinner-button"
-                                disabled={isLocked || isSaving || row.awayScore === '' || row.awayScore <= 0}
-                                onClick={() => onAdjustTipScore(row.match, 'awayScore', -1)}
-                              >
-                                -
-                              </button>
-                              <span className="spinner-value">{row.awayScore === '' ? '0' : row.awayScore}</span>
-                              <button
-                                type="button"
-                                className="spinner-button"
-                                disabled={isLocked || isSaving}
-                                onClick={() => onAdjustTipScore(row.match, 'awayScore', 1)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
+                            <select
+                              className="wheel-select"
+                              value={row.awayScore === '' ? 0 : row.awayScore}
+                              disabled={isLocked || isSaving}
+                              onChange={(e) => onChangeTip(row.match, 'awayScore', Number(e.target.value), 'wheel-score')}
+                            >
+                              {Array.from({ length: 11 }, (_, index) => (
+                                <option key={`${row.match}-away-wheel-${index}`} value={index}>
+                                  {index}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                         </div>
                         <button
                           type="button"
@@ -1249,34 +1231,6 @@ export function App() {
     )
   }
 
-  const onAdjustTipScore = (match: string, key: 'homeScore' | 'awayScore', delta: -1 | 1) => {
-    if (participant) {
-      logTipsEvent({
-        ts: new Date().toISOString(),
-        variant: tipsInputVariant,
-        action: 'score_spinner_adjusted',
-        match,
-        meta: { key, delta, participantId: participant.participantId },
-      })
-    }
-
-    setFixtureTips((current) =>
-      current.map((tip) => {
-        if (tip.match !== match || tip.status === 'Låst') {
-          return tip
-        }
-
-        const currentValue = tip[key] === '' ? 0 : tip[key]
-        const nextValue = Math.max(0, Number(currentValue) + delta)
-
-        return {
-          ...tip,
-          [key]: nextValue,
-        }
-      }),
-    )
-  }
-
   const onSaveTips = async () => {
     if (!participant) {
       return
@@ -1408,7 +1362,6 @@ export function App() {
           inputVariant: tipsInputVariant,
           onChangeTip,
           onSetScorePreset,
-          onAdjustTipScore,
           onSaveTips,
           onClearTips,
           isSavingTips: isTipsSaving,

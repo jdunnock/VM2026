@@ -183,3 +183,4 @@ Each admin-managed question must support:
 	- Added participantId-based tips CRUD backend scope and frontend integration for loading/saving tips.
 	- Added tips input UX trial scope with Variant A/B model for desktop+mobile comparison.
 	- Refined tips Variant B UX: grouped quick-pick score buttons into 6 home-win + 6 draw/away options with manual fallback, and added mobile spinner controls for tap-first score adjustment.
+	- Refined mobile Variant B score input to wheel-style vertical number spinners (scroll up/down) for faster thumb interaction.
