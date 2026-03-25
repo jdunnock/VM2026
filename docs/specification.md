@@ -141,16 +141,17 @@ Each admin-managed question must support:
 	- Admin question persistence.
 	- Full production auth/token/session implementation.
 
-### 7.3 Tips input UX trial scope (2026-03-25)
+### 7.3 Tips input UX default model (2026-03-25)
 
 - Included in this step:
-	- A/B-style tips input interaction trial in frontend for cross-device usability.
-	- Variant A: current numeric score inputs + sign dropdown.
-	- Variant B: quick-pick score buttons + segmented 1/X/2 controls with manual fallback.
-	- Lightweight localStorage event logging for interaction comparison.
+	- Finalized single tips input model (no active A/B trial branches).
+	- Desktop: grouped quick-pick score buttons + manual `+More` fallback.
+	- Mobile: spinner-only score entry for cleaner thumb interaction.
+	- Auto-derived `1/X/2` from selected score with manual override still available.
 - Excluded from this step:
 	- Tips API/schema changes.
 	- Admin UX changes.
+	- Temporary local telemetry for A/B comparison.
 
 ## 8. Workflow
 
@@ -186,3 +187,4 @@ Each admin-managed question must support:
 	- Refined mobile Variant B score input to wheel-style vertical number spinners (scroll up/down) for faster thumb interaction.
 	- Simplified mobile Variant B further: removed score quick-picks on mobile so score entry is spinner-only for cleaner thumb flow.
 	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
+	- Locked the tips input UX model as default and removed temporary A/B trial instrumentation.
