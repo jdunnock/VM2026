@@ -156,6 +156,22 @@ function isTipRowComplete(tip: FixtureTip): boolean {
   return Number.isInteger(tip.homeScore) && Number.isInteger(tip.awayScore) && tip.sign !== ''
 }
 
+function deriveSignFromScore(homeScore: number | '', awayScore: number | ''): '' | '1' | 'X' | '2' {
+  if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+    return ''
+  }
+
+  if (homeScore > awayScore) {
+    return '1'
+  }
+
+  if (homeScore < awayScore) {
+    return '2'
+  }
+
+  return 'X'
+}
+
 function createDefaultFixtureTips(): FixtureTip[] {
   return fixtureTemplates.map((row) => {
     const [home, away] = row.defaultScore ? row.defaultScore.split('-') : ['', '']
@@ -1197,6 +1213,17 @@ export function App() {
           return tip
         }
 
+        if (key === 'homeScore' || key === 'awayScore') {
+          const nextHomeScore = key === 'homeScore' ? (value as number | '') : tip.homeScore
+          const nextAwayScore = key === 'awayScore' ? (value as number | '') : tip.awayScore
+
+          return {
+            ...tip,
+            [key]: value,
+            sign: deriveSignFromScore(nextHomeScore, nextAwayScore),
+          }
+        }
+
         return {
           ...tip,
           [key]: value,
@@ -1226,6 +1253,7 @@ export function App() {
           ...tip,
           homeScore: home,
           awayScore: away,
+          sign: deriveSignFromScore(home, away),
         }
       }),
     )

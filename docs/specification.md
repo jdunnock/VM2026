@@ -185,3 +185,4 @@ Each admin-managed question must support:
 	- Refined tips Variant B UX: grouped quick-pick score buttons into 6 home-win + 6 draw/away options with manual fallback, and added mobile spinner controls for tap-first score adjustment.
 	- Refined mobile Variant B score input to wheel-style vertical number spinners (scroll up/down) for faster thumb interaction.
 	- Simplified mobile Variant B further: removed score quick-picks on mobile so score entry is spinner-only for cleaner thumb flow.
+	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
