@@ -1997,7 +1997,7 @@ function TipsPage({
 
     const query = normalizeKnockoutPickLabel(inputValue).toLowerCase()
     if (!query) {
-      return uniqueOptions.slice(0, 8)
+      return uniqueOptions
     }
 
     const startsWith = uniqueOptions.filter((option) => option.toLowerCase().startsWith(query))
@@ -2005,7 +2005,7 @@ function TipsPage({
       (option) => !option.toLowerCase().startsWith(query) && option.toLowerCase().includes(query),
     )
 
-    return [...startsWith, ...contains].slice(0, 8)
+    return [...startsWith, ...contains]
   }
 
   const toggleManualEditor = (match: string) => {
