@@ -4277,6 +4277,13 @@ export function App() {
     }
   }
 
+  // Redirect from "mine" to "results" if entering Phase C
+  useEffect(() => {
+    if (isGlobalLockActive && activePage === 'mine') {
+      setActivePage('results')
+    }
+  }, [isGlobalLockActive, activePage])
+
   if (!isLoggedIn) {
     return (
       <div className="app-shell">
@@ -4295,13 +4302,6 @@ export function App() {
   const visibleNavItems = adminSession
     ? navItems
     : navItems.filter((item) => item.id !== 'admin' && !(isGlobalLockActive && item.id === 'mine'))
-
-  // Redirect from "mine" to "results" if entering Phase C
-  useEffect(() => {
-    if (isGlobalLockActive && activePage === 'mine') {
-      setActivePage('results')
-    }
-  }, [isGlobalLockActive, activePage])
 
   return (
     <div className="app-shell">

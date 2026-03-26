@@ -797,6 +797,7 @@ Checklist run date: 2026-03-25
 	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.
 	- Tightened mobile main navigation pill spacing and padding so the horizontally scrollable tab row reads lighter on small screens.
 - 2026-03-26
+	- Fixed participant login-to-empty-screen regression: moved the `Mina tips` Phase C redirect `useEffect` to run before conditional login return so React hook order stays stable between signed-out and signed-in renders.
 	- Added lifecycle-based roadmap and strict phase-separation model (`Administrointi/alustus` -> `Osallistujien veikkausvaihe` -> `Turnauksen aikainen seuranta` -> `Lopetus`) to reduce mixed-context UX and prevent feature creep.
 	- Implemented first phase-coherence UI cleanup on Start page: prediction-prep blocks are now shown before deadline, while post-deadline Start switches to tournament-tracking-only leaderboard and rank context.
 	- Added Start page local-only phase preview controls for `Jarmo` (`Auto`, `Phase B`, `Phase C`) so phase-dependent UI can be validated without real-time deadline transitions.
