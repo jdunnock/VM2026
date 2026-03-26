@@ -4288,10 +4288,15 @@ export function App() {
     setResultsMessage('')
   }
 
-  // Redirect from "mine" to "results" if entering Phase C
+  // Keep active page aligned with current lifecycle phase visibility rules.
   useEffect(() => {
     if (isGlobalLockActive && activePage === 'mine') {
       setActivePage('results')
+      return
+    }
+
+    if (!isGlobalLockActive && activePage === 'results') {
+      setActivePage('tips')
     }
   }, [isGlobalLockActive, activePage])
 
@@ -4309,15 +4314,22 @@ export function App() {
     )
   }
 
-  // In Phase C, hide "Mina tips" (mine) completely; redirect users if they're on that page
-  const visibleNavItems = adminSession
-    ? navItems
-    : navItems.filter(
-        (item) =>
-          item.id !== 'admin' &&
-          !(isGlobalLockActive && item.id === 'mine') &&
-          !(!isGlobalLockActive && item.id === 'results'),
-      )
+  // Phase visibility rules are always applied; admin session only controls admin-tab visibility.
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.id === 'admin') {
+      return Boolean(adminSession)
+    }
+
+    if (isGlobalLockActive && item.id === 'mine') {
+      return false
+    }
+
+    if (!isGlobalLockActive && item.id === 'results') {
+      return false
+    }
+
+    return true
+  })
 
   return (
     <div className="app-shell">
