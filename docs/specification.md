@@ -1422,3 +1422,4 @@ Checklist run date: 2026-03-25
 	- Implemented settled match tracking validation in automated tests: partial-result scenarios now assert exact settled match count and explicit `unsettled` breakdown reason for unresolved tips.
 	- Implemented concrete knockout and partial-result edge-case tests in `server/scores.api.test.js` (replacing temporary TODO placeholders), keeping `npm run test:api` fully green.
 	- Updated knockout tips validation in API layer so allowed pick counts follow round definition (`Sextondelsfinal` 32, `Åttondelsfinal` 16, `Kvartsfinal` 8, `Semifinal` 4, `Final` 2).
+	- Fixed `Slutspel` first-round team suggestions to always include the canonical 48 tournament teams from fixture templates (instead of shrinking to participant-specific group picks), so dropdown options remain complete even if saved group picks contain duplicates or partial data.

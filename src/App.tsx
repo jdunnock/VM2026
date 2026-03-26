@@ -482,17 +482,26 @@ function getKnockoutListId(roundTitle: string): string {
 }
 
 function getBaseKnockoutTeams(groupPlacements: GroupPlacement[]): string[] {
-  const uniqueTeams = new Set<string>()
-
-  groupPlacements.forEach((group) => {
+  // Always start from canonical group templates (48 teams), then merge any
+  // current custom picks so user-entered values remain selectable.
+  const canonicalTeams = new Set<string>()
+  groupPlacementTemplates.forEach((group) => {
     group.picks.forEach((pick) => {
       if (pick.trim()) {
-        uniqueTeams.add(pick)
+        canonicalTeams.add(pick)
       }
     })
   })
 
-  return [...uniqueTeams]
+  groupPlacements.forEach((group) => {
+    group.picks.forEach((pick) => {
+      if (pick.trim()) {
+        canonicalTeams.add(pick)
+      }
+    })
+  })
+
+  return [...canonicalTeams]
 }
 
 function getRoundKnockoutTeams(
