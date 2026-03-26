@@ -3794,10 +3794,6 @@ export function App() {
       : 'B'
   const isTrackingPhaseActive = effectiveLifecyclePhase === 'C'
   const normalizePageForPhase = (page: PageId): PageId => {
-    if (isTrackingPhaseActive && page === 'mine') {
-      return 'results'
-    }
-
     if (!isTrackingPhaseActive && page === 'results') {
       return 'tips'
     }
@@ -4331,10 +4327,6 @@ export function App() {
   const visibleNavItems = navItems.filter((item) => {
     if (item.id === 'admin') {
       return Boolean(adminSession)
-    }
-
-    if (isTrackingPhaseActive && item.id === 'mine') {
-      return false
     }
 
     if (!isTrackingPhaseActive && item.id === 'results') {
