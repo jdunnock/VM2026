@@ -4312,7 +4312,12 @@ export function App() {
   // In Phase C, hide "Mina tips" (mine) completely; redirect users if they're on that page
   const visibleNavItems = adminSession
     ? navItems
-    : navItems.filter((item) => item.id !== 'admin' && !(isGlobalLockActive && item.id === 'mine'))
+    : navItems.filter(
+        (item) =>
+          item.id !== 'admin' &&
+          !(isGlobalLockActive && item.id === 'mine') &&
+          !(!isGlobalLockActive && item.id === 'results'),
+      )
 
   return (
     <div className="app-shell">
