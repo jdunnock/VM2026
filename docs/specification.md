@@ -1433,3 +1433,6 @@ Checklist run date: 2026-03-25
 	- Added P0-3 data integrity: wrapped `upsertTipsByParticipantId` and `deleteTipsByParticipantId` in SQLite transactions (BEGIN/COMMIT/ROLLBACK) so JSON column and all normalized table writes are atomic.
 	- Added P0-4 resilience: all `JSON.parse` calls in `db.js` wrapped in try-catch with safe defaults (`null` for tips, `[]` for options arrays) to prevent server errors from corrupt stored data.
 	- Added P0-5 database hardening: SQLite `PRAGMA foreign_keys = ON` and `PRAGMA journal_mode = WAL` applied at startup in `initDatabase()`; added `closeDatabase()` export and SIGTERM/SIGINT graceful shutdown handlers in `server/index.js` so the process drains active connections before exiting.
+	- Implemented P1-2 security improvement: admin session moved from `localStorage` to `sessionStorage` so credentials are cleared when the browser tab is closed.
+	- Added P1-4 `/api/config` endpoint (server) and `GLOBAL_DEADLINE` env var so the tip submission deadline can be configured per deployment without a code change.
+	- Implemented P1-1: frontend fetches `globalDeadline` from `/api/config` on mount and uses it for the live lock check; hardcoded fallback `2026-06-09T22:00:00` applies if the API is unreachable.

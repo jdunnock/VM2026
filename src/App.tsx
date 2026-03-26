@@ -280,9 +280,8 @@ const defaultSpecialPredictions: SpecialPredictions = {
 
 const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
 const ADMIN_SESSION_STORAGE_KEY = 'vm2026.adminSession'
-const GLOBAL_DEADLINE_LOCAL = '2026-06-09T22:00:00'
-const GLOBAL_DEADLINE = new Date(GLOBAL_DEADLINE_LOCAL)
-const GLOBAL_DEADLINE_LABEL = '2026-06-09 22:00'
+const GLOBAL_DEADLINE_FALLBACK = '2026-06-09T22:00:00'
+const GLOBAL_DEADLINE_LABEL = new Date(GLOBAL_DEADLINE_FALLBACK).toLocaleString('sv-SE')
 const QUICK_SCORE_GROUPS: Array<{
   key: 'home-win' | 'draw' | 'away-win'
   label: string
@@ -3787,8 +3786,9 @@ export function App() {
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
   const [lifecyclePreviewMode, setLifecyclePreviewMode] = useState<'auto' | 'B' | 'C'>('auto')
-  const isGlobalLockActive = Date.now() >= GLOBAL_DEADLINE.getTime()
-  const globalDeadlineLabel = GLOBAL_DEADLINE.toLocaleString('sv-SE')
+  const [globalDeadlineStr, setGlobalDeadlineStr] = useState(GLOBAL_DEADLINE_FALLBACK)
+  const isGlobalLockActive = Date.now() >= new Date(globalDeadlineStr).getTime()
+  const globalDeadlineLabel = new Date(globalDeadlineStr).toLocaleString('sv-SE')
   const canUseLifecyclePreview = Boolean(participant?.name && /jarmo/i.test(participant.name))
   const effectiveLifecyclePhase = canUseLifecyclePreview && lifecyclePreviewMode !== 'auto'
     ? lifecyclePreviewMode
@@ -3881,6 +3881,19 @@ export function App() {
   }
 
   useEffect(() => {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.globalDeadline === 'string' && data.globalDeadline) {
+          setGlobalDeadlineStr(data.globalDeadline)
+        }
+      })
+      .catch(() => {
+        // silently fall back to GLOBAL_DEADLINE_FALLBACK
+      })
+  }, [])
+
+  useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return
     }
@@ -3913,7 +3926,7 @@ export function App() {
 
   useEffect(() => {
     try {
-      const rawAdminSession = localStorage.getItem(ADMIN_SESSION_STORAGE_KEY)
+      const rawAdminSession = sessionStorage.getItem(ADMIN_SESSION_STORAGE_KEY)
       if (!rawAdminSession) {
         return
       }
@@ -3923,7 +3936,7 @@ export function App() {
         setAdminSession(parsed)
       }
     } catch {
-      localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY)
+      sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY)
     }
   }, [])
 
@@ -3938,11 +3951,11 @@ export function App() {
 
   useEffect(() => {
     if (!adminSession) {
-      localStorage.removeItem(ADMIN_SESSION_STORAGE_KEY)
+      sessionStorage.removeItem(ADMIN_SESSION_STORAGE_KEY)
       return
     }
 
-    localStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(adminSession))
+    sessionStorage.setItem(ADMIN_SESSION_STORAGE_KEY, JSON.stringify(adminSession))
   }, [adminSession])
 
   useEffect(() => {

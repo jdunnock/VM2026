@@ -33,6 +33,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const salt = process.env.ACCESS_CODE_SALT ?? 'vm2026-local-salt'
 const adminAccessCode = process.env.ADMIN_ACCESS_CODE ?? 'vm2026-admin'
 const adminAccessName = process.env.ADMIN_ACCESS_NAME ?? 'Admin'
+const globalDeadline = process.env.GLOBAL_DEADLINE ?? '2026-06-09T22:00:00'
 
 if (isProduction) {
   const missingEnvVars = [
@@ -486,6 +487,10 @@ app.use('/api/admin', requireAdminAccess)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
+})
+
+app.get('/api/config', (_req, res) => {
+  res.json({ globalDeadline })
 })
 
 app.get('/api/results', async (_req, res) => {
