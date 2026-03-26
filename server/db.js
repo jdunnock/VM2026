@@ -67,6 +67,9 @@ function get(sql, params = []) {
 }
 
 export async function initDatabase() {
+  await run('PRAGMA foreign_keys = ON')
+  await run('PRAGMA journal_mode = WAL')
+
   await run(`
     CREATE TABLE IF NOT EXISTS participants (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -743,6 +746,15 @@ export async function getMatchResultById(matchId) {
   }
 
   return mapMatchResultRow(row)
+}
+
+export function closeDatabase() {
+  return new Promise((resolve, reject) => {
+    db.close((err) => {
+      if (err) reject(err)
+      else resolve()
+    })
+  })
 }
 
 export async function upsertMatchResult(matchResult) {

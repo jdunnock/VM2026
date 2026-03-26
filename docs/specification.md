@@ -1432,3 +1432,4 @@ Checklist run date: 2026-03-25
 	- Added P0-2 security hardening: CORS origin whitelist (via `CORS_ORIGINS` env var), `express.json` body size capped at 1 MB, auth rate limiting (20 requests / 15 min) on `/api/auth/sign-in` and `/api/auth/admin-sign-in`.
 	- Added P0-3 data integrity: wrapped `upsertTipsByParticipantId` and `deleteTipsByParticipantId` in SQLite transactions (BEGIN/COMMIT/ROLLBACK) so JSON column and all normalized table writes are atomic.
 	- Added P0-4 resilience: all `JSON.parse` calls in `db.js` wrapped in try-catch with safe defaults (`null` for tips, `[]` for options arrays) to prevent server errors from corrupt stored data.
+	- Added P0-5 database hardening: SQLite `PRAGMA foreign_keys = ON` and `PRAGMA journal_mode = WAL` applied at startup in `initDatabase()`; added `closeDatabase()` export and SIGTERM/SIGINT graceful shutdown handlers in `server/index.js` so the process drains active connections before exiting.

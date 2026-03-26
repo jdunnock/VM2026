@@ -24,6 +24,7 @@ import {
   upsertMatchResult,
   upsertSpecialResults,
   upsertTipsByParticipantId,
+  closeDatabase,
 } from './db.js'
 
 const app = express()
@@ -827,9 +828,25 @@ app.delete('/api/tips/:participantId', async (req, res) => {
 
 initDatabase()
   .then(() => {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       console.log(`VM2026 API listening on http://localhost:${port}`)
     })
+
+    async function shutdown(signal) {
+      console.log(`Received ${signal}, shutting down gracefully...`)
+      server.close(async () => {
+        try {
+          await closeDatabase()
+          console.log('Database closed. Exiting.')
+        } catch (err) {
+          console.error('Error closing database:', err)
+        }
+        process.exit(0)
+      })
+    }
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'))
+    process.on('SIGINT', () => shutdown('SIGINT'))
   })
   .catch((error) => {
     console.error('Failed to initialize database:', error)
