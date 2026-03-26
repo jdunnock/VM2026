@@ -219,14 +219,6 @@ const categoryItems = [
   { label: 'Extrafrågor', count: 5 },
 ]
 
-const progressItems = [
-  { label: 'Gruppspel', value: 72 },
-  { label: 'Gruppplaceringar', value: 40 },
-  { label: 'Slutspel', value: 18 },
-  { label: 'Special', value: 100 },
-  { label: 'Extrafrågor', value: 50 },
-]
-
 const fixtureTemplates = groupStageFixtureTemplates
 
 const GROUP_CODES = 'ABCDEFGHIJKL'.split('')
@@ -1039,6 +1031,12 @@ function renderPage(
           canUseLifecyclePreview={pageProps.canUseLifecyclePreview}
           lifecyclePreviewMode={pageProps.lifecyclePreviewMode}
           onLifecyclePreviewModeChange={pageProps.onLifecyclePreviewModeChange}
+          fixtureTips={pageProps.fixtureTips}
+          groupPlacements={pageProps.groupPlacements}
+          knockoutPredictions={pageProps.knockoutPredictions}
+          specialPredictions={pageProps.specialPredictions}
+          extraAnswers={pageProps.extraAnswers}
+          publishedQuestions={pageProps.publishedQuestions}
         />
       )
     case 'results':
@@ -1118,6 +1116,12 @@ function StartPage({
   canUseLifecyclePreview,
   lifecyclePreviewMode,
   onLifecyclePreviewModeChange,
+  fixtureTips,
+  groupPlacements,
+  knockoutPredictions,
+  specialPredictions,
+  extraAnswers,
+  publishedQuestions,
 }: {
   participant: ParticipantSession | null
   leaderboard: LeaderboardEntry[]
@@ -1126,12 +1130,39 @@ function StartPage({
   canUseLifecyclePreview: boolean
   lifecyclePreviewMode: 'auto' | 'B' | 'C'
   onLifecyclePreviewModeChange: (mode: 'auto' | 'B' | 'C') => void
+  fixtureTips: FixtureTip[]
+  groupPlacements: GroupPlacement[]
+  knockoutPredictions: KnockoutPredictionRound[]
+  specialPredictions: SpecialPredictions
+  extraAnswers: ExtraAnswers
+  publishedQuestions: AdminQuestion[]
 }) {
   const currentEntry = participant
     ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
     : null
   const topEntries = leaderboard.slice(0, 5)
   const isTrackingPhase = phase === 'C'
+
+  const filledFixtures = fixtureTips.filter((t) => t.sign !== '').length
+  const totalFixtures = fixtureTips.length
+  const filledGroups = groupPlacements.filter((g) => g.picks.every((p) => p.trim() !== '')).length
+  const totalGroups = groupPlacements.length
+  const filledKnockout = knockoutPredictions.reduce((acc, r) => acc + r.picks.filter((p) => p.trim() !== '').length, 0)
+  const totalKnockout = knockoutPredictions.reduce((acc, r) => acc + r.picks.length, 0)
+  const filledSpecial = (specialPredictions.winner.trim() ? 1 : 0) + (specialPredictions.topScorer.trim() ? 1 : 0)
+  const totalSpecial = 2
+  const filledExtra = publishedQuestions.filter((q) => extraAnswers[String(q.id)]?.trim()).length
+  const totalExtra = publishedQuestions.length
+  const totalFilled = filledFixtures + filledGroups + filledKnockout + filledSpecial + filledExtra
+  const grandTotal = totalFixtures + totalGroups + totalKnockout + totalSpecial + totalExtra
+  const overallPct = grandTotal > 0 ? Math.round((totalFilled / grandTotal) * 100) : 0
+  const progressItems = [
+    { label: 'Gruppspel', filled: filledFixtures, total: totalFixtures },
+    { label: 'Gruppplaceringar', filled: filledGroups, total: totalGroups },
+    { label: 'Slutspel', filled: filledKnockout, total: totalKnockout },
+    { label: 'Special', filled: filledSpecial, total: totalSpecial },
+    { label: 'Extrafrågor', filled: filledExtra, total: totalExtra },
+  ]
 
   const renderLeaderboard = () => {
     if (topEntries.length === 0) {
@@ -1228,21 +1259,24 @@ function StartPage({
             <div>
               <div className="section-heading">
                 <p className="eyebrow">Framsteg</p>
-                <h2>Du har fyllt i: 0%</h2>
-                <p className="tips-total">0 av 154 tips inskickade</p>
+                <h2>Du har fyllt i: {overallPct}%</h2>
+                <p className="tips-total">{totalFilled} av {grandTotal} tips inskickade</p>
               </div>
               <div className="progress-list">
-                {progressItems.map((item) => (
-                  <div className="progress-row" key={item.label}>
-                    <div className="progress-label">
-                      <span>{item.label}</span>
-                      <strong>{item.value}%</strong>
+                {progressItems.map((item) => {
+                  const pct = item.total > 0 ? Math.round((item.filled / item.total) * 100) : 0
+                  return (
+                    <div className="progress-row" key={item.label}>
+                      <div className="progress-label">
+                        <span>{item.label}</span>
+                        <strong>{pct}%</strong>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${item.value}%` }} />
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
