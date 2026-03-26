@@ -836,3 +836,5 @@ Checklist run date: 2026-03-25
 	- Defined recompute-on-read score API scope for this phase: `GET /api/scores` and `GET /api/scores/:participantId`, without leaderboard ranking or score persistence.
 	- Added automated scoring API integration tests (`node --test`) with isolated API process and temporary DB to verify exact/sign/wrong/missing/unsettled scoring paths plus legacy fallback matching.
 	- Extended recompute-on-read scoring to include published `Extrafrågor` answers and exposed additional score fields: `fixturePoints`, `extraQuestionPoints`, `settledQuestions`, and participant `extraBreakdown`.
+	- Refactored lifecycle phase state machine: `effectiveLifecyclePhase` is now computed once in App root and passed as a single `phase: 'B' | 'C'` prop to `StartPage`, `MyTipsPage`, and `RulesPage`; duplicate `effectivePhase` derivations in sub-components removed.
+	- Decoupled admin session from participant lifecycle: participant logout (`Logga ut`) no longer clears the admin session, so admin identity survives participant session changes independently.

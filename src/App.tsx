@@ -1020,6 +1020,7 @@ function renderPage(
     results: MatchResult[]
     specialResults: SpecialResultsState
     isResultsLoading: boolean
+    phase: 'B' | 'C'
     canUseLifecyclePreview: boolean
     lifecyclePreviewMode: 'auto' | 'B' | 'C'
     onLifecyclePreviewModeChange: (mode: 'auto' | 'B' | 'C') => void
@@ -1034,7 +1035,7 @@ function renderPage(
           participant={pageProps.participant}
           leaderboard={pageProps.leaderboard}
           tipsSaveMessage={pageProps.tipsSaveMessage}
-          isGlobalLockActive={pageProps.isGlobalLockActive}
+          phase={pageProps.phase}
           canUseLifecyclePreview={pageProps.canUseLifecyclePreview}
           lifecyclePreviewMode={pageProps.lifecyclePreviewMode}
           onLifecyclePreviewModeChange={pageProps.onLifecyclePreviewModeChange}
@@ -1089,7 +1090,7 @@ function renderPage(
           participantScoreDetail={pageProps.participantScoreDetail}
           isParticipantScoreLoading={pageProps.isParticipantScoreLoading}
           lastSavedLabel={pageProps.myTipsSavedLabel}
-          isGlobalLockActive={pageProps.isGlobalLockActive}
+          phase={pageProps.phase}
           canUseLifecyclePreview={pageProps.canUseLifecyclePreview}
           lifecyclePreviewMode={pageProps.lifecyclePreviewMode}
         />
@@ -1097,7 +1098,7 @@ function renderPage(
     case 'rules':
       return (
         <RulesPage
-          isGlobalLockActive={pageProps.isGlobalLockActive}
+          phase={pageProps.phase}
           canUseLifecyclePreview={pageProps.canUseLifecyclePreview}
           lifecyclePreviewMode={pageProps.lifecyclePreviewMode}
         />
@@ -1113,7 +1114,7 @@ function StartPage({
   participant,
   leaderboard,
   tipsSaveMessage,
-  isGlobalLockActive,
+  phase,
   canUseLifecyclePreview,
   lifecyclePreviewMode,
   onLifecyclePreviewModeChange,
@@ -1121,7 +1122,7 @@ function StartPage({
   participant: ParticipantSession | null
   leaderboard: LeaderboardEntry[]
   tipsSaveMessage: string
-  isGlobalLockActive: boolean
+  phase: 'B' | 'C'
   canUseLifecyclePreview: boolean
   lifecyclePreviewMode: 'auto' | 'B' | 'C'
   onLifecyclePreviewModeChange: (mode: 'auto' | 'B' | 'C') => void
@@ -1130,9 +1131,7 @@ function StartPage({
     ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
     : null
   const topEntries = leaderboard.slice(0, 5)
-  const previewMode = canUseLifecyclePreview ? lifecyclePreviewMode : 'auto'
-  const effectivePhase = previewMode === 'auto' ? (isGlobalLockActive ? 'C' : 'B') : previewMode
-  const isTrackingPhase = effectivePhase === 'C'
+  const isTrackingPhase = phase === 'C'
 
   const renderLeaderboard = () => {
     if (topEntries.length === 0) {
@@ -1179,7 +1178,7 @@ function StartPage({
                   <option value="C">Fas C</option>
                 </select>
               </label>
-              <span className="save-pill">Aktiv fas: {effectivePhase}</span>
+              <span className="save-pill">Aktiv fas: {phase}</span>
             </div>
           ) : null}
         </div>
@@ -2364,7 +2363,7 @@ function MyTipsPage({
   participantScoreDetail,
   isParticipantScoreLoading,
   lastSavedLabel,
-  isGlobalLockActive,
+  phase,
   canUseLifecyclePreview,
   lifecyclePreviewMode,
 }: {
@@ -2378,7 +2377,7 @@ function MyTipsPage({
   participantScoreDetail: ParticipantScoreDetail | null
   isParticipantScoreLoading: boolean
   lastSavedLabel: string
-  isGlobalLockActive: boolean
+  phase: 'B' | 'C'
   canUseLifecyclePreview: boolean
   lifecyclePreviewMode: 'auto' | 'B' | 'C'
 }) {
@@ -2519,13 +2518,7 @@ function MyTipsPage({
 
   const displayedScoreDetail = useMockScorePreview && mockScoreDetail ? mockScoreDetail : participantScoreDetail
   const showLoadingState = isParticipantScoreLoading && !(useMockScorePreview && mockScoreDetail)
-  const effectivePhase =
-    canUseLifecyclePreview && lifecyclePreviewMode !== 'auto'
-      ? lifecyclePreviewMode
-      : isGlobalLockActive
-        ? 'C'
-        : 'B'
-  const showScorePanel = effectivePhase === 'C'
+  const showScorePanel = phase === 'C'
 
   const extraQuestionItems = publishedQuestions
     .map((question) => {
@@ -2551,7 +2544,7 @@ function MyTipsPage({
 
       {canUseLifecyclePreview ? (
         <div className="inline-actions" style={{ padding: '0 4px' }}>
-          <span className="save-pill">Lokal faspreview aktiv: {effectivePhase}</span>
+          <span className="save-pill">Lokal faspreview aktiv: {phase}</span>
           <span className="status-note">Källa: {lifecyclePreviewMode === 'auto' ? 'Auto (deadline)' : `Tvingad Fas ${lifecyclePreviewMode}`}</span>
         </div>
       ) : null}
@@ -2661,22 +2654,15 @@ function MyTipsPage({
 }
 
 function RulesPage({
-  isGlobalLockActive,
+  phase,
   canUseLifecyclePreview,
   lifecyclePreviewMode,
 }: {
-  isGlobalLockActive: boolean
+  phase: 'B' | 'C'
   canUseLifecyclePreview: boolean
   lifecyclePreviewMode: 'auto' | 'B' | 'C'
 }) {
-  const effectivePhase =
-    canUseLifecyclePreview && lifecyclePreviewMode !== 'auto'
-      ? lifecyclePreviewMode
-      : isGlobalLockActive
-        ? 'C'
-        : 'B'
-
-  const isTrackingPhase = effectivePhase === 'C'
+  const isTrackingPhase = phase === 'C'
 
   return (
     <div className="page-stack">
@@ -2691,7 +2677,7 @@ function RulesPage({
 
         {canUseLifecyclePreview ? (
           <div className="inline-actions">
-            <span className="save-pill">Lokal faspreview aktiv: {effectivePhase}</span>
+            <span className="save-pill">Lokal faspreview aktiv: {phase}</span>
             <span className="status-note">Källa: {lifecyclePreviewMode === 'auto' ? 'Auto (deadline)' : `Tvingad Fas ${lifecyclePreviewMode}`}</span>
           </div>
         ) : null}
@@ -4296,7 +4282,6 @@ export function App() {
 
   const onParticipantLogout = () => {
     setParticipant(null)
-    setAdminSession(null)
     setIsLoggedIn(false)
     setActivePage('start')
     setTipsSaveMessage('Inte sparad ännu')
@@ -4402,6 +4387,7 @@ export function App() {
           results,
           specialResults,
           isResultsLoading,
+          phase: effectiveLifecyclePhase,
           canUseLifecyclePreview,
           lifecyclePreviewMode,
           onLifecyclePreviewModeChange: setLifecyclePreviewMode,
