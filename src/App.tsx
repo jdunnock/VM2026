@@ -538,7 +538,7 @@ function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): Knockout
     return {
       title: template.title,
       picks: template.picks.map((_, index) => {
-        const pick = found.picks ? found.picks[index] : ''
+        const pick = found.picks && index < found.picks.length ? found.picks[index] : ''
         if (typeof pick === 'string' && pick.trim()) {
           return normalizeKnockoutPickLabel(pick)
         }
