@@ -3793,6 +3793,17 @@ export function App() {
       ? 'C'
       : 'B'
   const isTrackingPhaseActive = effectiveLifecyclePhase === 'C'
+  const normalizePageForPhase = (page: PageId): PageId => {
+    if (isTrackingPhaseActive && page === 'mine') {
+      return 'results'
+    }
+
+    if (!isTrackingPhaseActive && page === 'results') {
+      return 'tips'
+    }
+
+    return page
+  }
 
   useEffect(() => {
     setLifecyclePreviewMode('auto')
@@ -4296,13 +4307,9 @@ export function App() {
 
   // Keep active page aligned with current lifecycle phase visibility rules.
   useEffect(() => {
-    if (isTrackingPhaseActive && activePage === 'mine') {
-      setActivePage('results')
-      return
-    }
-
-    if (!isTrackingPhaseActive && activePage === 'results') {
-      setActivePage('tips')
+    const normalizedPage = normalizePageForPhase(activePage)
+    if (normalizedPage !== activePage) {
+      setActivePage(normalizedPage)
     }
   }, [isTrackingPhaseActive, activePage])
 
@@ -4351,7 +4358,7 @@ export function App() {
               className={item.id === activePage ? 'nav-button active' : 'nav-button'}
               key={item.id}
               type="button"
-              onClick={() => setActivePage(item.id)}
+              onClick={() => setActivePage(normalizePageForPhase(item.id))}
             >
               {item.label}
             </button>
