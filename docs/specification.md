@@ -1418,3 +1418,7 @@ Checklist run date: 2026-03-25
 	- Added section 10: Maintenance and Evolution Guidelines with procedures for spec-to-code traceability, when to add tests, handling scoring rule changes, and managing known fragilities.
 	- Documented fragilities: legacy fixture text matching (fix: normalized schema), admin special outcomes (fix: external validation layer), unsettled result ambiguity (mitigation: recompute-read design).
 	- All sections 8-10 are ready for implementation; section numbering updated (Workflow now 11, Open Questions now 12, Checklist now 13, Changelog now 14).
+	- Implemented knockout scoring backend behavior for settled rounds: knockout lookups now consider only completed knockout matches with both scores present, preventing incomplete/planned rounds from being scored prematurely.
+	- Implemented settled match tracking validation in automated tests: partial-result scenarios now assert exact settled match count and explicit `unsettled` breakdown reason for unresolved tips.
+	- Implemented concrete knockout and partial-result edge-case tests in `server/scores.api.test.js` (replacing temporary TODO placeholders), keeping `npm run test:api` fully green.
+	- Updated knockout tips validation in API layer so allowed pick counts follow round definition (`Sextondelsfinal` 32, `Åttondelsfinal` 16, `Kvartsfinal` 8, `Semifinal` 4, `Final` 2).

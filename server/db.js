@@ -955,6 +955,9 @@ async function buildKnockoutRoundLookups() {
       SELECT round, home_team, away_team
       FROM match_results
       WHERE stage = 'knockout'
+        AND result_status = 'completed'
+        AND home_score IS NOT NULL
+        AND away_score IS NOT NULL
       ORDER BY kickoff_at ASC, match_id ASC
     `,
   )

@@ -500,10 +500,76 @@ test('scores API group placement: all correct, partial, and none correct', async
   assert.equal(noneScore.data.groupPlacementBreakdown[0].matchedPositions.length, 0)
 })
 
-test('scores API knockout predictions: correct teams in round [TODO: awaiting backend knockout scoring implementation]', async () => {
-  // TODO: This test documents knockout scoring contract from spec section 9.4
-  // Backend knockout scoring engine not yet implemented (Phase 3 Step 2B scope)
-  // Placeholder test skipped for now
+test('scores API knockout predictions: settled round awards per-team points', async () => {
+  const roundTitle = 'Sextondelsfinal'
+  const allTeams = []
+
+  // Round of 32 requires 16 completed matches => 32 unique teams.
+  for (let index = 1; index <= 16; index += 1) {
+    const homeTeam = `KO Home ${index}`
+    const awayTeam = `KO Away ${index}`
+    allTeams.push(homeTeam, awayTeam)
+
+    const response = await request(
+      'PUT',
+      `/api/admin/results/KO-R32-${index}`,
+      {
+        stage: 'knockout',
+        round: roundTitle,
+        homeTeam,
+        awayTeam,
+        kickoffAt: `2026-07-${String(index).padStart(2, '0')}T19:00:00Z`,
+        homeScore: 2,
+        awayScore: 1,
+        resultStatus: 'completed',
+        settledAt: `2026-07-${String(index).padStart(2, '0')}T21:00:00Z`,
+      },
+      { 'x-admin-code': 'vm2026-admin' },
+    )
+    assert.equal(response.status, 200)
+  }
+
+  const fullParticipant = await createParticipant('Knockout Full Settled', 'ko-full')
+  await saveTips(fullParticipant, {
+    fixtureTips: [],
+    groupPlacements: [],
+    knockoutPredictions: [
+      {
+        title: roundTitle,
+        picks: allTeams,
+      },
+    ],
+    specialPredictions: { winner: '', topScorer: '' },
+    extraAnswers: {},
+  })
+
+  const partialParticipant = await createParticipant('Knockout Partial Settled', 'ko-partial')
+  await saveTips(partialParticipant, {
+    fixtureTips: [],
+    groupPlacements: [],
+    knockoutPredictions: [
+      {
+        title: roundTitle,
+        picks: allTeams.slice(0, 10),
+      },
+    ],
+    specialPredictions: { winner: '', topScorer: '' },
+    extraAnswers: {},
+  })
+
+  const fullScore = await request('GET', `/api/scores/${fullParticipant}`)
+  const partialScore = await request('GET', `/api/scores/${partialParticipant}`)
+
+  assert.equal(fullScore.status, 200)
+  assert.equal(fullScore.data.settledKnockoutRounds, 1)
+  assert.equal(fullScore.data.knockoutPoints, 32)
+  assert.equal(fullScore.data.knockoutBreakdown[0].reason, 'settled-round')
+  assert.equal(fullScore.data.knockoutBreakdown[0].matchedTeams.length, 32)
+
+  assert.equal(partialScore.status, 200)
+  assert.equal(partialScore.data.settledKnockoutRounds, 1)
+  assert.equal(partialScore.data.knockoutPoints, 10)
+  assert.equal(partialScore.data.knockoutBreakdown[0].matchedTeams.length, 10)
 })
 
 test('scores API special predictions: winner and topScorer', async () => {
@@ -560,8 +626,87 @@ test('scores API special predictions: winner and topScorer', async () => {
   assert.equal(bothScore.data.specialPoints, 8)
 })
 
-test('scores API edge case: partial match results with pending unsettled [TODO: awaiting settled match tracking]', async () => {
-  // TODO: This test documents partial results contract from spec section 9.7.1
-  // Feature to track settled vs unsettled matches per category not yet implemented
-  // Placeholder test skipped for now
+test('scores API edge case: partial match results track settled and unsettled correctly', async () => {
+  const matchIds = ['SET-C-1', 'SET-C-2', 'SET-C-3', 'SET-C-4']
+
+  // Settle only first 3 matches.
+  for (let index = 0; index < 3; index += 1) {
+    const response = await request(
+      'PUT',
+      `/api/admin/results/${matchIds[index]}`,
+      {
+        stage: 'group',
+        groupCode: 'C',
+        homeTeam: `SET Home ${index + 1}`,
+        awayTeam: `SET Away ${index + 1}`,
+        kickoffAt: `2026-06-${String(index + 20).padStart(2, '0')}T19:00:00Z`,
+        homeScore: 2,
+        awayScore: 1,
+        resultStatus: 'completed',
+        settledAt: `2026-06-${String(index + 20).padStart(2, '0')}T21:00:00Z`,
+      },
+      { 'x-admin-code': 'vm2026-admin' },
+    )
+    assert.equal(response.status, 200)
+  }
+
+  const participantId = await createParticipant('Settled Tracker Participant', 'set-1')
+  await saveTips(participantId, {
+    fixtureTips: [
+      {
+        fixtureId: 'SET-C-1',
+        group: 'C',
+        match: 'SET Home 1 - SET Away 1',
+        date: '2026-06-20T19:00:00Z',
+        homeScore: 2,
+        awayScore: 1,
+        sign: '1',
+        status: 'Öppet',
+      },
+      {
+        fixtureId: 'SET-C-2',
+        group: 'C',
+        match: 'SET Home 2 - SET Away 2',
+        date: '2026-06-21T19:00:00Z',
+        homeScore: 3,
+        awayScore: 2,
+        sign: '1',
+        status: 'Öppet',
+      },
+      {
+        fixtureId: 'SET-C-3',
+        group: 'C',
+        match: 'SET Home 3 - SET Away 3',
+        date: '2026-06-22T19:00:00Z',
+        homeScore: 1,
+        awayScore: 1,
+        sign: 'X',
+        status: 'Öppet',
+      },
+      {
+        fixtureId: 'SET-C-4',
+        group: 'C',
+        match: 'SET Home 4 - SET Away 4',
+        date: '2026-06-23T19:00:00Z',
+        homeScore: 2,
+        awayScore: 0,
+        sign: '1',
+        status: 'Öppet',
+      },
+    ],
+    groupPlacements: [],
+    knockoutPredictions: [],
+    specialPredictions: { winner: '', topScorer: '' },
+    extraAnswers: {},
+  })
+
+  const score = await request('GET', `/api/scores/${participantId}`)
+
+  assert.equal(score.status, 200)
+  assert.equal(score.data.settledMatches, 3)
+  assert.equal(score.data.fixturePoints, 3)
+
+  const unsettledEntry = score.data.breakdown.find((entry) => entry.fixtureId === 'SET-C-4')
+  assert.ok(unsettledEntry)
+  assert.equal(unsettledEntry.reason, 'unsettled')
 })
