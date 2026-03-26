@@ -505,29 +505,11 @@ function getBaseKnockoutTeams(groupPlacements: GroupPlacement[]): string[] {
 }
 
 function getRoundKnockoutTeams(
-  knockoutPredictions: KnockoutPredictionRound[],
+  _knockoutPredictions: KnockoutPredictionRound[],
   groupPlacements: GroupPlacement[],
-  roundIndex: number,
+  _roundIndex: number,
 ): string[] {
-  if (roundIndex === 0) {
-    return getBaseKnockoutTeams(groupPlacements)
-  }
-
-  const previousRound = knockoutPredictions[roundIndex - 1]
-  if (!previousRound) {
-    return getBaseKnockoutTeams(groupPlacements)
-  }
-
-  const uniqueTeams = new Set<string>()
-  previousRound.picks.forEach((pick) => {
-    const normalized = normalizeKnockoutPickLabel(pick)
-    if (normalized) {
-      uniqueTeams.add(normalized)
-    }
-  })
-
-  const candidates = [...uniqueTeams]
-  return candidates.length > 0 ? candidates : getBaseKnockoutTeams(groupPlacements)
+  return getBaseKnockoutTeams(groupPlacements)
 }
 
 function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): KnockoutPredictionRound[] {
@@ -1995,17 +1977,8 @@ function TipsPage({
       new Set(options.map((option) => normalizeKnockoutPickLabel(option)).filter((option) => option.length > 0)),
     )
 
-    const query = normalizeKnockoutPickLabel(inputValue).toLowerCase()
-    if (!query) {
-      return uniqueOptions
-    }
-
-    const startsWith = uniqueOptions.filter((option) => option.toLowerCase().startsWith(query))
-    const contains = uniqueOptions.filter(
-      (option) => !option.toLowerCase().startsWith(query) && option.toLowerCase().includes(query),
-    )
-
-    return [...startsWith, ...contains]
+    void inputValue
+    return uniqueOptions
   }
 
   const toggleManualEditor = (match: string) => {
