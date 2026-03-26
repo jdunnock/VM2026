@@ -5,6 +5,7 @@ const GROUP_CODES = 'ABCDEFGHIJKL'.split('')
 
 type GroupsFixturesCardProps = {
   fixtureTips: FixtureTip[]
+  savedFixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
   expandedManualEditor: Record<string, boolean>
   toggleManualEditor: (match: string) => void
@@ -22,6 +23,7 @@ type GroupsFixturesCardProps = {
 
 export function GroupsFixturesCard({
   fixtureTips,
+  savedFixtureTips,
   groupPlacements,
   expandedManualEditor,
   toggleManualEditor,
@@ -53,9 +55,18 @@ export function GroupsFixturesCard({
             <div className="grouped-match-list">
               {matches.map((row) => {
                 const isLocked = isGlobalLockActive || row.status === 'Låst'
+                const savedMatch = savedFixtureTips.find((tip) => tip.match === row.match && tip.date === row.date)
+                const isSavedComplete =
+                  savedMatch !== undefined &&
+                  row.homeScore !== '' &&
+                  row.awayScore !== '' &&
+                  row.sign !== '' &&
+                  savedMatch.homeScore === row.homeScore &&
+                  savedMatch.awayScore === row.awayScore &&
+                  savedMatch.sign === row.sign
 
                 return (
-                  <div className="grouped-match-row" key={`${row.match}-${row.date}`}>
+                  <div className={isSavedComplete ? 'grouped-match-row completed' : 'grouped-match-row'} key={`${row.match}-${row.date}`}>
                     <div className="grouped-row-head">
                       <strong>{row.match}</strong>
                       <span>{row.date}</span>

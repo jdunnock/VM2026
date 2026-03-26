@@ -5,11 +5,16 @@ import {
 import type {
   AdminQuestion,
   AdminSession,
+  ExtraAnswers,
+  FixtureTip,
+  GroupPlacement,
+  KnockoutPredictionRound,
   LeaderboardEntry,
   MatchResult,
   PageId,
   ParticipantScoreDetail,
   ParticipantSession,
+  SpecialPredictions,
   SpecialResultsState,
 } from './types'
 import { StartPage } from './pages/StartPage'
@@ -122,6 +127,7 @@ function renderPage(
   activePage: PageId,
   pageProps: {
     fixtureTips: FixtureTip[]
+    lastSavedFixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
     specialPredictions: SpecialPredictions
@@ -192,6 +198,7 @@ function renderPage(
       return (
         <TipsPage
           fixtureTips={pageProps.fixtureTips}
+          savedFixtureTips={pageProps.lastSavedFixtureTips}
           groupPlacements={pageProps.groupPlacements}
           knockoutPredictions={pageProps.knockoutPredictions}
           specialPredictions={pageProps.specialPredictions}
@@ -245,7 +252,7 @@ export function App() {
   // Core session and routing hooks
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
   const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase } = usePhaseRouting()
-  const { fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
+  const { fixtureTips, lastSavedFixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
 
   const countdownLabel = (() => {
     const deadlineTimestamp = new Date(globalDeadlineStr).getTime()
@@ -501,6 +508,7 @@ export function App() {
       <main className="content-shell">
         {renderPage(activePage, {
           fixtureTips,
+          lastSavedFixtureTips,
           groupPlacements,
           knockoutPredictions,
           specialPredictions,

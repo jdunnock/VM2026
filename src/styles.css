@@ -717,6 +717,11 @@ strong {
   background: #f9fbfd;
 }
 
+.grouped-match-row.completed {
+  background: #cdeecf;
+  border-color: #6aa877;
+}
+
 .grouped-row-head {
   display: grid;
   gap: 4px;

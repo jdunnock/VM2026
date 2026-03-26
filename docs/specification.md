@@ -169,6 +169,7 @@ Each admin-managed question must support:
 	- Mobile: spinner-only score entry for cleaner thumb interaction.
 	- On mobile spinner score changes, `1/X/2` is always auto-derived immediately from the current score pair.
 	- Auto-derived `1/X/2` from selected score with manual override still available.
+	- Match-card completion feedback: a group-stage match card gets a pale green background only after a successful save (`Sparad:` state) and only when the currently shown score + `1/X/2` still matches the saved value.
 	- Gruppplaceringar uses guided group-specific team selectors instead of free text, so each position only offers teams from that group.
 	- The same team can only be selected once inside a single group ranking.
 	- Slutspel inputs use type-ahead suggestions: users can type first letters and pick only participating teams.

@@ -24,6 +24,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
   const [isTipsSaving, setIsTipsSaving] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
+  const [lastSavedFixtureTips, setLastSavedFixtureTips] = useState<FixtureTip[]>([])
 
   // Load tips from API when participant changes
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setKnockoutPredictions(knockoutPredictionTemplates)
       setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
+      setLastSavedFixtureTips([])
       setTipsSaveMessage('Inte sparad ännu')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
       return
@@ -55,6 +57,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
         setExtraAnswers(normalizedState.extraAnswers)
 
         if (payload.updatedAt) {
+          setLastSavedFixtureTips(normalizedState.fixtureTips)
           const formatted = new Date(payload.updatedAt).toLocaleString('sv-SE')
           setTipsSaveMessage(`Sparad: ${formatted}`)
           setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
@@ -265,6 +268,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
 
       const normalizedState = normalizePersistedTipsState(payload.tips)
       setFixtureTips(normalizedState.fixtureTips)
+      setLastSavedFixtureTips(normalizedState.fixtureTips)
       setGroupPlacements(normalizedState.groupPlacements)
       setKnockoutPredictions(normalizedState.knockoutPredictions)
       setSpecialPredictions(normalizedState.specialPredictions)
@@ -314,6 +318,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setKnockoutPredictions(knockoutPredictionTemplates)
       setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
+      setLastSavedFixtureTips([])
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
 
@@ -333,6 +338,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
 
   return {
     fixtureTips,
+    lastSavedFixtureTips,
     groupPlacements,
     knockoutPredictions,
     specialPredictions,

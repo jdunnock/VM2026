@@ -16,6 +16,7 @@ import { ExtraQuestionsCard } from './tips/ExtraQuestionsCard'
 
 export function TipsPage({
   fixtureTips,
+  savedFixtureTips,
   groupPlacements,
   knockoutPredictions,
   specialPredictions,
@@ -36,6 +37,7 @@ export function TipsPage({
   globalDeadlineLabel,
 }: {
   fixtureTips: FixtureTip[]
+  savedFixtureTips: FixtureTip[]
   groupPlacements: GroupPlacement[]
   knockoutPredictions: KnockoutPredictionRound[]
   specialPredictions: SpecialPredictions
@@ -104,6 +106,7 @@ export function TipsPage({
       {activeSection === 'Gruppspel' ? (
         <GroupsFixturesCard
           fixtureTips={fixtureTips}
+          savedFixtureTips={savedFixtureTips}
           groupPlacements={groupPlacements}
           expandedManualEditor={expandedManualEditor}
           toggleManualEditor={toggleManualEditor}
