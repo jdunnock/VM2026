@@ -83,6 +83,7 @@ before(async () => {
       API_PORT: port,
       ADMIN_ACCESS_CODE: 'vm2026-admin',
       ADMIN_ACCESS_NAME: 'Admin',
+      NODE_ENV: 'test',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

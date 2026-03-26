@@ -1429,3 +1429,4 @@ Checklist run date: 2026-03-25
 	- Started MVP-cleanup backlog execution (P0-1): CI workflow modernized to Node 20 + current GitHub Action versions; test command aligned to `npm run test:api`; artifact output path corrected to `./dist`.
 	- Added production fail-fast guard for critical secrets (`ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`) so server startup aborts when these are missing in production environment.
 	- Added `.env.example` template to document required runtime variables for local setup and production deployment hardening.
+	- Added P0-2 security hardening: CORS origin whitelist (via `CORS_ORIGINS` env var), `express.json` body size capped at 1 MB, auth rate limiting (20 requests / 15 min) on `/api/auth/sign-in` and `/api/auth/admin-sign-in`.

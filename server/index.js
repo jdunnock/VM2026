@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
+import cors from 'cors'
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import {
   createAdminQuestion,
   createParticipant,
@@ -426,9 +428,37 @@ function normalizeTipsPayload(tips) {
   }
 }
 
-app.use(express.json())
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:4173', 'http://localhost:5173']
 
-app.post('/api/auth/admin-sign-in', (req, res) => {
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. server-to-server, curl)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+      callback(new Error(`CORS: origin '${origin}' not allowed`))
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'x-admin-code', 'Authorization'],
+  })
+)
+
+app.use(express.json({ limit: '1mb' }))
+
+const isTest = process.env.NODE_ENV === 'test'
+
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  skip: () => isTest,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'För många inloggningsförsök. Försök igen om en stund.' },
+})
+
+app.post('/api/auth/admin-sign-in', authRateLimit, (req, res) => {
   const rawName = typeof req.body?.name === 'string' ? req.body.name : ''
   const rawCode = typeof req.body?.code === 'string' ? req.body.code : ''
 
@@ -675,7 +705,7 @@ app.get('/api/questions/published', async (_req, res) => {
   }
 })
 
-app.post('/api/auth/sign-in', async (req, res) => {
+app.post('/api/auth/sign-in', authRateLimit, async (req, res) => {
   const rawName = typeof req.body?.name === 'string' ? req.body.name : ''
   const rawCode = typeof req.body?.code === 'string' ? req.body.code : ''
 
