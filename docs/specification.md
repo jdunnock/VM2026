@@ -474,7 +474,7 @@ Current application structure: 7 pages (`PageId` types in `src/App.tsx`) mapped 
 | --- | --- | --- | --- | --- | --- |
 | Sign-in | `login` | Both A & B | Entry gate (admin code for Phase A; participant code for Phase B) | — | Unified sign-in interface to route to Admin or Participant flows |
 | Start | `start` | **C** (Tracking) | Tournament progress and leaderboard during Phase C | A & D | Static tournament info, playoff bracket placeholders |
-| Lämna tips | `tips` | **B** (Predictions) | Participant enters/edits fixture, group, knockout, special, extra predictions before deadline | A | Scoring rules reference (read-only) |
+| Lämna tips | `tips` | **B** (Predictions) | Participant enters/edits fixture, group, knockout, special, extra predictions before deadline | A | Hidden in Phase C; participants review submissions via `Mina tips` |
 | Mina tips | `mine` | **B** (Predictions) primary; **C** (Tracking) secondary | Own prediction review before deadline; score breakdown visible after matches settle | C | Score breakdown by category (read-only) |
 | Resultat & poäng | `results` | **C** (Tracking) | Public match results, special outcomes, leaderboard by phase | A & D | Tournament rules link (read-only) |
 | Admin | `admin` | **A** (Admin/Setup) | Question authoring, management, result entry, before-and-during phases | C | Lightweight result stats (read-only) |
@@ -484,7 +484,7 @@ Current application structure: 7 pages (`PageId` types in `src/App.tsx`) mapped 
 
 - **Phase A (Admin/Setup)**: Primary pages = `admin`, `rules`. Secondary visibility = `results` (read-only stats), `start` (rules link). ✅ Mostly isolated.
 - **Phase B (Predictions)**: Primary pages = `tips`, `mine`. Secondary visibility = `rules` (scoring context). ✅ Isolated.
-- **Phase C (Tracking)**: Primary pages = `start`, `results`. Secondary visibility = `mine` (score breakdown), `admin` (result stats). ⚠️ **MIXED** — Start page and Results page both primary; Start also references Phase A/D info.
+- **Phase C (Tracking)**: Primary pages = `start`, `results`. Secondary visibility = `mine` (score breakdown), `admin` (result stats). `tips` is hidden. ⚠️ **MIXED** — Start page and Results page both primary; Start also references Phase A/D info.
 - **Phase D (Closure)**: No dedicated page (Final results shown in end-screen variant of `start` or `results`). Secondary visibility = `rules` (results archive).
 - **Sign-in (`login`)**: Dual entry point (admin code → Phase A, participant code → Phase B). ✅ Appropriate.
 
@@ -797,6 +797,7 @@ Checklist run date: 2026-03-25
 	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.
 	- Tightened mobile main navigation pill spacing and padding so the horizontally scrollable tab row reads lighter on small screens.
 - 2026-03-26
+	- Updated phase navigation decision: `Lämna tips` is hidden in Phase C and normalizes to `Mina tips`, so participants can review saved entries instead of seeing the editable tips workspace during tracking.
 	- Updated phase navigation decision: `Mina tips` is visible in both Phase B and Phase C (no longer hidden in C); only `Resultat & poäng` stays hidden in Phase B.
 	- Hardened participant phase coherence for state transitions: active page is normalized by lifecycle phase rules so users are redirected away from phase-incompatible pages (`Fas B`: `Resultat & poäng` -> `Lämna tips`).
 	- Updated participant top navigation visibility to follow effective lifecycle phase (including local `Fas B`/`Fas C` preview mode for Jarmo), so `Resultat & poäng` appears in Phase C preview and remains hidden only in Phase B.
