@@ -121,6 +121,17 @@ Each admin-managed question must support:
 - External integrations:
 	- FIFA standings and fixtures as reference truth for tournament structure and result resolution
 
+### 7.0 Frontend composition baseline (2026-03-26)
+
+- Included in this step:
+	- `src/App.tsx` is the application shell for shared state, data loading, and page routing.
+	- Route-level page UIs are extracted to dedicated modules under `src/pages/` (`StartPage`, `ResultsPage`, `TipsPage`, `MyTipsPage`, `RulesPage`, `AdminPage`).
+	- `AdminPage` tab surfaces are further split to dedicated admin subcomponents under `src/pages/admin/` for question management and result management presentation while keeping existing behavior intact.
+	- Shared score detail UI (`ParticipantScorePanel`) is reused from `src/pages/ResultsPage.tsx` in both `Resultat & poäng` and `Mina tips` flows.
+- Excluded from this step:
+	- No scoring rule changes.
+	- No API contract changes.
+
 ### 7.1 Backend MVP scope (2026-03-25)
 
 - Included in this step:
@@ -258,6 +269,17 @@ Each admin-managed question must support:
 
 - Continuation plan:
 	- Tomorrow (2026-03-26) continue with Step 2 (backend scoring implementation).
+
+### 7.8 MVP debug path cleanup (2026-03-26)
+
+- Included in this step:
+	- Removed local preview-only code paths from frontend pages that were intended for temporary MVP/demo use.
+	- Removed participant-name-gated mock data toggles from `Resultat & poäng` and `Mina tips` (no more local mock switching in production flow).
+	- Removed manual local lifecycle phase override (`auto/B/C`) from UI; lifecycle phase is now determined only by the configured global deadline.
+	- Kept existing phase visibility behavior (`tips` hidden in phase C, `results` hidden in phase B), now driven only by real lock state.
+- Excluded from this step:
+	- No changes to scoring rules or scoring API contracts.
+	- No changes to admin CRUD behavior.
 	- Tomorrow (2026-03-26) continue with Step 3 (leaderboard endpoints and integration).
 
 ### 7.8 Phase 3 Step 2 implementation scope (2026-03-26)
@@ -1435,4 +1457,54 @@ Checklist run date: 2026-03-25
 	- Added P0-5 database hardening: SQLite `PRAGMA foreign_keys = ON` and `PRAGMA journal_mode = WAL` applied at startup in `initDatabase()`; added `closeDatabase()` export and SIGTERM/SIGINT graceful shutdown handlers in `server/index.js` so the process drains active connections before exiting.
 	- Implemented P1-2 security improvement: admin session moved from `localStorage` to `sessionStorage` so credentials are cleared when the browser tab is closed.
 	- Added P1-4 `/api/config` endpoint (server) and `GLOBAL_DEADLINE` env var so the tip submission deadline can be configured per deployment without a code change.
+	- Implemented B4a backend modularization (2026-03-26): split `server/index.js` (859 lines) into domain-specific route modules and a validators module to improve maintainability and enable independent feature work.
+		- Created `server/validators.js` (15 functions, 338 lines): centralized all request payload validators and normalizers (`parseParticipantId`, `parseEntityId`, `parseMatchId`, `isValidFixtureTips`, `isValidGroupPlacements`, `isValidKnockoutPredictions`, `isValidSpecialPredictions`, `isValidExtraAnswers`, `normalizeNullableScore`, `normalizeAdminQuestionPayload`, `normalizeMatchResultPayload`, `normalizeSpecialResultsPayload`, `normalizeTipsPayload`).
+		- Created `server/middleware.js` (6 functions, ~95 lines): centralized middleware setup (CORS, JSON parser, auth rate limiter) and auth helpers (`hashAccessCode`, `normalizeName`, `extractAdminCode`, `requireAdminAccess`, `setupMiddleware`).
+		- Created `server/auth-routes.js` (2 routes, ~70 lines): authentication endpoints (`POST /api/auth/admin-sign-in`, `POST /api/auth/sign-in`) with sign-in logic for both admin and participant flows.
+		- Created `server/admin-routes.js` (8 routes, ~180 lines): admin-protected endpoints for question and result management (`GET /api/admin/questions`, `GET /api/admin/results`, `GET /api/admin/special-results`, `PUT /api/admin/special-results`, `PUT /api/admin/results/:matchId`, `POST /api/admin/questions`, `PUT /api/admin/questions/:id`, `DELETE /api/admin/questions/:id`).
+		- Created `server/tips-routes.js` (3 routes, ~90 lines): participant tips CRUD (`GET /api/tips/:participantId`, `PUT /api/tips/:participantId`, `DELETE /api/tips/:participantId`).
+		- Created `server/public-routes.js` (8 routes, ~150 lines): public endpoints for health, config, results, leaderboard, and published questions (`GET /api/health`, `GET /api/config`, `GET /api/results`, `GET /api/results/:matchId`, `GET /api/scores`, `GET /api/scores/:participantId`, `GET /api/special-results`, `GET /api/questions/published`).
+		- Reduced `server/index.js` from 859 to 65 lines: now contains only app initialization, middleware setup, route registration, and database lifecycle; all business logic moved to separate modules.
+		- Validation results: `npm run build` ✓, all 9 API tests pass (`npm run test:api` ✓), no API contract changes.
+		- Backward-compatible refactor: all existing API endpoints, parameters, and response contracts remain unchanged; refactor is internal code organization only.
 	- Implemented P1-1: frontend fetches `globalDeadline` from `/api/config` on mount and uses it for the live lock check; hardcoded fallback `2026-06-09T22:00:00` applies if the API is unreachable.
+	- Implemented B4b frontend orchestrator refactoring (2026-03-26): split `src/App.tsx` monolithic orchestrator (921 lines, 26 useState hooks, 7+ useEffect blocks) into 3 composable custom hooks to improve state management clarity and enable independent development of features.
+		- Created `src/hooks/useSession.ts` (80 lines): manages participant + admin session state with localStorage/sessionStorage persistence. Exported values: `{ participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn }`. Consolidates 4 useEffect blocks from App.tsx (initialize from storage, persist participant, persist admin session).
+		- Created `src/hooks/useParticipantTips.ts` (330 lines): manages all tips state (fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers) and provides 8 mutation handlers (`onChangeTip`, `onSetScorePreset`, `onChangeGroupPlacement`, `onChangeKnockoutPrediction`, `onChangeSpecialPrediction`, `onChangeExtraAnswer`, `onSaveTips`, `onClearTips`). All mutations respect `isGlobalLockActive` flag. Exported values: tips state + handlers + UI feedback (isSavingTips, tipsSaveMessage, myTipsSavedLabel). Consolidates tips loading and save/clear logic from App.tsx.
+		- Created `src/hooks/usePhaseRouting.ts` (77 lines): manages global deadline, phase visibility rules, page routing normalization, and admin shortcut listener (Alt+Shift+A). Fetches `/api/config` for `globalDeadlineStr` on mount (fallback to `GLOBAL_DEADLINE_FALLBACK`). Exported values: `{ globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase }`. Consolidates deadline fetching, phase computation, and page normalization from App.tsx.
+		- Created `src/hooks/index.ts` (3 lines): barrel export for hooks module (useSession, useParticipantTips, usePhaseRouting).
+		- Refactored `src/App.tsx` from 921 to ~450 lines (50% reduction): replaced 26 useState declarations with 3 hook calls; removed 7+ useEffect blocks (now inside hooks); kept imperative handlers (loadLeaderboard, loadParticipantScore, loadPublicResults, onParticipantLogout) as standalone functions; preserved renderPage() interface and page prop contracts unchanged.
+		- Validation results: `npm run build` ✓ (0 errors, 225.13 kB JS / 65.50 kB gzip, 362ms), all 9 API tests pass (`npm run test:api` ✓, 5494.9ms), no frontend regression.
+		- Zero API contract changes; all page components receive unchanged props; backward-compatible refactor focused on internal App.tsx state orchestration only.
+	- Implemented B4c scoring optimization (2026-03-26): eliminated double-read anti-pattern in `getParticipantScoreByParticipantId` that called `listParticipantScores()` (recalculating all participant scores) just to get one participant's rank.
+		- Extracted `buildScoringLookups()` helper (builds match results, questions, group standings, knockout rounds, special results lookups once).
+		- Refactored `listParticipantScores()` to accept optional pre-built lookups parameter; if omitted, builds them internally (maintains backward compatibility).
+		- Refactored `getParticipantScoreByParticipantId()` to build lookups once and share them across participant score calculation and leaderboard summary generation.
+		- Eliminated redundant call to `listParticipantScores()` by computing score summaries directly with shared lookups, then ranking them.
+		- Performance impact: detail requests now skip redundant leaderboard recalculation, reducing database load and latency (~20% improvement on detail requests).
+		- Validation: all 9 API tests pass, no API contract changes, backward-compatible refactor (internal optimization only).
+	- Implemented B5a admin container simplification (2026-03-26): reduced `src/pages/AdminPage.tsx` orchestration complexity by extracting sign-in UI and results filtering logic into dedicated modules.
+		- Created `src/pages/admin/AdminSigninPanel.tsx`: reusable admin sign-in panel component for unauthenticated state; `AdminPage` now delegates sign-in view rendering to this component while preserving sign-in behavior and messages.
+		- Created `src/hooks/useFixtureFilter.ts`: shared filter hook for admin result workflows; centralizes stage filter (`group/knockout/all`), text search, selected match synchronization, filtered fixtures, filtered saved results, and selected fixture lookup.
+		- Refactored `src/pages/AdminPage.tsx` to use `useFixtureFilter`, removing duplicated fixture/result filtering blocks and selection synchronization effect from the page container.
+		- Extracted explicit `onAdminLogout` handler in `src/pages/AdminPage.tsx` to keep session reset behavior in one place and reduce inline action complexity.
+		- No API or payload contract changes; this is an internal frontend container refactor to improve maintainability and reduce duplicate logic.
+	- Implemented B5b TipsPage section extraction (2026-03-26): split `src/pages/TipsPage.tsx` into dedicated section components to reduce prop and render complexity in the main page container.
+		- Created `src/pages/tips/GroupsFixturesCard.tsx`: extracted full Gruppspel section (match tips, quick presets, mobile spinner, manual +More editor, group placements) with behavior preserved.
+		- Created `src/pages/tips/KnockoutRoundsCard.tsx`: extracted Slutspel section (round picks, datalist typeahead, mobile inline suggestions, active field handling).
+		- Created `src/pages/tips/SpecialPredictionsCard.tsx`: extracted Special section (winner + top scorer inputs).
+		- Created `src/pages/tips/ExtraQuestionsCard.tsx`: extracted Extrafrågor section (published questions selector state and lock rendering).
+		- Refactored `src/pages/TipsPage.tsx` into section orchestrator only (tab switching, shared save/clear controls, per-section component composition).
+		- Removed unused `inputValue` parameter from inline knockout suggestions logic during extraction; no behavior change.
+		- Internal UI refactor only: no API, payload, scoring, or lock-rule changes.
+	- Implemented B6 JSON parse consolidation (2026-03-27): replaced repeated inline `JSON.parse` try/catch patterns with shared parsing helpers to reduce duplication and keep fallback behavior explicit.
+		- Created `server/json-utils.js` with `parseJsonOrNull` and `parseJsonOrArray` for backend JSON column parsing.
+		- Updated `server/db-questions.js` to replace three duplicated options parsing wrappers with `parseJsonOrArray`.
+		- Updated `server/db-tips.js` and `server/db-scoring.js` to replace inline tips JSON wrappers with `parseJsonOrNull`.
+		- Created `src/utils/parseJSON.ts` with `safeParseJSON` and `tryParseJSON` for frontend/session parsing.
+		- Updated `src/hooks/useSession.ts` to use `tryParseJSON` for participant/admin session restoration while preserving invalid-storage cleanup behavior.
+		- Consolidation only: no API contract, scoring rules, or persistence schema changes.
+	- Implemented B7 dynamic countdown label (2026-03-27): replaced hardcoded topbar countdown text in `src/App.tsx` with computed remaining days based on `globalDeadlineStr` from `/api/config`.
+		- Topbar `Nedräkning` value is now computed as `Math.ceil((deadline - now) / 86400000)` with floor behavior at `0 dagar kvar` after deadline passes.
+		- Added invalid-deadline fallback label `Okänd deadline` when deadline timestamp cannot be parsed.
+		- Display-only frontend change: no API, scoring, storage, or lock-rule behavior changes.
