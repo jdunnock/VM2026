@@ -42,6 +42,18 @@ function run(sql, params = []) {
   })
 }
 
+async function runTransaction(work) {
+  await run('BEGIN')
+  try {
+    const result = await work()
+    await run('COMMIT')
+    return result
+  } catch (err) {
+    try { await run('ROLLBACK') } catch (_) {}
+    throw err
+  }
+}
+
 function get(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
@@ -234,7 +246,7 @@ export async function getTipsByParticipantId(participantId) {
   }
 
   return {
-    tips: JSON.parse(row.tips_json),
+    tips: (() => { try { return JSON.parse(row.tips_json) } catch (_) { return null } })(),
     updatedAt: row.updated_at,
   }
 }
@@ -377,36 +389,40 @@ async function syncExtraAnswersToNormalized(participantId, extraAnswers) {
 export async function upsertTipsByParticipantId(participantId, tips) {
   const tipsJson = JSON.stringify(tips)
 
-  // Write to JSON column (primary API contract)
-  await run(
-    `
-      INSERT INTO participant_tips (participant_id, tips_json, created_at, updated_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT(participant_id)
-      DO UPDATE SET tips_json = excluded.tips_json, updated_at = CURRENT_TIMESTAMP
-    `,
-    [participantId, tipsJson],
-  )
+  return runTransaction(async () => {
+    // Write to JSON column (primary API contract)
+    await run(
+      `
+        INSERT INTO participant_tips (participant_id, tips_json, created_at, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(participant_id)
+        DO UPDATE SET tips_json = excluded.tips_json, updated_at = CURRENT_TIMESTAMP
+      `,
+      [participantId, tipsJson],
+    )
 
-  // Dual-write: sync to normalized tables
-  if (tips.fixtureTips) await syncFixtureTipsToNormalized(participantId, tips.fixtureTips)
-  if (tips.groupPlacements) await syncGroupPlacementsToNormalized(participantId, tips.groupPlacements)
-  if (tips.knockoutPredictions) await syncKnockoutPredictionsToNormalized(participantId, tips.knockoutPredictions)
-  if (tips.specialPredictions) await syncSpecialPredictionsToNormalized(participantId, tips.specialPredictions)
-  if (tips.extraAnswers) await syncExtraAnswersToNormalized(participantId, tips.extraAnswers)
+    // Dual-write: sync to normalized tables
+    if (tips.fixtureTips) await syncFixtureTipsToNormalized(participantId, tips.fixtureTips)
+    if (tips.groupPlacements) await syncGroupPlacementsToNormalized(participantId, tips.groupPlacements)
+    if (tips.knockoutPredictions) await syncKnockoutPredictionsToNormalized(participantId, tips.knockoutPredictions)
+    if (tips.specialPredictions) await syncSpecialPredictionsToNormalized(participantId, tips.specialPredictions)
+    if (tips.extraAnswers) await syncExtraAnswersToNormalized(participantId, tips.extraAnswers)
 
-  return getTipsByParticipantId(participantId)
+    return getTipsByParticipantId(participantId)
+  })
 }
 
 export async function deleteTipsByParticipantId(participantId) {
-  await run('DELETE FROM participant_tips WHERE participant_id = ?', [participantId])
-  
-  // Also delete from normalized tables
-  await run('DELETE FROM participant_fixture_tips WHERE participant_id = ?', [participantId])
-  await run('DELETE FROM participant_group_placements WHERE participant_id = ?', [participantId])
-  await run('DELETE FROM participant_knockout_predictions WHERE participant_id = ?', [participantId])
-  await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [participantId])
-  await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [participantId])
+  await runTransaction(async () => {
+    await run('DELETE FROM participant_tips WHERE participant_id = ?', [participantId])
+
+    // Also delete from normalized tables
+    await run('DELETE FROM participant_fixture_tips WHERE participant_id = ?', [participantId])
+    await run('DELETE FROM participant_group_placements WHERE participant_id = ?', [participantId])
+    await run('DELETE FROM participant_knockout_predictions WHERE participant_id = ?', [participantId])
+    await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [participantId])
+    await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [participantId])
+  })
 }
 
 export async function getSpecialResults() {
@@ -534,7 +550,7 @@ export async function listAdminQuestions() {
     id: row.id,
     questionText: row.question_text,
     category: row.category,
-    options: JSON.parse(row.options_json),
+    options: (() => { try { return JSON.parse(row.options_json) } catch (_) { return [] } })(),
     correctAnswer: row.correct_answer,
     points: row.points,
     lockTime: row.lock_time,
@@ -565,7 +581,7 @@ export async function listPublishedAdminQuestions() {
     id: row.id,
     questionText: row.question_text,
     category: row.category,
-    options: JSON.parse(row.options_json),
+    options: (() => { try { return JSON.parse(row.options_json) } catch (_) { return [] } })(),
     points: row.points,
     lockTime: row.lock_time,
     status: row.status,
@@ -630,7 +646,7 @@ export async function getAdminQuestionById(id) {
     id: row.id,
     questionText: row.question_text,
     category: row.category,
-    options: JSON.parse(row.options_json),
+    options: (() => { try { return JSON.parse(row.options_json) } catch (_) { return [] } })(),
     correctAnswer: row.correct_answer,
     points: row.points,
     lockTime: row.lock_time,
@@ -797,7 +813,7 @@ async function listParticipantsWithTips() {
   return rows.map((row) => ({
     participantId: row.id,
     name: row.name,
-    tips: row.tips_json ? JSON.parse(row.tips_json) : null,
+    tips: row.tips_json ? (() => { try { return JSON.parse(row.tips_json) } catch (_) { return null } })() : null,
     updatedAt: row.updated_at ?? null,
   }))
 }
@@ -824,7 +840,7 @@ async function getParticipantWithTipsById(participantId) {
   return {
     participantId: row.id,
     name: row.name,
-    tips: row.tips_json ? JSON.parse(row.tips_json) : null,
+    tips: row.tips_json ? (() => { try { return JSON.parse(row.tips_json) } catch (_) { return null } })() : null,
     updatedAt: row.updated_at ?? null,
   }
 }
