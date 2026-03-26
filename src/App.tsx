@@ -531,13 +531,14 @@ function normalizeKnockoutPredictions(rawKnockoutPredictions: unknown): Knockout
       (item) => item && typeof item === 'object' && 'title' in item && (item as { title?: string }).title === template.title,
     ) as Partial<KnockoutPredictionRound> | undefined
 
-    if (!found || !Array.isArray(found.picks) || found.picks.length !== template.picks.length) {
+    if (!found || !Array.isArray(found.picks)) {
       return template
     }
 
     return {
       title: template.title,
-      picks: found.picks.map((pick, index) => {
+      picks: template.picks.map((_, index) => {
+        const pick = found.picks ? found.picks[index] : ''
         if (typeof pick === 'string' && pick.trim()) {
           return normalizeKnockoutPickLabel(pick)
         }
