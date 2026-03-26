@@ -691,16 +691,583 @@ Confirmed intentional data flows (not bugs):
 	- No changes to existing result/special outcome data models.
 	- No changes to tips save/load logic.
 
-## 8. Workflow
+## 8. Normalized Database Schema
+
+### 8.1 Migration Strategy: JSON → Relational
+
+Current state (MVP):
+- Tips stored as single JSON `data` column in a monolithic `participant_tips` row.
+- Data structure: `{ fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers }`.
+- Scaling concern: JSON normalization ensures easier querying, archival, audit, and scoring isolation.
+
+Migration approach (this phase):
+- Create new normalized tables in same SQLite database.
+- Implement dual-write capability in backend: write to both JSON and normalized tables simultaneously.
+- Implement read compatibility layer: read from normalized tables when available, fall back to JSON for backward compatibility.
+- No frontend breaking changes; tips API contract remains unchanged.
+- One-time backfill of historical tips from JSON to normalized tables (idempotent script, safe to rerun).
+
+### 8.2 Normalized Tables Schema
+
+#### `participant_fixture_tips` (one row per participant × fixture prediction)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| `participant_id` | INTEGER | FK → `participants.id`, NOT NULL | |
+| `fixture_id` | TEXT | NOT NULL | Canonical fixture UUID from frontend fixture source |
+| `match_key` | TEXT | | Legacy fallback key (group+match name) for backward compat |
+| `home_score` | INTEGER | | Predicted home score (null if not set) |
+| `away_score` | INTEGER | | Predicted away score (null if not set) |
+| `sign` | TEXT | CHECK (`sign` IN ('1', 'X', '2', '')) | Predicted outcome sign (auto-derived from scores) |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | When prediction first saved |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | When prediction was last modified |
+| `synced_from_json` | BOOLEAN | DEFAULT FALSE | Markers for backfill tracking |
+
+**Indexes:**
+- UNIQUE(`participant_id`, `fixture_id`)
+- INDEX(`participant_id`, `updated_at`)
+
+---
+
+#### `participant_group_placements` (one row per participant × group ranking prediction)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| `participant_id` | INTEGER | FK → `participants.id`, NOT NULL | |
+| `group_code` | TEXT | NOT NULL | Group identifier (A-L) |
+| `position` | INTEGER | CHECK (`position` IN (1,2,3,4)), NOT NULL | Ranking position (1st, 2nd, 3rd, 4th) |
+| `team_name` | TEXT | | Predicted team name for this position (null if not set) |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `synced_from_json` | BOOLEAN | DEFAULT FALSE | |
+
+**Indexes:**
+- UNIQUE(`participant_id`, `group_code`, `position`)
+- INDEX(`participant_id`, `group_code`)
+
+**Invariants:**
+- A team can appear at most once per group ranking (no duplicates).
+- Null `team_name` represents "not yet picked" and is allowed for incomplete submissions.
+
+---
+
+#### `participant_knockout_predictions` (one row per participant × knockout round)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| `participant_id` | INTEGER | FK → `participants.id`, NOT NULL | |
+| `round_title` | TEXT | NOT NULL | Round name (`Sextondelsfinal`, `Åttondelsfinal`, `Kvartsfinal`, `Semifinal`, `Final`) |
+| `position` | INTEGER | NOT NULL | Slot index in the round (0-31 for round of 32, 0-15 for round of 16, etc.) |
+| `team_name` | TEXT | | Predicted team name for this slot (null if not set) |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `synced_from_json` | BOOLEAN | DEFAULT FALSE | |
+
+**Indexes:**
+- UNIQUE(`participant_id`, `round_title`, `position`)
+- INDEX(`participant_id`, `round_title`)
+
+**Invariants:**
+- Null `team_name` is allowed (incomplete submission).
+- No uniqueness constraint on team names within a round (teams may repeat if they're multiple iterations).
+
+---
+
+#### `participant_special_predictions` (one row per participant, combined special predictions)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| `participant_id` | INTEGER | FK → `participants.id`, NOT NULL, UNIQUE | One row per participant |
+| `winner_team` | TEXT | | Predicted tournament winner team name (null if not set) |
+| `top_scorer_name` | TEXT | | Predicted tournament top scorer name (null if not set) |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `synced_from_json` | BOOLEAN | DEFAULT FALSE | |
+
+---
+
+#### `participant_extra_answers` (one row per participant × published question answer)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | |
+| `participant_id` | INTEGER | FK → `participants.id`, NOT NULL | |
+| `question_id` | INTEGER | FK → `admin_questions.id`, NOT NULL | |
+| `selected_answer` | TEXT | NOT NULL | The answer option participant selected |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `updated_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | |
+| `synced_from_json` | BOOLEAN | DEFAULT FALSE | |
+
+**Indexes:**
+- UNIQUE(`participant_id`, `question_id`)
+- INDEX(`participant_id`)
+- INDEX(`question_id`)
+
+---
+
+### 8.3 API Contract (Unchanged)
+
+Frontend continues to send and receive tips as a single JSON payload via existing endpoints:
+- `PUT /api/tips/:participantId` — accepts single tips JSON object
+- `GET /api/tips/:participantId` — returns single tips JSON object
+- `DELETE /api/tips/:participantId` — clears all tips
+
+Backend internally:
+1. Writes normalized rows from incoming JSON.
+2. Reads normalized rows and reconstructs JSON payload for API response.
+3. Falls back to legacy JSON read if normalized tables are not available (for backward compat during transition).
+
+No schema or response changes visible to frontend.
+
+---
+
+### 8.4 Scoring Implications
+
+Scoring reads directly from normalized tables during backend scoring computation:
+- `GET /api/scores/:participantId` queries normalized tables instead of JSON parsing.
+- Scoring engine joins: `participant_fixture_tips` → `match_results`, `participant_group_placements` → settled group standings, etc.
+- Idempotent computation: rescore can be run repeatedly from normalized data without double-counting.
+- Audit trail: normalized tables preserve created/updated timestamps for forensic analysis.
+
+---
+
+### 8.5 Backfill and Transition Plan
+
+1. **Create**: Deploy new normalized tables with `synced_from_json` flag.
+2. **Dual-write**: New tips mutations write to both JSON and normalized tables; read `synced_from_json` to verify completeness.
+3. **Backfill**: One-time script runs `UPDATE participant_fixture_tips SET synced_from_json = TRUE` where migration was successful; script is idempotent.
+4. **Cutover**: Gradually increase read traffic from normalized tables; monitor for any mismatches vs. legacy JSON.
+5. **Cleanup**: After N days of successful normalized-table reads, deprecate JSON column read path; JSON column remains in DB for archival only.
+
+---
+
+## 9. Test Automation Requirements
+
+### 9.1 Test Coverage Philosophy
+
+Goal: "Pomminvarma pistelaskenta" (bulletproof scoring) — ensure every path through the scoring pipeline is validated and cannot accidentally produce incorrect points.
+
+Coverage principle:
+- **Unit tests**: Scoring calculation logic per category (fixture, group, knockout, special, extra).
+- **Integration tests**: End-to-end flow from tips save → match settlement → score recalculation.
+- **Regression tests**: Edge cases that have caused bugs in the past (e.g., partial results, missing settlements).
+- **Isolation tests**: Each test uses a dedicated temporary database and spawned API process to avoid test pollution.
+
+### 9.2 Test Matrix: Fixture Tips (Group Stage Matches)
+
+**Scoring Rule:**
+- Exact score hit (home + away both match): 2 points.
+- Correct `1/X/2` outcome only (scores miss but sign is right): 1 point.
+- Wrong outcome or no tip: 0 points.
+- Unsettled match (no completed result): 0 points (eligible for rescore when result arrives).
+
+| Scenario | Tip Data | Match Result | Expected Points | Notes |
+|----------|----------|--------------|-----------------|-------|
+| Exact score | home=1, away=0, sign=1 | home=1, away=0, status=completed | 2 | Hit all three |
+| Correct sign | home=1, away=0, sign=1 | home=1, away=1, status=completed | 1 | Sign correct, score wrong |
+| Wrong sign | home=1, away=0, sign=1 | home=1, away=0 *reversed* → sign=2 | 0 | Sign wrong |
+| No tip | null, null, '' | home=1, away=1, status=completed | 0 | Participant didn't enter |
+| Unsettled | home=1, away=0, sign=1 | (no result row) | 0 | Match not yet played |
+| Pending result | home=1, away=0, sign=1 | status=planned or live | 0 | Result not finalized |
+| Admin override | home=1, away=0, sign=1 | admin-corrected to home=2, away=0 | Recalc on update | Corner case: admin corrects result after initial scoring → rescore must detect and repoint |
+
+**Test implementation:**
+- Use isolated API + temp DB per test scenario.
+- Seed fixture, participant tips, and match result in sequence.
+- Call `GET /api/scores/:participantId` and assert `fixturePoints` and expected `breakdown[0].points`.
+- Verify `breakdown[0].reason` matches expected reason string (Swedish user-facing copy).
+
+---
+
+### 9.3 Test Matrix: Group Placements
+
+**Scoring Rule:**
+- 1 point per team in the correct final position within its group.
+- Group settlement only when all 6 group matches are completed.
+- Max: 4 points per group (all 4 teams correctly placed).
+
+| Scenario | Prediction | Group Standing | Expected Points | Notes |
+|----------|-----------|---|--|--|
+| All correct | [MX, USA, CAN, MXPL] | [MX, USA, CAN, MXPL] computed from match results | 4 | Perfect group prediction |
+| 2 correct | [MX, USA, CAN, MXPL] | [MX, MXPL, USA, CAN] | 2 | MX and USA correct; CAN and MXPL swapped |
+| None correct | [MX, USA, CAN, MXPL] | [CAN, USA, MXPL, MX] | 0 | All wrong |
+| Partial group | [MX, USA, CAN, MXPL] | Only 3 group matches played | 0 | Group not settled (unsettled) |
+| Empty picks | ['', '', '', ''] | All positions settled | 0 | No prediction entered |
+
+**Settlement logic:**
+- Group is settlement-eligible when all 6 matches in that group have `result_status = completed` and both scores exist.
+- Standings derived deterministically from completed results: sort by points (3 for win, 1 for draw), then goal diff, then goals for, then name.
+
+**Test implementation:**
+- Create 6 fixtures for a test group, all with completed results.
+- Compute group standings from results.
+- Seed participant group placement prediction.
+- Call `GET /api/scores/:participantId` and assert `groupPlacementPoints` and `groupPlacementBreakdown[0]` contains matched position count and reason.
+
+---
+
+### 9.4 Test Matrix: Knockout Predictions
+
+**Scoring Rule:**
+- 1-3 points per correct team in the round (points vary by round; e.g., Semifinal = 2 pts/team, Final = 3 pts/team).
+- Settlement when expected number of unique teams for that round are present in completed match results.
+- Round is settlement-eligible only after the previous round has at least played.
+
+| Scenario | Round | Prediction | Results | Expected Points | Notes |
+|----------|-------|-----------|---------|---|---|
+| All teams correct | Åttondelsfinal | Teams ABC…P (16) | All 16 teams advanced from fixtures | 16 × 1 = 16 | All teams in advance are predicted |
+| Partial correct | Åttondelsfinal | Teams ABC…X (16) | Only 8 teams actually advanced | Points only for matched 8 | Unsettled teams don't score |
+| Zero correct | Åttondelsfinal | Teams XXX…X (16) | None match advanced teams | 0 | All wrong predictions |
+| Unsettled | Kvartsfinal | Prediction entered | Round-of-16 not yet played | 0 (eligible for rescore) | Settlement deferred until prior round complete |
+| Semifinal | Semifinal | Predicted 4 teams | Only 2 teams available from QF | 2 × 2 = 4 | Points only for available teams in the round |
+
+**Settlement logic:**
+- Derive actual participants for a knockout round from `match_results` rows where `stage = knockout` and `round = <round_title>` and `result_status = completed`.
+- Expected uniqueteams count per round: 32 (R32), 16 (R16), 8 (QF), 4 (SF), 2 (F).
+- Scoring is membership-based: each team in the round that also appears in the participant's prediction gets the round's point value.
+
+**Test implementation:**
+- Create fixture chain: group matches → R32 matches with winners → R16 matches with winners.
+- Seed knockout predictions for multiple rounds.
+- Only mark some match results as completed.
+- Call `GET /api/scores/:participantId` and verify:
+  - Settled rounds show points; unsettled show 0.
+  - `knockoutBreakdown[i]` shows matched team names and points-per-team.
+  - Rerunning score computation (rescore) after more results complete updates points.
+
+---
+
+### 9.5 Test Matrix: Special Predictions (Slutsegrare, Skytteligavinnare)
+
+**Scoring Rule:**
+- 4 points if prediction correct.
+- 0 points if prediction wrong.
+- 0 points if special outcome not yet settled.
+
+| Scenario | Prediction | Admin Outcome | Expected Points | Notes |
+|---------|-----------|---|--|--|
+| Correct winner | Argentina | Argentina | 4 | Hit |
+| Wrong winner | Argentina | France | 0 | Miss |
+| Correct topScorer | Kylian Mbappé | Kylian Mbappé | 4 | Hit |
+| Wrong topScorer | Kylian Mbappé | Neymar | 0 | Miss |
+| Unsettled | Argentina | (no special result row) | 0 | Corner case: tournament in progress, winner still uncertain |
+| Empty prediction | '' | Argentina | 0 | Participant didn't enter |
+
+**Settlement logic:**
+- Admin enters special outcomes via `PUT /api/admin/special-results`.
+- Special outcomes are standalone (not derived from match results).
+- Scoring treats empty predictions (`''`) as 0 points, same as wrong predictions.
+
+**Test implementation:**
+- Seed special predictions (or empty).
+- Seed special outcomes via admin API.
+- Call `GET /api/scores/:participantId` and verify `specialPoints` and `specialBreakdown[0].points`.
+
+---
+
+### 9.6 Test Matrix: Extra Questions (Extrafrågor)
+
+**Scoring Rule:**
+- Award question's `points` value if selected answer matches `correct_answer`.
+- 0 points if answers don't match.
+- 0 points if question is unsettled (admin hasn't set `correct_answer` yet).
+
+| Scenario | Question Points | Selected | Correct | Expected | Notes |
+|----------|--------|----------|---------|---|---|
+| Correct answer | 2 | "A" | "A" | 2 | Hit |
+| Wrong answer | 2 | "A" | "B" | 0 | Miss |
+| No answer saved | 2 | (null) | "A" | 0 | Participant skipped question |
+| Unsettled question | 2 | "A" | (null) | 0 | Admin hasn't published answer yet |
+| Published flag | 2 | "A" | "A" but status=draft | 0 | Corner: only published questions count |
+
+**Settlement logic:**
+- Only published questions (`status = published`) appear in `GET /api/questions/published` and are answerable by participants.
+- Scoring only awards points when question is published AND `correct_answer` is not null.
+- If admin later changes `correct_answer`, `GET /api/scores/:participantId` is recalculated.
+
+**Test implementation:**
+- Admin creates question with 2 options and score value.
+- Admin publishes question.
+- Participant saves answer.
+- Admin sets `correct_answer`.
+- Call `GET /api/scores/:participantId` and verify points awarded.
+- Rescore after admin corrects answer to verify consistency.
+
+---
+
+### 9.7 Test Matrix: Edge Cases and Regressions
+
+#### 9.7.1 Partial Match Results
+
+**Scenario:**
+- 72 group matches total; admin enters results for only 30 matches.
+- Participant has predictions for all 72.
+
+**Expected behavior:**
+- Scoring computes points for 30 settled matches.
+- 42 unsettled matches contribute 0 points and are marked in breakdown as unsettled (not 0-point misses).
+- When admin settles more matches, `GET /api/scores/:participantId` recalculates and includes new points without double-counting.
+
+**Test implementation:**
+- Create all 72 fixtures.
+- Seed participant fixture tips for all 72.
+- Seed results for 30 matches (random selection).
+- Verify `settledMatches = 30` and `fixturePoints` reflects 30 matches only.
+- Add 15 more results and rescore; verify `settledMatches = 45` and points updated.
+
+---
+
+#### 9.7.2 Missing or Null Predictions
+
+**Scenario:**
+- Group A prediction has only 2 team picks out of 4 positions; participant left slots empty.
+- Group A all matches are settled.
+
+**Expected behavior:**
+- Scoring counts only the 2 non-empty picks (not unknown).
+- Unset positions don't cause errors or affect calculations of filled positions.
+- Breakdown shows "2 av 4 rätt" structure and 2 points awarded.
+
+**Test implementation:**
+- Create group placement prediction with only non-null values.
+- Verify scoring handles sparse arrays safely.
+
+---
+
+#### 9.7.3 Admin Result Correction (Rescore)
+
+**Scenario:**
+- Match initially scored: Argentina 1 - 0 Mexico; participant predicted 1-0 (2 points awarded).
+- Admin corrects result to Argentina 2 - 0 Mexico; correction time recorded.
+
+**Expected behavior:**
+- Rescore from current state: participant's 1-0 prediction still matches first result, scores only 1 point (wrong score but right sign).
+- Audit trail: `updated_at` on match result reflects correction time.
+- No double-counting: historical score record is not updated; only forward rescore is valid.
+
+**Test implementation:**
+- Seed initial result.
+- Score and verify points.
+- Update result via admin API.
+- Call `GET /api/scores/:participantId` and verify new points.
+- Ensure old points are not re-added.
+
+---
+
+#### 9.7.4 Legacy Fixture Fallback Matching
+
+**Scenario:**
+- Old saved tips don't have `fixtureId` (only display text like "Argentina - France").
+- New scoring engine has `match_results` with explicit `match_id` UUIDs.
+
+**Expected behavior:**
+- Fallback matching: if `fixtureId` is null, attempt to match by display text or (stage, group/round, kickoff time).
+- If fallback matches a unique result row, score using that result.
+- If fallback is ambiguous or fails, score 0 (safe default; no incorrect points awarded).
+
+**Regression note:** This is a known fragility; normalized schema (section 8) is the long-term fix.
+
+**Test implementation:**
+- Create old-style tip row without `fixtureId`.
+- Verify scoring falls back to text matching.
+- Verify ambiguous fallbacks don't cause crashes (score defensively).
+
+---
+
+### 9.8 Test Automation Maintenance
+
+#### 9.8.1 When to Add Tests
+
+Add a new test scenario when:
+1. A new scoring rule or category is implemented (before merging to main).
+2. A bug is discovered in scoring (add test, fix bug, verify test passes).
+3. A regression is suspected in an existing path (add test to cover, rerun test suite).
+4. A new edge case is identified in code review or user feedback.
+
+**Minimum coverage:** Each scenario in section 9.2–9.7 must have at least one automated test.
+
+#### 9.8.2 Test Organization (Backend)
+
+Location: `/server/scores.api.test.js` (existing file, extend with new tests).
+
+Structure:
+```javascript
+describe('Scoring: Fixture Tips', () => {
+  describe('exact score', () => { test(...) })
+  describe('correct sign only', () => { test(...) })
+  // ...per scenario in 9.2
+})
+
+describe('Scoring: Group Placements', () => {
+  // ...per scenario in 9.3
+})
+
+describe('Scoring: Knockout Predictions', () => {
+  // ...per scenario in 9.4
+})
+
+describe('Scoring: Special Predictions', () => {
+  // ...per scenario in 9.5
+})
+
+describe('Scoring: Extra Questions', () => {
+  // ...per scenario in 9.6
+})
+
+describe('Scoring: Edge Cases', () => {
+  // ...per scenario in 9.7
+})
+```
+
+**Test execution:**
+- `npm run test:api` runs tests using an isolated temp database.
+- Tests spawn a fresh API process per test suite to ensure no cross-test pollution.
+- Tests clean up temporary database and API process after completion.
+
+#### 9.8.3 Benchmark: Test Run Time
+
+Target: Full test suite completes in < 30 seconds.
+- Current baseline (Phase 2): ~1.1 seconds for 4 MVP smoke tests.
+- Phase 3 target: ~10 additional scoring tests, estimated ~25 seconds total.
+- Timeout: 60 seconds per test case (catch runaway processes).
+
+#### 9.8.4 Continuous Integration Plan
+
+When implemented (future phase):
+- Run test suite on every push to main.
+- Require tests to pass before merge.
+- Archive test artifacts (stdout, temp DB snapshots) for debugging failures.
+- Alert on test failures within 5 minutes of merge.
+
+---
+
+## 10. Maintenance and Evolution Guidelines
+
+### 10.1 When Changing Scoring Rules
+
+Before implementing:
+1. **Update specification** section 7.11 (scoring values) or 9.x (test matrix).
+2. **Add test case** in `/server/scores.api.test.js` for new rule.
+3. **Verify test fails** (new rule not yet implemented).
+
+While implementing:
+1. **Implement scoring logic** in scoring engine.
+2. **Update backend endpoints** if API contract changes.
+3. **Update frontend** if UI surfaces new score detail (e.g., new breakdown category).
+
+After implementing:
+1. **Verify test passes**.
+2. **Rescore all participants** if rule change is retroactive (edge case; typically new scores apply forward).
+3. **Commit together**: code + tests + spec update in one atomic change.
+
+**Example:** If knockout semifinal points change from 1 to 2 (covered in section 7.11), update spec before coding, add test for "semifinal 2 points per team", implement change, verify test passes, commit all together.
+
+---
+
+### 10.2 When Adding a New Prediction Category
+
+Before implementing:
+1. **Add to specification** section 4 (prediction targets) and section 7.x (new phase scope).
+2. **Add schema** to section 8 (normalized tables) if persistence needed.
+3. **Add test matrix** to section 9.x (full coverage).
+4. **Get approval** from user (clarify phase, validate acceptance criteria).
+
+While implementing:
+1. **Create backend persistence** if needed (new API endpoint, new table).
+2. **Create frontend UI** (input, edit, review).
+3. **Add scoring rules** to 7.x and test matrix to 9.x.
+4. **Implement tests** covering all scenarios in test matrix.
+
+**Lock in order:** Complete tests before merging; spec updates happen in same change.
+
+---
+
+### 10.3 Known Fragilities and Planned Fixes
+
+#### Fragility: Legacy Fixture Text Matching (Current MVP)
+
+**Root cause:** Fixture tips saved without UUID `fixtureId` only have display text (team names + match date).  
+**Impact:** Scoring falls back to fuzzy text matching, which is fragile (team name spelling variations, date timezone mismatches).  
+**Planned fix:** Section 8.2 (normalized schema) includes `fixtureId` column; new tips always populate it; backfill existing tips with UUIDs.  
+**Timeline:** Before production; low urgency if test suite covers fallback.
+
+#### Fragility: Admin Special Outcomes Manual Entry (Current MVP)
+
+**Root cause:** Admin must manually enter `Slutsegrare` and `Skytteligavinnare` via admin UI (no external data sync).  
+**Impact:** Data-entry errors possible (typo in team name or player name = wrong scoring).  
+**Planned fix:** Add data validation layer (`admin/special-results` endpoint validates team/player name against official source); UI auto-complete from official list.  
+**Timeline:** Before Phase C start (live tournament); medium priority.
+
+#### Fragility: Unsettled Result Ambiguity (Current MVP)
+
+**Root cause:** If a match result is corrected multiple times, scoring must be deterministic (not path-dependent).  
+**Impact:** Potential for double-counting or missed points if rescore logic is not careful.  
+**Mitigation:** Scoring engine is read-only and recomputes from current state (no incremental updates); rescore is idempotent by design.  
+**Validation:** Test 9.7.3 (admin result correction) covers this; runs before each merge.
+
+---
+
+### 10.4 Spec-to-Code Traceability
+
+Maintain bidirectional links:
+
+**From code to spec:**
+- Header comments in scoring implementation `points/rules.js`: reference section 7.11 line numbers.
+- Test file comments: reference test matrix sections 9.2–9.7.
+
+**From spec to code:**
+- Section 7.11 scoring values: link to implementation file and line number.
+- Section 9 test matrix: link to test file location.
+
+**Example:**
+```javascript
+// scores.js line 45:
+// Fixture-tip scoring (MVP): see spec section 7.11 and test matrix 9.2
+// Points: 2 (exact), 1 (sign only), 0 (wrong/unsettled)
+
+const scoreFixtureTip = (tip, result) => {
+  if (!result || result.status !== 'completed') return 0 // unsettled
+  // ... exact/sign logic
+}
+```
+
+---
+
+### 10.5 Evolution Phase Roadmap
+
+**Phase 3 (current):** Implement scoring engine, leaderboard, participant results pages.
+- Adds sections 7.6–7.14 (result foundation, scoring contracts, leaderboard scope).
+- Adds test matrix 9.2–9.7 (all core scoring scenarios).
+- Normalization (section 8) begins; dual-write capability added.
+
+**Phase 4 (future):** Production launch; CI/CD pipeline; live data sync.
+- Complete section 8 (normalized tables; JSON fallback fully deprecated).
+- Expand section 9 (CI/CD integration; automated regression suite run on every push).
+- Resolve fragilities (section 10.3): external data validation, team name autocomplete.
+
+**Phase 5 (future):** Post-tournament archive and lessons learned.
+- Freeze scoring rules in spec; version historical seasons.
+- Add audit/forensic section to spec (how to diagnose scoring disagreements).
+- Update maintenance guidelines (section 10) based on issues encountered.
+
+---
+
+## 11. Workflow
 
 - Default workflow mode for this project: Fast (as agreed).
 - Spec-first rule: update this file before or together with behavior changes.
 - Process hygiene rule: when backend/API code or API validation rules are changed, restart running API dev processes before smoke tests.
 - Canonical workflow skill source: `.github/skills/`.
 
-## 9. Open Questions
+## 12. Open Questions
 
 - Decide production hosting model for backend and database.
+
+## 13. Phase 2 Done Checklist
 
 ## 10. Phase 2 Done Checklist
 
@@ -733,7 +1300,7 @@ Checklist run date: 2026-03-25
 - Phase 2 backend/API MVP flow is validated.
 - Remaining closure actions: none for Phase 2 checklist closure in this pass.
 
-## 11. Changelog
+## 14. Changelog
 
 - 2026-03-24
 	- Added phase-1 content definition for prediction targets and lock rules.
@@ -841,3 +1408,13 @@ Checklist run date: 2026-03-25
 	- Implemented real-time tips completion in the Start page "Framsteg" section: overall percentage and per-category progress bars are now computed from live tips state (fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, publishedQuestions) instead of hardcoded mock values. A tip is counted filled when: fixture has a sign set, group has all 4 picks non-empty, knockout pick is non-empty, special field is non-empty, extra answer is selected.
 	- Fixed knockoutPredictions persistence validation: now accepts partial picks arrays from API (stores what user entered, pads with template empty values) instead of rejecting entire round if array length mismatches. Fixes regression where selected knockout teams would not appear in dropdown on subsequent page load.
 	- Fixed knockout team suggestions filtering: correctly bounds array access when picks array is shorter than expected, preventing undefined values from causing missing suggestions in later knockout rounds (e.g., Semifinal would show only teams from Quarterfinal instead of from all previous rounds).
+- 2026-03-26 (continued)
+	- Added section 8: Normalized Database Schema with full relational design, migration strategy, and backward-compatibility approach.
+	- Documented five normalized tables: `participant_fixture_tips`, `participant_group_placements`, `participant_knockout_predictions`, `participant_special_predictions`, `participant_extra_answers`.
+	- Added dual-write strategy: new tips mutations write to both JSON (for API contract stability) and normalized tables simultaneously; reads prioritize normalized tables with JSON fallback.
+	- Added idempotent backfill plan: one-time script migrates historical JSON tips to normalized tables using `synced_from_json` flag for safety.
+	- Added section 9: Test Automation Requirements with comprehensive "pomminvarma pistelaskenta" (bulletproof scoring) philosophy.
+	- Documented 7 test matrices covering: fixture tips (2-1-0 points rules), group placements (1 point per correct position), knockout predictions (1-3 points per team by round), special predictions (4 points exact/0 wrong), extra questions (variable points), admin result corrections (rescore idempotence), and edge cases (partial results, missing predictions, legacy fallback).
+	- Added section 10: Maintenance and Evolution Guidelines with procedures for spec-to-code traceability, when to add tests, handling scoring rule changes, and managing known fragilities.
+	- Documented fragilities: legacy fixture text matching (fix: normalized schema), admin special outcomes (fix: external validation layer), unsettled result ambiguity (mitigation: recompute-read design).
+	- All sections 8-10 are ready for implementation; section numbering updated (Workflow now 11, Open Questions now 12, Checklist now 13, Changelog now 14).
