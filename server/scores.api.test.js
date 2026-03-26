@@ -710,3 +710,61 @@ test('scores API edge case: partial match results track settled and unsettled co
   assert.ok(unsettledEntry)
   assert.equal(unsettledEntry.reason, 'unsettled')
 })
+
+test('tips API preserves full knockout round pick lengths (32/16/8/4/2)', async () => {
+  const participantId = await createParticipant('Knockout Length Regression', 'ko-length-1')
+
+  const knockoutPredictions = [
+    {
+      title: 'Sextondelsfinal',
+      picks: Array.from({ length: 32 }, (_, index) => `R32 Team ${index + 1}`),
+    },
+    {
+      title: 'Åttondelsfinal',
+      picks: Array.from({ length: 16 }, (_, index) => `R16 Team ${index + 1}`),
+    },
+    {
+      title: 'Kvartsfinal',
+      picks: Array.from({ length: 8 }, (_, index) => `QF Team ${index + 1}`),
+    },
+    {
+      title: 'Semifinal',
+      picks: Array.from({ length: 4 }, (_, index) => `SF Team ${index + 1}`),
+    },
+    {
+      title: 'Final',
+      picks: Array.from({ length: 2 }, (_, index) => `F Team ${index + 1}`),
+    },
+  ]
+
+  const saveResponse = await request('PUT', `/api/tips/${participantId}`, {
+    tips: {
+      fixtureTips: [],
+      groupPlacements: [],
+      knockoutPredictions,
+      specialPredictions: { winner: '', topScorer: '' },
+      extraAnswers: {},
+    },
+  })
+  assert.equal(saveResponse.status, 200)
+
+  const readResponse = await request('GET', `/api/tips/${participantId}`)
+  assert.equal(readResponse.status, 200)
+
+  const persistedRounds = readResponse.data.tips.knockoutPredictions
+  assert.ok(Array.isArray(persistedRounds))
+
+  const expectedLengths = {
+    Sextondelsfinal: 32,
+    'Åttondelsfinal': 16,
+    Kvartsfinal: 8,
+    Semifinal: 4,
+    Final: 2,
+  }
+
+  for (const [roundTitle, expectedLength] of Object.entries(expectedLengths)) {
+    const round = persistedRounds.find((entry) => entry.title === roundTitle)
+    assert.ok(round, `Missing round ${roundTitle}`)
+    assert.equal(round.picks.length, expectedLength)
+  }
+})

@@ -1425,3 +1425,4 @@ Checklist run date: 2026-03-25
 	- Fixed `Slutspel` first-round team suggestions to always include the canonical 48 tournament teams from fixture templates (instead of shrinking to participant-specific group picks), so dropdown options remain complete even if saved group picks contain duplicates or partial data.
 	- Removed the touch-device `Slutspel` inline suggestion cap (`8` items), so users can browse the full candidate pool (including all 48 first-round teams) without typing filters first.
 	- Removed all round-based and input-based `Slutspel` suggestion filtering (`Sextondelsfinal` → `Final`): every knockout round now uses the same full canonical candidate pool so no round dropdown list is truncated by previous-round picks or typed query filtering.
+	- Added regression API test coverage for knockout round lengths to ensure save/read persistence keeps full pick counts per round (`32/16/8/4/2`) and prevents accidental truncation in future changes.
