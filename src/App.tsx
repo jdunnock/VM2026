@@ -4277,6 +4277,17 @@ export function App() {
     }
   }
 
+  const onParticipantLogout = () => {
+    setParticipant(null)
+    setAdminSession(null)
+    setIsLoggedIn(false)
+    setActivePage('start')
+    setTipsSaveMessage('Inte sparad ännu')
+    setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
+    setQuestionMessage('')
+    setResultsMessage('')
+  }
+
   // Redirect from "mine" to "results" if entering Phase C
   useEffect(() => {
     if (isGlobalLockActive && activePage === 'mine') {
@@ -4336,6 +4347,12 @@ export function App() {
           <div className="utility-item">
             <span className="utility-label">Senast sparad</span>
             <strong>{tipsSaveMessage.replace('Sparad: ', '')}</strong>
+          </div>
+          <div className="utility-item">
+            <span className="utility-label">Session</span>
+            <button className="ghost-button utility-logout-button" type="button" onClick={onParticipantLogout}>
+              Logga ut
+            </button>
           </div>
         </div>
       </header>
