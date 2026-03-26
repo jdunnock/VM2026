@@ -475,7 +475,7 @@ Current application structure: 7 pages (`PageId` types in `src/App.tsx`) mapped 
 | Sign-in | `login` | Both A & B | Entry gate (admin code for Phase A; participant code for Phase B) | — | Unified sign-in interface to route to Admin or Participant flows |
 | Start | `start` | **C** (Tracking) | Tournament progress and leaderboard during Phase C | A & D | Static tournament info, playoff bracket placeholders |
 | Lämna tips | `tips` | **B** (Predictions) | Participant enters/edits fixture, group, knockout, special, extra predictions before deadline | A | Scoring rules reference (read-only) |
-| Mina tips | `mine` | **B** (Predictions) primary; **C** (Tracking) secondary | Own prediction review before deadline; score breakdown visible after matches settle | C | Score breakdown by category (read-only) |
+| Mina tips | `mine` | **B** (Predictions) only | Own prediction review and saved answers before deadline | — | Hidden in Phase C; score breakdown moved to Resultat & poäng |
 | Resultat & poäng | `results` | **C** (Tracking) | Public match results, special outcomes, leaderboard by phase | A & D | Tournament rules link (read-only) |
 | Admin | `admin` | **A** (Admin/Setup) | Question authoring, management, result entry, before-and-during phases | C | Lightweight result stats (read-only) |
 | Regler | `rules` | **Reference** (all phases) | Static tournament rules and scoring model | — | Used by participants in B and C; reference for admin in A |
@@ -484,7 +484,7 @@ Current application structure: 7 pages (`PageId` types in `src/App.tsx`) mapped 
 
 - **Phase A (Admin/Setup)**: Primary pages = `admin`, `rules`. Secondary visibility = `results` (read-only stats), `start` (rules link). ✅ Mostly isolated.
 - **Phase B (Predictions)**: Primary pages = `tips`, `mine`. Secondary visibility = `rules` (scoring context). ✅ Isolated.
-- **Phase C (Tracking)**: Primary pages = `start`, `results`. Secondary visibility = `mine` (score breakdown), `admin` (result stats). ⚠️ **MIXED** — Start page and Results page both primary; Start also references Phase A/D info.
+- **Phase C (Tracking)**: Primary pages = `start`, `results`. Secondary visibility = `admin` (result stats). ⚠️ **MIXED** — Start page and Results page both primary; Start also references Phase A/D info.
 - **Phase D (Closure)**: No dedicated page (Final results shown in end-screen variant of `start` or `results`). Secondary visibility = `rules` (results archive).
 - **Sign-in (`login`)**: Dual entry point (admin code → Phase A, participant code → Phase B). ✅ Appropriate.
 
@@ -495,10 +495,10 @@ Current application structure: 7 pages (`PageId` types in `src/App.tsx`) mapped 
    - Coherence risk: **HIGH** if user navigates between Start and Admin during early Phase A.
    - Action: Defer detailed UX restructure; flag for Phase 3 start when live data validates layout.
 
-2. **Mina tips mixing**: Primarily Phase B (edit predictions) but immediately shows Phase C score breakdown.
-   - Problem: During Phase B (before deadline), participant sees no scores; after Phase B closes, sudden full breakdown appears.
-   - Coherence risk: **MEDIUM** — switching paradigms between B and C.
-   - Action: Consider Phase B variant (edit-only, no score preview) vs Phase C variant (read-only, full breakdown) once lock-time logic complete.
+2. **Mina tips separation**: Now Phase B only (hidden in Phase C).
+   - Solution: Remove "Mina tips" page from navigation when Phase C (isGlobalLockActive) is active. Redirect users from "Mina tips" to "Resultat & poäng" if phase change occurs during active session.
+   - Score breakdown: Displayed only in "Resultat & poäng" (Phase C).
+   - Coherence improvement: **RESOLVED** — clear phase separation between prediction entry (B, Mina tips) and result tracking (C, Resultat & poäng).
 
 3. **Rules page as a catch-all**: Visible in all phases, linked from multiple pages.
    - Problem: Rules don't disambiguate by phase; scoring examples could reference Phase B or Phase C behavior.

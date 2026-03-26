@@ -4291,9 +4291,17 @@ export function App() {
     )
   }
 
+  // In Phase C, hide "Mina tips" (mine) completely; redirect users if they're on that page
   const visibleNavItems = adminSession
     ? navItems
-    : navItems.filter((item) => item.id !== 'admin')
+    : navItems.filter((item) => item.id !== 'admin' && !(isGlobalLockActive && item.id === 'mine'))
+
+  // Redirect from "mine" to "results" if entering Phase C
+  useEffect(() => {
+    if (isGlobalLockActive && activePage === 'mine') {
+      setActivePage('results')
+    }
+  }, [isGlobalLockActive, activePage])
 
   return (
     <div className="app-shell">
