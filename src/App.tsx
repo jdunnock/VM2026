@@ -3787,6 +3787,12 @@ export function App() {
   const isGlobalLockActive = Date.now() >= GLOBAL_DEADLINE.getTime()
   const globalDeadlineLabel = GLOBAL_DEADLINE.toLocaleString('sv-SE')
   const canUseLifecyclePreview = Boolean(participant?.name && /jarmo/i.test(participant.name))
+  const effectiveLifecyclePhase = canUseLifecyclePreview && lifecyclePreviewMode !== 'auto'
+    ? lifecyclePreviewMode
+    : isGlobalLockActive
+      ? 'C'
+      : 'B'
+  const isTrackingPhaseActive = effectiveLifecyclePhase === 'C'
 
   useEffect(() => {
     setLifecyclePreviewMode('auto')
@@ -4290,15 +4296,15 @@ export function App() {
 
   // Keep active page aligned with current lifecycle phase visibility rules.
   useEffect(() => {
-    if (isGlobalLockActive && activePage === 'mine') {
+    if (isTrackingPhaseActive && activePage === 'mine') {
       setActivePage('results')
       return
     }
 
-    if (!isGlobalLockActive && activePage === 'results') {
+    if (!isTrackingPhaseActive && activePage === 'results') {
       setActivePage('tips')
     }
-  }, [isGlobalLockActive, activePage])
+  }, [isTrackingPhaseActive, activePage])
 
   if (!isLoggedIn) {
     return (
@@ -4320,11 +4326,11 @@ export function App() {
       return Boolean(adminSession)
     }
 
-    if (isGlobalLockActive && item.id === 'mine') {
+    if (isTrackingPhaseActive && item.id === 'mine') {
       return false
     }
 
-    if (!isGlobalLockActive && item.id === 'results') {
+    if (!isTrackingPhaseActive && item.id === 'results') {
       return false
     }
 

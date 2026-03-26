@@ -797,6 +797,7 @@ Checklist run date: 2026-03-25
 	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.
 	- Tightened mobile main navigation pill spacing and padding so the horizontally scrollable tab row reads lighter on small screens.
 - 2026-03-26
+	- Updated participant top navigation visibility to follow effective lifecycle phase (including local `Fas B`/`Fas C` preview mode for Jarmo), so `Resultat & poäng` appears in Phase C preview and remains hidden only in Phase B.
 	- Fixed Phase B navigation regression where persisted admin session could bypass participant phase tab filtering; lifecycle-based tab visibility (`hide results in B`, `hide mina tips in C`) now applies regardless of admin session presence.
 	- Updated phase navigation coherence: `Resultat & poäng` is hidden from participant main navigation during Phase B (before global deadline) and shown in Phase C tracking mode.
 	- Added participant logout control in topbar utility panel (`Logga ut`) to explicitly end participant session from the main app UI; logout clears local participant and admin session state and returns to sign-in.
