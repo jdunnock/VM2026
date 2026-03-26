@@ -1426,3 +1426,6 @@ Checklist run date: 2026-03-25
 	- Removed the touch-device `Slutspel` inline suggestion cap (`8` items), so users can browse the full candidate pool (including all 48 first-round teams) without typing filters first.
 	- Removed all round-based and input-based `Slutspel` suggestion filtering (`Sextondelsfinal` → `Final`): every knockout round now uses the same full canonical candidate pool so no round dropdown list is truncated by previous-round picks or typed query filtering.
 	- Added regression API test coverage for knockout round lengths to ensure save/read persistence keeps full pick counts per round (`32/16/8/4/2`) and prevents accidental truncation in future changes.
+	- Started MVP-cleanup backlog execution (P0-1): CI workflow modernized to Node 20 + current GitHub Action versions; test command aligned to `npm run test:api`; artifact output path corrected to `./dist`.
+	- Added production fail-fast guard for critical secrets (`ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`) so server startup aborts when these are missing in production environment.
+	- Added `.env.example` template to document required runtime variables for local setup and production deployment hardening.

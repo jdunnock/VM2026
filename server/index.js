@@ -26,9 +26,21 @@ import {
 
 const app = express()
 const port = Number(process.env.API_PORT ?? 4174)
+const isProduction = process.env.NODE_ENV === 'production'
 const salt = process.env.ACCESS_CODE_SALT ?? 'vm2026-local-salt'
 const adminAccessCode = process.env.ADMIN_ACCESS_CODE ?? 'vm2026-admin'
 const adminAccessName = process.env.ADMIN_ACCESS_NAME ?? 'Admin'
+
+if (isProduction) {
+  const missingEnvVars = [
+    process.env.ACCESS_CODE_SALT ? null : 'ACCESS_CODE_SALT',
+    process.env.ADMIN_ACCESS_CODE ? null : 'ADMIN_ACCESS_CODE',
+  ].filter(Boolean)
+
+  if (missingEnvVars.length > 0) {
+    throw new Error(`Missing required production environment variables: ${missingEnvVars.join(', ')}`)
+  }
+}
 
 function hashAccessCode(code) {
   return crypto.scryptSync(code, salt, 64).toString('hex')
