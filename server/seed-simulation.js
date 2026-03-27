@@ -383,12 +383,13 @@ function generateKnockoutPredictions(participantIndex) {
   const isCasual = CASUAL.includes(participantIndex)
 
   // Actual teams per round
+  const winnerOf = (r) => r[3] > r[4] ? r[1] : r[2]
   const actualByRound = {
     Sextondelsfinal: ALL_KNOCKOUT_TEAMS,
-    'Åttondelsfinal': R32_RESULTS.map(r => r[2 + (r[3] > r[4] ? 0 : 1)]),  // winners
-    Kvartsfinal: R16_RESULTS.map(r => r[2 + (r[3] > r[4] ? 0 : 1)]),
-    Semifinal: QF_RESULTS.map(r => r[2 + (r[3] > r[4] ? 0 : 1)]),
-    Final: SF_RESULTS.map(r => r[2 + (r[3] > r[4] ? 0 : 1)]),
+    'Åttondelsfinal': R32_RESULTS.map(winnerOf),
+    Kvartsfinal: R16_RESULTS.map(winnerOf),
+    Semifinal: QF_RESULTS.map(winnerOf),
+    Final: SF_RESULTS.map(winnerOf),
   }
 
   // All 48 teams for picking non-qualifying teams
