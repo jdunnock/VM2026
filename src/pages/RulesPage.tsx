@@ -11,15 +11,15 @@ export function RulesPage({
 
   return (
     <div className="page-stack">
-      <section className="panel">
-        <div className="section-heading">
+      <section className="panel panel-sticky-head page-hero">
+        <div>
           <p className="eyebrow">Regler och låsning</p>
-          <h1>Regler och låsning</h1>
+          <h1 className="section-title">Regler och låsning</h1>
+          <p className="lead-text" style={{ margin: 0 }}>
+            Här hittar du all information om vad du kan tippa på och den gemensamma deadline som gäller för alla kategorier.
+          </p>
         </div>
-        <p className="lead-text">
-          Här hittar du all information om vad du kan tippa på och den gemensamma deadline som gäller för alla kategorier.
-        </p>
-
+        <span className="save-pill">{isTrackingPhase ? 'Fas C' : 'Fas B'}</span>
       </section>
 
       <section className="panel">

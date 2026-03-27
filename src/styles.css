@@ -1158,6 +1158,17 @@ strong {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.page-hero {
+  min-height: 150px;
+  align-content: center;
+}
+
+.start-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
 .nav-button:hover,
 .tab-button:hover,
 .ghost-button:hover,
@@ -1347,15 +1358,27 @@ strong {
   }
 
   .action-bar {
-    position: static;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
     justify-content: stretch;
     gap: 10px;
-    padding: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
   }
 
   .action-bar .ghost-button,
   .action-bar .primary-button {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
+  }
+
+  .page-stack:has(.action-bar) {
+    padding-bottom: 80px;
   }
 
   .accordion-table {
@@ -1418,12 +1441,25 @@ strong {
 /* Touch devices (phones + tablets, all orientations) */
 @media (hover: none) and (pointer: coarse) {
   .action-bar {
-    position: static;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
   }
 
   .action-bar .ghost-button,
   .action-bar .primary-button {
-    flex: 1 1 100%;
+    flex: 1 1 auto;
+  }
+
+  .page-stack:has(.action-bar) {
+    padding-bottom: 80px;
   }
 }
 

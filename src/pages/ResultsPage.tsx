@@ -267,29 +267,29 @@ export function ResultsPage({
 
   return (
     <div className="page-stack">
-      <section className="panel panel-split start-overview">
+      <section className="panel panel-sticky-head page-hero">
         <div>
-          <div className="section-heading compact">
-            <p className="eyebrow">Resultat & poäng</p>
-            <h1>Matchläge och din poäng just nu</h1>
-          </div>
-          <p className="lead-text">
+          <p className="eyebrow">Resultat & poäng</p>
+          <h1 className="section-title">Matchläge och din poäng just nu</h1>
+          <p className="lead-text" style={{ margin: 0 }}>
             Följ officiella matchresultat, specialutfall och hur de påverkar din nuvarande ställning.
           </p>
         </div>
-        <div className="start-stats">
-          <div className="start-stat">
-            <span>Din placering</span>
-            <strong>{displayedPositionLabel}</strong>
-          </div>
-          <div className="start-stat">
-            <span>Totalpoäng</span>
-            <strong>{displayedTotalPoints} p</strong>
-          </div>
-          <div className="start-stat">
-            <span>Avgjorda matcher</span>
-            <strong>{completedCount}</strong>
-          </div>
+        <span className="save-pill">{displayedPositionLabel} · {displayedTotalPoints} p</span>
+      </section>
+
+      <section className="start-stats-row">
+        <div className="start-stat">
+          <span>Din placering</span>
+          <strong>{displayedPositionLabel}</strong>
+        </div>
+        <div className="start-stat">
+          <span>Totalpoäng</span>
+          <strong>{displayedTotalPoints} p</strong>
+        </div>
+        <div className="start-stat">
+          <span>Avgjorda matcher</span>
+          <strong>{completedCount}</strong>
         </div>
       </section>
 

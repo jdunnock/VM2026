@@ -80,37 +80,31 @@ export function StartPage({
 
   return (
     <div className="page-stack">
-      <section className="panel panel-split start-overview">
+      <section className="panel panel-sticky-head page-hero">
         <div>
-          <div className="section-heading compact">
-            <p className="eyebrow">Start</p>
-            <h1>{isTrackingPhase ? 'Följ VM 2026' : 'Lägg dina tips för VM 2026'}</h1>
-          </div>
-          <p className="lead-text">
+          <p className="eyebrow">Start</p>
+          <h1 className="section-title">{isTrackingPhase ? 'Följ VM 2026' : 'Lägg dina tips för VM 2026'}</h1>
+          <p className="lead-text" style={{ margin: 0 }}>
             {isTrackingPhase
               ? 'Turneringen är igång. Följ topplistan och din aktuella placering här.'
               : 'Allt du behöver finns samlat här: lämna tips, följ dina framsteg och håll koll på vad som låser härnäst.'}
           </p>
         </div>
-        <div className="start-stats">
-          {isTrackingPhase && (
-            <>
-              <div className="start-stat">
-                <span>Din placering</span>
-                <strong>{currentEntry ? currentEntry.positionLabel : '-'}</strong>
-              </div>
-              <div className="start-stat">
-                <span>Dina poäng</span>
-                <strong>{currentEntry ? `${currentEntry.totalPoints} p` : '0 p'}</strong>
-              </div>
-            </>
-          )}
-          <div className="start-stat">
-            <span>Status</span>
-            <strong>{participant ? (isTrackingPhase ? 'Turnering pågår' : tipsSaveMessage) : 'Inte inloggad'}</strong>
-          </div>
-        </div>
+        <span className="save-pill">{participant ? (isTrackingPhase ? 'Turnering pågår' : tipsSaveMessage) : 'Inte inloggad'}</span>
       </section>
+
+      {isTrackingPhase && (
+        <section className="start-stats-row">
+          <div className="start-stat">
+            <span>Din placering</span>
+            <strong>{currentEntry ? currentEntry.positionLabel : '-'}</strong>
+          </div>
+          <div className="start-stat">
+            <span>Dina poäng</span>
+            <strong>{currentEntry ? `${currentEntry.totalPoints} p` : '0 p'}</strong>
+          </div>
+        </section>
+      )}
 
       {!isTrackingPhase ? (
         <>

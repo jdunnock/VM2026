@@ -76,11 +76,13 @@ export function TipsPage({
 
   return (
     <div className="page-stack">
-      <section className="panel panel-sticky-head">
+      <section className="panel panel-sticky-head page-hero">
         <div>
           <p className="eyebrow">Lämna tips</p>
           <h1 className="section-title">Lämna dina tips</h1>
-          {isGlobalLockActive ? <p className="status-note">Tips är låsta (deadline passerad: {globalDeadlineLabel}).</p> : null}
+          {isGlobalLockActive
+            ? <p className="status-note">Tips är låsta (deadline passerad: {globalDeadlineLabel}).</p>
+            : <p className="lead-text" style={{ margin: 0 }}>Fyll i dina tips och spara när du är klar.</p>}
         </div>
         <div className="inline-actions">
           {hasUnsavedChanges && <span className="save-pill unsaved">Osparade ändringar</span>}
@@ -204,6 +206,7 @@ export function TipsPage({
       <section className="action-bar">
         <button className="ghost-button" type="button" onClick={() => { if (window.confirm('Vill du verkligen rensa alla sparade tips? Detta kan inte ångras.')) { onClear() } }} disabled={isSaving || isGlobalLockActive}>Rensa sparade</button>
         {hasUnsavedChanges && <span className="save-pill unsaved">Osparade ändringar</span>}
+        <span className="save-pill">{saveMessage}</span>
         <button className="primary-button" type="button" onClick={onSave} disabled={isSaving || isGlobalLockActive}>
           {isSaving ? 'Sparar...' : 'Spara'}
         </button>

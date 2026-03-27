@@ -52,24 +52,14 @@ export function MyTipsPage({
 
   return (
     <div className="page-stack">
-      <section className="panel panel-sticky-head">
+      <section className="panel panel-sticky-head page-hero">
         <div>
           <p className="eyebrow">Mina tips</p>
           <h1 className="section-title">Dina inskickade tips</h1>
+          <p className="lead-text" style={{ margin: 0 }}>Här ser du exakt vad du har skickat in. Tips med status Låst kan inte redigeras.</p>
         </div>
         <span className="save-pill">{lastSavedLabel}</span>
       </section>
-
-      <p className="lead-text" style={{ padding: '0 4px' }}>Här ser du exakt vad du har skickat in. Tips med status Låst kan inte redigeras.</p>
-
-      {showScorePanel && (
-        <ParticipantScorePanel
-          eyebrow="Poäng"
-          title="Din poängöversikt"
-          participantScoreDetail={displayedScoreDetail}
-          isLoading={showLoadingState}
-        />
-      )}
 
       <section className="tab-row" aria-label="Sektioner">
         {myTipsSectionTabs.map((tab) => (
@@ -84,7 +74,17 @@ export function MyTipsPage({
         ))}
       </section>
 
+      {showScorePanel && (
+        <ParticipantScorePanel
+          eyebrow="Poäng"
+          title="Din poängöversikt"
+          participantScoreDetail={displayedScoreDetail}
+          isLoading={showLoadingState}
+        />
+      )}
+
       {activeSection === 'Gruppspel' && (
+        <section className="panel">
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -113,6 +113,7 @@ export function MyTipsPage({
             </tbody>
           </table>
         </div>
+        </section>
       )}
 
       {activeSection === 'Grupplaceringar' && (

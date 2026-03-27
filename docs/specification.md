@@ -771,6 +771,30 @@ Confirmed intentional data flows (not bugs):
 - **Fix**: Added `autoCapitalize="none"` to the name `<input>` in LoginPage to prevent iOS keyboard from auto-capitalizing.
 - **Scope**: Frontend only (App.tsx LoginPage component). No server or data model changes.
 
+### 7.31 UI consistency: Mina tips ↔ Lämna tips layout alignment (2026-03-27)
+
+- Moved lead-text description inside the sticky header panel on Mina tips page so it does not push the tab row down.
+- Wrapped Gruppspel tab content (data-table) in a `<section className="panel">` to match the framed card style used on Lämna tips page.
+- Moved score panel (Phase C only) below the tab row so tabs appear at the same vertical position as on Lämna tips page.
+- Result: switching between Mina tips and Lämna tips no longer feels visually jumpy — header, tabs, and framed content all align.
+
+### 7.32 Unified page hero height across all pages (2026-03-27)
+
+- All five navigable pages (Start, Lämna tips, Mina tips, Resultat, Regler) now use the same `panel-sticky-head page-hero` structure for their topmost section.
+- `.page-hero` CSS class applies `min-height: 150px; align-content: center` so all hero panels render at the same height.
+- StartPage and ResultsPage: stats (Din placering, Totalpoäng, etc.) moved from inside the hero panel into a separate `.start-stats-row` below, keeping the hero panel at uniform height.
+- RulesPage: switched from plain `panel` to `panel-sticky-head page-hero` with a phase indicator pill on the right.
+- Each hero panel follows the pattern: eyebrow + title + optional lead-text on the left, status pill or action buttons on the right.
+- No data model or API changes.
+
+### 7.33 Mobile sticky action-bar on Lämna tips page (2026-03-27)
+
+- On mobile (max-width 720px and touch devices), the action-bar with Rensa sparade, save status pill, and Spara button is now `position: fixed` at the bottom of the viewport.
+- iOS safe-area-inset handled via `env(safe-area-inset-bottom)`.
+- Page content gets `padding-bottom: 80px` (via `:has(.action-bar)`) to prevent content from being hidden behind the fixed bar.
+- Save message pill added to the action-bar so save feedback is visible without scrolling up.
+- Desktop retains the existing `position: sticky; bottom: 18px` behavior.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
