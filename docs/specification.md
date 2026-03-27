@@ -342,7 +342,7 @@ Each admin-managed question must support:
 		- ties are rendered in stable name order (`name` case-insensitive ascending) without applying a dedicated tie-break rule
 	- Extend leaderboard rows with:
 		- `rank`
-		- `positionLabel` (`Delad X` for shared ranks, otherwise numeric rank as string)
+		- `positionLabel` (numeric rank as string; shared ranks repeat the same number without prefix)
 	- Extend `GET /api/scores/:participantId` detail payload with the participant's current `rank` and `positionLabel` derived from the same read-only leaderboard calculation.
 	- Integrate the leaderboard into the frontend Start page:
 		- show a `Topplista` panel based on `GET /api/scores`

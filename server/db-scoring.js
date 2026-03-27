@@ -545,12 +545,10 @@ function rankParticipantScoreSummaries(summaries) {
       previousPoints = entry.totalPoints
     }
 
-    const isSharedRank = (totalsByPoints.get(entry.totalPoints) ?? 0) > 1
-
     return {
       ...entry,
       rank: currentRank,
-      positionLabel: isSharedRank ? `Delad ${currentRank}` : String(currentRank),
+      positionLabel: String(currentRank),
     }
   })
 }

@@ -379,7 +379,7 @@ test('scores API returns leaderboard ordering with shared ranks', async () => {
   assert.ok(leaderboardEntries[0].rank < leaderboardEntries[1].rank)
   assert.equal(leaderboardEntries[1].rank, leaderboardEntries[2].rank)
   assert.equal(leaderboardEntries[1].positionLabel, leaderboardEntries[2].positionLabel)
-  assert.match(leaderboardEntries[1].positionLabel, /^Delad \d+$/)
+  assert.equal(leaderboardEntries[1].positionLabel, String(leaderboardEntries[1].rank))
 
   const tiedParticipantResponse = await request('GET', `/api/scores/${tiedBId}`)
   assert.equal(tiedParticipantResponse.status, 200)
