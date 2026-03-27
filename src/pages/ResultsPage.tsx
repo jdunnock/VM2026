@@ -142,13 +142,12 @@ export function ResultsPage({
                         Följ officiella matchresultat, specialutfall och hur de påverkar din nuvarande ställning.
                     </p>
                 </div>
-                <span className="save-pill">{displayedPositionLabel} · {displayedTotalPoints} p</span>
             </section>
 
             {showParticipantScoreLoading ? (
                 <p className="status-note">Laddar poängdetaljer...</p>
             ) : psd ? (
-                <div className="stats-grid">
+                <section className="panel start-stats-row">
                     <article className="mini-card">
                         <span className="mini-label">Placering</span>
                         <strong>{displayedPositionLabel}</strong>
@@ -179,7 +178,7 @@ export function ResultsPage({
                         <strong>{psd.specialPoints + psd.extraQuestionPoints} p</strong>
                         <span className="status-note">Avgjorda: {psd.settledSpecialPredictions + psd.settledQuestions}</span>
                     </article>
-                </div>
+                </section>
             ) : null}
 
             <section className="tab-row" aria-label="Sektioner">

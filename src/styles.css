@@ -1274,6 +1274,33 @@ strong {
   gap: 12px;
 }
 
+.start-stats-row .mini-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.start-stats-row .mini-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.start-stats-row .mini-card strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.start-stats-row .mini-card .status-note {
+  display: block;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .nav-button:hover,
 .tab-button:hover,
 .ghost-button:hover,
