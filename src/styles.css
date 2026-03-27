@@ -1816,7 +1816,10 @@ strong {
 
 .alltips-scroll {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .alltips-table {
@@ -1835,15 +1838,15 @@ strong {
 }
 
 .alltips-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background: var(--panel);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
-  position: sticky;
-  top: 0;
-  z-index: 2;
 }
 
 .alltips-col-match {
@@ -1866,6 +1869,7 @@ strong {
   font-weight: 600;
   width: 60px;
   min-width: 60px;
+  border-right: 2px solid var(--line);
 }
 
 .alltips-table thead .alltips-col-match,
@@ -1875,10 +1879,15 @@ strong {
 
 .alltips-col-participant {
   min-width: 52px;
+  background: var(--panel);
 }
 
 .alltips-own-col {
   background: rgba(16, 163, 127, 0.06) !important;
+}
+
+.alltips-table thead .alltips-own-col {
+  background: #f0faf6 !important;
 }
 
 .alltips-hit-exact {
