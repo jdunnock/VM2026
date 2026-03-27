@@ -145,31 +145,42 @@ export function ResultsPage({
                 <span className="save-pill">{displayedPositionLabel} · {displayedTotalPoints} p</span>
             </section>
 
-            <section className="start-stats-row">
-                <div className="start-stat">
-                    <span>Din placering</span>
-                    <strong>{displayedPositionLabel}</strong>
+            {showParticipantScoreLoading ? (
+                <p className="status-note">Laddar poängdetaljer...</p>
+            ) : psd ? (
+                <div className="stats-grid">
+                    <article className="mini-card">
+                        <span className="mini-label">Placering</span>
+                        <strong>{displayedPositionLabel}</strong>
+                        <span className="status-note">Totalpoäng: {displayedTotalPoints} p</span>
+                    </article>
+                    <article className="mini-card">
+                        <span className="mini-label">Matcher</span>
+                        <strong>{completedCount} / {fixtureCounts.total}</strong>
+                        <span className="status-note">Återstående: {remainingCount}</span>
+                    </article>
+                    <article className="mini-card">
+                        <span className="mini-label">Gruppspel</span>
+                        <strong>{psd.fixturePoints} p</strong>
+                        <span className="status-note">Avgjorda: {psd.settledMatches}</span>
+                    </article>
+                    <article className="mini-card">
+                        <span className="mini-label">Grupplaceringar</span>
+                        <strong>{psd.groupPlacementPoints} p</strong>
+                        <span className="status-note">Avgjorda: {psd.settledGroups}</span>
+                    </article>
+                    <article className="mini-card">
+                        <span className="mini-label">Slutspel</span>
+                        <strong>{psd.knockoutPoints} p</strong>
+                        <span className="status-note">Avgjorda: {psd.settledKnockoutRounds}</span>
+                    </article>
+                    <article className="mini-card">
+                        <span className="mini-label">Extrafrågor</span>
+                        <strong>{psd.specialPoints + psd.extraQuestionPoints} p</strong>
+                        <span className="status-note">Avgjorda: {psd.settledSpecialPredictions + psd.settledQuestions}</span>
+                    </article>
                 </div>
-                <div className="start-stat">
-                    <span>Totalpoäng</span>
-                    <strong>{displayedTotalPoints} p</strong>
-                </div>
-                <div className="start-stat">
-                    <span>Avgjorda matcher</span>
-                    <strong>{completedCount}</strong>
-                </div>
-            </section>
-
-            <section className="summary-grid">
-                <article className="summary-card">
-                    <h2>{completedCount}</h2>
-                    <p>Slutförda matcher</p>
-                </article>
-                <article className="summary-card">
-                    <h2>{remainingCount}</h2>
-                    <p>Återstående matcher</p>
-                </article>
-            </section>
+            ) : null}
 
             <section className="tab-row" aria-label="Sektioner">
                 {myTipsSectionTabs.map((tab) => (
@@ -353,12 +364,6 @@ export function ResultsPage({
                 </section>
             )}
 
-            <ParticipantScorePanel
-                eyebrow="Poäng"
-                title="Din poängöversikt"
-                participantScoreDetail={displayedParticipantScoreDetail}
-                isLoading={showParticipantScoreLoading}
-            />
         </div>
     )
 }

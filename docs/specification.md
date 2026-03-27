@@ -822,6 +822,22 @@ Confirmed intentional data flows (not bugs):
 	- No changes to Phase B (leaderboard remains hidden).
 	- No changes to scoring logic or API.
 
+### 7.36 Consolidate Resultat & poäng top stats with ParticipantScorePanel (2026-03-27)
+
+- Removed three redundant stat sections from `Resultat & poäng` page:
+	- `.start-stats-row` (Din placering, Totalpoäng, Avgjorda matcher)
+	- `.summary-grid` (Slutförda matcher, Återstående matcher)
+	- Bottom `ParticipantScorePanel` (separate section with "Poäng / Din poängöversikt")
+- Replaced with a single consolidated `.stats-grid` rendered directly after the page hero, containing mini-cards:
+	- Placering (with totalpoäng subtitle)
+	- Matcher (slutförda / total, with återstående subtitle)
+	- Gruppspel (points + settled count)
+	- Grupplaceringar (points + settled count)
+	- Slutspel (points + settled count)
+	- Extrafrågor (points + settled count)
+- `ParticipantScorePanel` component remains exported but is no longer used on the `Resultat & poäng` page (still available for other pages).
+- No API or data model changes.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
