@@ -56,7 +56,7 @@ export function StartPage({
   const overallPct = grandTotal > 0 ? Math.round((totalFilled / grandTotal) * 100) : 0
   const progressItems = [
     { label: 'Gruppspel', filled: filledFixtures, total: totalFixtures },
-    { label: 'Gruppplaceringar', filled: filledGroups, total: totalGroups },
+    { label: 'Grupplaceringar', filled: filledGroups, total: totalGroups },
     { label: 'Slutspel', filled: filledKnockout, total: totalKnockout },
     { label: 'Special', filled: filledSpecial, total: totalSpecial },
     { label: 'Extrafrågor', filled: filledExtra, total: totalExtra },

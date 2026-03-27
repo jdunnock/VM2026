@@ -79,7 +79,7 @@ Wireframe blocks (top to bottom):
 
 3. Prediction categories overview
 - Gruppspelsmatcher
-- Gruppplaceringar
+- Grupplaceringar
 - Slutspel
 - Slutsegrare
 - Skytteligavinnare
@@ -109,7 +109,7 @@ Wireframe blocks:
 
 2. Tabs/sections
 - `Gruppspel`
-- `Gruppplaceringar`
+- `Grupplaceringar`
 - `Slutspel`
 - `Special`
 - `Extrafrågor`
@@ -126,7 +126,7 @@ Row state examples:
 - Open: `Öppet`
 - Locked: `Last`
 
-4. Gruppplaceringar section
+4. Grupplaceringar section
 - One card per group (A-L)
 - Drag-and-drop or 1-4 dropdown ranking
 - Header example: `Grupp A - slutlig ordning`
@@ -170,7 +170,7 @@ Wireframe blocks:
 
 2. Category accordions
 - Gruppspel
-- Gruppplaceringar
+- Grupplaceringar
 - Slutspel
 - Special
 - Extrafrågor
@@ -203,7 +203,7 @@ Columns:
 
 Rows:
 - Gruppspelsmatcher | Exakt resultat + 1/X/2 | Vid matchstart
-- Gruppplaceringar | Slutlig ordning 1-4 i Grupp A-L | Före turneringens första match
+- Grupplaceringar | Slutlig ordning 1-4 i Grupp A-L | Före turneringens första match
 - Slutspel | Matchval per slutspelsrunda | Före första matchen i respektive runda
 - Slutsegrare | Vinnande lag | Före turneringsstart
 - Skytteligavinnare | Spelare med flest mål | Före turneringsstart

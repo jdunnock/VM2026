@@ -10,8 +10,9 @@ import type { PageId } from '../types'
 export function usePhaseRouting() {
   const [globalDeadlineStr, setGlobalDeadlineStr] = useState(GLOBAL_DEADLINE_FALLBACK)
   const [activePage, setActivePage] = useState<PageId>('start')
+  const [phaseOverride, setPhaseOverride] = useState<'B' | 'C' | null>(null)
 
-  const isGlobalLockActive = Date.now() >= new Date(globalDeadlineStr).getTime()
+  const isGlobalLockActive = phaseOverride === 'C' || (phaseOverride !== 'B' && Date.now() >= new Date(globalDeadlineStr).getTime())
   const globalDeadlineLabel = new Date(globalDeadlineStr).toLocaleString('sv-SE')
   const effectiveLifecyclePhase = isGlobalLockActive ? 'C' : 'B'
   const isTrackingPhaseActive = effectiveLifecyclePhase === 'C'
@@ -73,5 +74,7 @@ export function usePhaseRouting() {
     effectiveLifecyclePhase,
     isTrackingPhaseActive,
     normalizePageForPhase,
+    phaseOverride,
+    setPhaseOverride,
   }
 }

@@ -32,7 +32,7 @@ export const summaryCards: SummaryCard[] = [
 
 export const categoryItems = [
   { label: 'Gruppspelsmatcher', count: fixtureCounts.groupStage },
-  { label: 'Gruppplaceringar', count: 12 },
+  { label: 'Grupplaceringar', count: 12 },
   { label: 'Slutspel', count: 31 },
   { label: 'Slutsegrare', count: 1 },
   { label: 'Skytteligavinnare', count: 1 },
@@ -171,7 +171,7 @@ export const knockoutPredictionTemplates: KnockoutPredictionRound[] = [
 
 export const myTipsSections: Array<{ title: string; count: number; status: string; items: string[] }> = [
   { title: 'Gruppspel', count: 104, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
-  { title: 'Gruppplaceringar', count: 12, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: ['Grupp A: Kanada, SWE/POL/ALB/UKR, Ghana, Peru'] },
+  { title: 'Grupplaceringar', count: 12, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: ['Grupp A: Kanada, SWE/POL/ALB/UKR, Ghana, Peru'] },
   { title: 'Slutspel', count: 31, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
   { title: 'Extrafrågor', count: 7, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
 ]
@@ -183,7 +183,7 @@ export const ruleRows: RuleRow[] = [
     lockTime: `Gemensam deadline: ${GLOBAL_DEADLINE_LABEL}`,
   },
   {
-    category: 'Gruppplaceringar',
+    category: 'Grupplaceringar',
     prediction: 'Slutlig ordning 1-4 i Grupp A-L',
     lockTime: `Gemensam deadline: ${GLOBAL_DEADLINE_LABEL}`,
   },

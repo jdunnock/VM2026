@@ -254,7 +254,7 @@ function renderPage(
 export function App() {
   // Core session and routing hooks
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
-  const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase } = usePhaseRouting()
+  const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase, phaseOverride, setPhaseOverride } = usePhaseRouting()
   const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
 
   // Guard: warn when navigating away from tips page with unsaved changes
@@ -562,6 +562,15 @@ export function App() {
           globalDeadlineLabel,
         })}
       </main>
+
+      <button
+        className="dev-phase-toggle"
+        type="button"
+        onClick={() => setPhaseOverride(phaseOverride === 'C' ? 'B' : 'C')}
+        title={`Fas ${effectiveLifecyclePhase} (klicka för att byta)`}
+      >
+        {effectiveLifecyclePhase}
+      </button>
     </div>
   )
 }

@@ -162,15 +162,15 @@ Each admin-managed question must support:
 	- Each group card (`Grupp A` ... `Grupp L`) contains both the group's match tips and the group's placement picks (1-4).
 	- Group placement team options are derived from the same canonical group fixture teams used in the group match list, so match and placement data stay aligned.
 	- Group-card layout target: desktop default 3 groups side-by-side, medium screens 2 columns, mobile 1 column.
-	- Placement area inside each group card must be visually distinct (highlight color, framed container, and clear heading) so users immediately notice where to set `Gruppplaceringar`.
+	- Placement area inside each group card must be visually distinct (highlight color, framed container, and clear heading) so users immediately notice where to set `Grupplaceringar`.
 	- Placement highlight color is strong warm yellow to draw immediate attention while scrolling through the group cards.
-	- Placement heading inside each group card is sticky so the `Gruppplaceringar` block remains discoverable during scroll.
+	- Placement heading inside each group card is sticky so the `Grupplaceringar` block remains discoverable during scroll.
 	- Desktop: grouped quick-pick score buttons + manual `+More` fallback.
 	- Mobile: spinner-only score entry for cleaner thumb interaction.
 	- On mobile spinner score changes, `1/X/2` is always auto-derived immediately from the current score pair.
 	- Auto-derived `1/X/2` from selected score with manual override still available.
 	- Match-card completion feedback: a group-stage match card gets a pale green background only after a successful save (`Sparad:` state) and only when the currently shown score + `1/X/2` still matches the saved value.
-	- Gruppplaceringar uses guided group-specific team selectors instead of free text, so each position only offers teams from that group.
+	- Grupplaceringar uses guided group-specific team selectors instead of free text, so each position only offers teams from that group.
 	- The same team can only be selected once inside a single group ranking.
 	- Slutspel inputs use type-ahead suggestions: users can type first letters and pick only participating teams.
 	- Slutspel suggestions are round-aware: first round uses participating teams, later rounds suggest picks from the previous round.
@@ -357,7 +357,7 @@ Each admin-managed question must support:
 
 - Included in this step:
 	- Expand score computation beyond match tips and extra questions to also include:
-		- `Gruppplaceringar`
+		- `Grupplaceringar`
 		- `Slutspel`
 		- `Special`
 	- Finalized scoring values for current implementation:
@@ -625,10 +625,10 @@ Confirmed intentional data flows (not bugs):
 - Included in this step:
 	- Implement second coherence cleanup in `Mina tips` so participant score breakdown is phase-scoped.
 	- Define practical `Mina tips` behavior by existing global deadline state:
-		- before global deadline (`Phase B` style): hide `ParticipantScorePanel` and show explanatory read-only note that scoring appears after tournament tracking starts.
-		- after global deadline (`Phase C` style): show `ParticipantScorePanel` with existing score API data and local mock controls.
+		- before global deadline (`Phase B` style): show saved tips in tabs, hide score breakdowns.
+		- after global deadline (`Phase C` style): show saved tips in same tabs, with score breakdown accordion added inside each tab and compact score summary row above tabs.
 	- Connect the existing Start-page local phase preview control (`Auto`/`Fas B`/`Fas C`) to shared app-level preview state so the same forced phase applies in both `Start` and `Mina tips` during validation.
-	- Keep existing saved tips sections (`Gruppspel`, `Gruppplaceringar`, `Slutspel`, `Special`, `Extrafrågor`) visible in both phases.
+	- Keep existing saved tips sections (`Gruppspel`, `Grupplaceringar`, `Slutspel`, `Special`, `Extrafrågor`) visible in both phases.
 	- Reuse current `isGlobalLockActive` state as default lifecycle proxy, with local preview override only for `Jarmo`; no backend contract changes.
 - Excluded from this step:
 	- No scoring rule changes.
@@ -687,8 +687,7 @@ Confirmed intentional data flows (not bugs):
 		1. **Avgjorda gruppspelsmatcher** (`breakdown` array): summary card per fixture showing match name, points, and formatted reason (e.g., "Exakt resultat", "Rätt 1/X/2", "Missad match", "Inget tips sparat").
 		2. **Avgjorda gruppplaceringar** (`groupPlacementBreakdown` array): summary card per group showing group label, points, matched position count, and reason (e.g., "Rätt placeringar: 1, 2, 3, 4").
 		3. **Avgjorda slutspel** (`knockoutBreakdown` array): summary card per knockout round showing round name, points, matched team count, points per team, and reason (e.g., "Rätt lag: Brasilien, Spanien").
-		4. **Avgjorda special** (`specialBreakdown` array): summary card per special (winner/topScorer) showing label, points, max points, and reason (e.g., "Korrekt specialtips").
-		5. **Avgjorda extrafrågor** (`extraBreakdown` array): summary card per settled question showing question text, points, answer strings (predicted vs actual), and reason (e.g., "Rätt svar", "Fel svar").
+		4. **Avgjorda extrafrågor** (combined `specialBreakdown` + `extraBreakdown` arrays): single accordion merging special predictions (winner/topScorer) and extra question answers, each showing points and formatted reason.
 	- Each breakdown item displays:
 		- Points badge with conditional color (green if > 0, red/muted if 0 or missing).
 		- Reason badge with color-coded tone (success/exact/accent/danger/neutral) per `getReasonTone()` mapping.
@@ -699,7 +698,7 @@ Confirmed intentional data flows (not bugs):
 		- Participant ranking and position label if available.
 	- Styling: reuse existing CSS classes (`.score-breakdown-list`, `.score-breakdown-item`, `.score-breakdown-main`, `.score-breakdown-badges`, `.points-badge`, `.reason-badge`, `.status-note`).
 	- Integration:
-		- `Mina tips` page: show `ParticipantScorePanel` in Phase C (after global deadline) with mock preview toggle for Jarmo; hide in Phase B with explanatory note.
+		- `Mina tips` page: In Phase C, each tab (Gruppspel, Grupplaceringar, Slutspel, Extrafrågor) includes the corresponding score breakdown accordion below the saved tips. A compact score summary row (mini-cards with category points and total) is shown above the tabs. No standalone `ParticipantScorePanel` is used.
 		- `Resultat & poäng` page: show `ParticipantScorePanel` at bottom after match results and special outcomes, always visible when participant score data available.
 	- Local mock data:
 		- Both pages support Jarmo-only local mock preview override.
@@ -794,6 +793,26 @@ Confirmed intentional data flows (not bugs):
 - Page content gets `padding-bottom: 80px` (via `:has(.action-bar)`) to prevent content from being hidden behind the fixed bar.
 - Save message pill added to the action-bar so save feedback is visible without scrolling up.
 - Desktop retains the existing `position: sticky; bottom: 18px` behavior.
+
+### 7.34 Phase C QA simulation seed script (2026-03-27)
+
+- Script: `server/seed-simulation.js` — deterministic simulation data generator for Phase C QA testing.
+- npm shortcut: `npm run seed:sim -- <command>`
+- CLI commands: `setup | C0 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | reset`
+- **setup**: Creates 15 simulated participants (Anders, Björn, Cecilia, David, Erik, Fanny, Gustav, Helena, Isak, Julia, Karl, Laura, Magnus, Nora, Oscar), all with access code `1234`. Creates 5 published admin questions (2 Gruppspelsfrågor, 2 Slutspelsfrågor, 1 33-33-33). Generates complete predictions for each participant. Auto-backs up DB to `data/vm2026-pre-sim.db`.
+- **C0**: No results (deadline passed, all scores = 0).
+- **C1**: Groups A–D complete (24 matches). Partial fixture + group placement scoring.
+- **C2**: All group matches complete (72 total). Group placement scoring activates. 2 Gruppspelsfrågor settled.
+- **C3**: Round of 32 complete (16 matches, 32 teams). Knockout R32 scoring.
+- **C4**: Round of 16 complete (8 matches). Knockout R16 scoring.
+- **C5**: Quarterfinals complete (4 matches). Knockout QF scoring (2 pts/team).
+- **C6**: Semifinals complete (2 matches). Knockout SF scoring. 2 Slutspelsfrågor settled.
+- **C7**: Final complete. Special results set (winner + topScorer). 33-33-33 fråga settled. Full scoring.
+- **reset**: Deletes sim participants by name, clears match_results, special_results, and sim admin_questions. Preserves non-sim users.
+- Prediction quality tiers: 3 experts (~65% correct signs), 7 average (~45%), 5 casual (~30%).
+- Phases are cumulative: run `setup` → `C0` → `C1` → … → `C7` in order.
+- To revisit an earlier phase: `reset` → `setup` → desired `Cx`.
+- Deterministic: same seed always produces identical predictions and scores.
 
 ## 8. Normalized Database Schema
 
@@ -1417,7 +1436,7 @@ Checklist run date: 2026-03-25
 	- Updated hero section CTA buttons to gray tones for consistent button styling.
 	- Added mobile readiness pass: all major data tables now transform into stacked card layouts on small screens, and tips actions keep sticky bottom accessibility for phone testing.
 - 2026-03-25
-	- Aligned `Gruppplaceringar` options with canonical group fixture teams by deriving placement candidates from the same grouped fixture source used by the match cards.
+	- Aligned `Grupplaceringar` options with canonical group fixture teams by deriving placement candidates from the same grouped fixture source used by the match cards.
 	- Trialed stronger `Placeringar` emphasis: upgraded to a more assertive warm yellow palette and sticky section header inside each group card for better scroll discoverability.
 	- Changed `Placeringar` emphasis color to warm yellow and strengthened section framing so group placements are clearly visible in each group card.
 	- Fixed mobile score spinner behavior so selecting score values always auto-updates `1/X/2` immediately from the active score pair.
@@ -1451,14 +1470,14 @@ Checklist run date: 2026-03-25
 	- Simplified mobile Variant B further: removed score quick-picks on mobile so score entry is spinner-only for cleaner thumb flow.
 	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
 	- Locked the tips input UX model as default and removed temporary A/B trial instrumentation.
-	- Extended tips persistence end-to-end to include Gruppplaceringar and Special predictions, and updated Mina tips to show these from saved data.
-	- Replaced Gruppplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
-	- Fixed Gruppplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.
+	- Extended tips persistence end-to-end to include Grupplaceringar and Special predictions, and updated Mina tips to show these from saved data.
+	- Replaced Grupplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
+	- Fixed Grupplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.
 	- Extended tips persistence to include Slutspel predictions and updated both Lämna tips and Mina tips to edit/show saved knockout picks.
 	- Added Slutspel type-ahead suggestions with round-aware team filtering so users can type to narrow choices instead of scrolling long lists.
 	- Fixed mobile overlap issue where the floating action bar could cover active tips input fields. Initial fix used max-width: 720px breakpoint; extended to also apply @media (hover: none) and (pointer: coarse) to cover landscape iPhones and tablets whose CSS viewport width exceeds 720px.
 	- Fixed touch-device Slutspel input overlap where native datalist suggestion popups could cover the next text field; desktop keeps datalist type-ahead and touch devices now show inline suggestion chips directly under the active field.
-	- Expanded Gruppplaceringar source-of-truth data from sample Groups A-C to full Groups A-L (48 team slots) with placeholder entries where qualifiers are still pending.
+	- Expanded Grupplaceringar source-of-truth data from sample Groups A-C to full Groups A-L (48 team slots) with placeholder entries where qualifiers are still pending.
 	- Expanded Slutspel prediction templates to all five rounds with full participant slot counts (32/16/8/4/2) for each knockout round.
 	- Fixed desktop Slutspel layout so knockout round cards no longer stretch to the height of the largest card in the same grid row.
 	- Updated tips page section flow so all Slutspel rounds (including Semifinal and Final) stay in the same knockout panel, while `Special och dynamiska frågor` is rendered in a separate panel below.

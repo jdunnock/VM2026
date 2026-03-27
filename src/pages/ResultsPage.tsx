@@ -67,7 +67,7 @@ export function ParticipantScorePanel({
               <span className="status-note">Avgjorda matcher: {participantScoreDetail.settledMatches}</span>
             </article>
             <article className="mini-card">
-              <span className="mini-label">Gruppplaceringar</span>
+              <span className="mini-label">Grupplaceringar</span>
               <strong>{participantScoreDetail.groupPlacementPoints} p</strong>
               <span className="status-note">Avgjorda grupper: {participantScoreDetail.settledGroups}</span>
             </article>
@@ -77,14 +77,9 @@ export function ParticipantScorePanel({
               <span className="status-note">Avgjorda rundor: {participantScoreDetail.settledKnockoutRounds}</span>
             </article>
             <article className="mini-card">
-              <span className="mini-label">Special</span>
-              <strong>{participantScoreDetail.specialPoints} p</strong>
-              <span className="status-note">Avgjorda special: {participantScoreDetail.settledSpecialPredictions}</span>
-            </article>
-            <article className="mini-card">
               <span className="mini-label">Extrafrågor</span>
-              <strong>{participantScoreDetail.extraQuestionPoints} p</strong>
-              <span className="status-note">Avgjorda frågor: {participantScoreDetail.settledQuestions}</span>
+              <strong>{participantScoreDetail.specialPoints + participantScoreDetail.extraQuestionPoints} p</strong>
+              <span className="status-note">Avgjorda: {participantScoreDetail.settledSpecialPredictions + participantScoreDetail.settledQuestions}</span>
             </article>
           </div>
 
@@ -114,11 +109,11 @@ export function ParticipantScorePanel({
 
           <details className="accordion-card">
             <summary>
-              <strong>Avgjorda gruppplaceringar</strong>
+              <strong>Avgjorda grupplaceringar</strong>
               <span className="count-badge">{settledGroupEntries.length}</span>
             </summary>
             {settledGroupEntries.length === 0 ? (
-              <p>Inga avgjorda gruppplaceringar ännu.</p>
+              <p>Inga avgjorda grupplaceringar ännu.</p>
             ) : (
               <ul className="score-breakdown-list">
                 {settledGroupEntries.map((entry) => (
@@ -166,11 +161,11 @@ export function ParticipantScorePanel({
 
           <details className="accordion-card">
             <summary>
-              <strong>Avgjorda special</strong>
-              <span className="count-badge">{settledSpecialEntries.length}</span>
+              <strong>Avgjorda extrafrågor</strong>
+              <span className="count-badge">{settledSpecialEntries.length + settledExtraEntries.length}</span>
             </summary>
-            {settledSpecialEntries.length === 0 ? (
-              <p>Inga avgjorda specialprediktioner ännu.</p>
+            {settledSpecialEntries.length === 0 && settledExtraEntries.length === 0 ? (
+              <p>Inga avgjorda extrafrågor ännu.</p>
             ) : (
               <ul className="score-breakdown-list">
                 {settledSpecialEntries.map((entry) => (
@@ -184,19 +179,6 @@ export function ParticipantScorePanel({
                     </div>
                   </li>
                 ))}
-              </ul>
-            )}
-          </details>
-
-          <details className="accordion-card">
-            <summary>
-              <strong>Avgjorda extrafrågor</strong>
-              <span className="count-badge">{settledExtraEntries.length}</span>
-            </summary>
-            {settledExtraEntries.length === 0 ? (
-              <p>Inga avgjorda extrafrågor ännu.</p>
-            ) : (
-              <ul className="score-breakdown-list">
                 {settledExtraEntries.map((entry) => (
                   <li className="score-breakdown-item" key={`${entry.questionId ?? 'unknown'}-${entry.points}`}>
                     <div className="score-breakdown-main">
