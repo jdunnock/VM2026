@@ -2,8 +2,8 @@ import { run, get, all } from './db-core.js'
 import { parseJsonOrArray } from './json-utils.js'
 
 export async function listAdminQuestions() {
-  const rows = await all(
-    `
+    const rows = await all(
+        `
       SELECT
         id,
         question_text,
@@ -18,25 +18,25 @@ export async function listAdminQuestions() {
       FROM admin_questions
       ORDER BY id DESC
     `,
-  )
+    )
 
-  return rows.map((row) => ({
-    id: row.id,
-    questionText: row.question_text,
-    category: row.category,
-    options: parseJsonOrArray(row.options_json),
-    correctAnswer: row.correct_answer,
-    points: row.points,
-    lockTime: row.lock_time,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }))
+    return rows.map((row) => ({
+        id: row.id,
+        questionText: row.question_text,
+        category: row.category,
+        options: parseJsonOrArray(row.options_json),
+        correctAnswer: row.correct_answer,
+        points: row.points,
+        lockTime: row.lock_time,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    }))
 }
 
 export async function listPublishedAdminQuestions() {
-  const rows = await all(
-    `
+    const rows = await all(
+        `
       SELECT
         id,
         question_text,
@@ -49,22 +49,22 @@ export async function listPublishedAdminQuestions() {
       WHERE status = 'published'
       ORDER BY lock_time ASC, id ASC
     `,
-  )
+    )
 
-  return rows.map((row) => ({
-    id: row.id,
-    questionText: row.question_text,
-    category: row.category,
-    options: parseJsonOrArray(row.options_json),
-    points: row.points,
-    lockTime: row.lock_time,
-    status: row.status,
-  }))
+    return rows.map((row) => ({
+        id: row.id,
+        questionText: row.question_text,
+        category: row.category,
+        options: parseJsonOrArray(row.options_json),
+        points: row.points,
+        lockTime: row.lock_time,
+        status: row.status,
+    }))
 }
 
 export async function createAdminQuestion(question) {
-  const result = await run(
-    `
+    const result = await run(
+        `
       INSERT INTO admin_questions (
         question_text,
         category,
@@ -78,23 +78,23 @@ export async function createAdminQuestion(question) {
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `,
-    [
-      question.questionText,
-      question.category,
-      JSON.stringify(question.options),
-      question.correctAnswer,
-      question.points,
-      question.lockTime,
-      question.status,
-    ],
-  )
+        [
+            question.questionText,
+            question.category,
+            JSON.stringify(question.options),
+            question.correctAnswer,
+            question.points,
+            question.lockTime,
+            question.status,
+        ],
+    )
 
-  return getAdminQuestionById(result.lastID)
+    return getAdminQuestionById(result.lastID)
 }
 
 export async function getAdminQuestionById(id) {
-  const row = await get(
-    `
+    const row = await get(
+        `
       SELECT
         id,
         question_text,
@@ -109,30 +109,30 @@ export async function getAdminQuestionById(id) {
       FROM admin_questions
       WHERE id = ?
     `,
-    [id],
-  )
+        [id],
+    )
 
-  if (!row) {
-    return null
-  }
+    if (!row) {
+        return null
+    }
 
-  return {
-    id: row.id,
-    questionText: row.question_text,
-    category: row.category,
-    options: parseJsonOrArray(row.options_json),
-    correctAnswer: row.correct_answer,
-    points: row.points,
-    lockTime: row.lock_time,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }
+    return {
+        id: row.id,
+        questionText: row.question_text,
+        category: row.category,
+        options: parseJsonOrArray(row.options_json),
+        correctAnswer: row.correct_answer,
+        points: row.points,
+        lockTime: row.lock_time,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    }
 }
 
 export async function updateAdminQuestion(id, question) {
-  await run(
-    `
+    await run(
+        `
       UPDATE admin_questions
       SET
         question_text = ?,
@@ -145,21 +145,21 @@ export async function updateAdminQuestion(id, question) {
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
-    [
-      question.questionText,
-      question.category,
-      JSON.stringify(question.options),
-      question.correctAnswer,
-      question.points,
-      question.lockTime,
-      question.status,
-      id,
-    ],
-  )
+        [
+            question.questionText,
+            question.category,
+            JSON.stringify(question.options),
+            question.correctAnswer,
+            question.points,
+            question.lockTime,
+            question.status,
+            id,
+        ],
+    )
 
-  return getAdminQuestionById(id)
+    return getAdminQuestionById(id)
 }
 
 export async function deleteAdminQuestion(id) {
-  await run('DELETE FROM admin_questions WHERE id = ?', [id])
+    await run('DELETE FROM admin_questions WHERE id = ?', [id])
 }

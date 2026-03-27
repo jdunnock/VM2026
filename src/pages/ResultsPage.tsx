@@ -1,408 +1,364 @@
 import { useState, type ReactNode } from 'react'
+import { fixtureCounts } from '../fixtures'
 import type {
-  LeaderboardEntry,
-  MatchResult,
-  MatchResultStage,
-  MatchResultStatus,
-  ParticipantScoreDetail,
-  ParticipantSession,
-  SpecialResultsState,
+    LeaderboardEntry,
+    MatchResult,
+    MatchResultStage,
+    MyTipsSectionTab,
+    ParticipantScoreDetail,
+    ParticipantSession,
+    SpecialResultsState,
 } from '../types'
+import { myTipsSectionTabs } from '../types'
 import {
-  formatDateTimeLabel,
-  formatExtraReason,
-  formatFixtureReason,
-  formatGroupReason,
-  formatMatchResultStatusLabel,
-  formatPositionsMeta,
-  formatRoundReason,
-  formatSpecialReason,
-  formatTeamsMeta,
-  getReasonTone,
+    formatExtraReason,
+    formatGroupReason,
+    formatPositionsMeta,
+    formatSpecialReason,
+    getReasonTone,
 } from '../utils'
 
 export function ParticipantScorePanel({
-  eyebrow,
-  title,
-  participantScoreDetail,
-  isLoading,
-  controls,
+    eyebrow,
+    title,
+    participantScoreDetail,
+    isLoading,
+    controls,
 }: {
-  eyebrow: string
-  title: string
-  participantScoreDetail: ParticipantScoreDetail | null
-  isLoading: boolean
-  controls?: ReactNode
+    eyebrow: string
+    title: string
+    participantScoreDetail: ParticipantScoreDetail | null
+    isLoading: boolean
+    controls?: ReactNode
 }) {
-  const settledFixtureEntries = participantScoreDetail?.breakdown.filter((entry) => entry.reason !== 'unsettled') ?? []
-  const settledGroupEntries = participantScoreDetail?.groupPlacementBreakdown.filter((entry) => entry.reason !== 'unsettled-group') ?? []
-  const settledKnockoutEntries = participantScoreDetail?.knockoutBreakdown.filter((entry) => entry.reason !== 'unsettled-round') ?? []
-  const settledSpecialEntries = participantScoreDetail?.specialBreakdown.filter((entry) => entry.settled) ?? []
-  const settledExtraEntries = participantScoreDetail?.extraBreakdown.filter((entry) => entry.settled) ?? []
+    return (
+        <section className="panel">
+            <div className="section-heading compact">
+                <p className="eyebrow">{eyebrow}</p>
+                <h2>{title}</h2>
+            </div>
 
-  return (
-    <section className="panel">
-      <div className="section-heading compact">
-        <p className="eyebrow">{eyebrow}</p>
-        <h2>{title}</h2>
-      </div>
+            {controls}
 
-      {controls}
-
-      {isLoading ? (
-        <p className="status-note">Laddar poängdetaljer...</p>
-      ) : !participantScoreDetail ? (
-        <p className="status-note">Ingen poängdata tillgänglig ännu.</p>
-      ) : (
-        <>
-          <div className="stats-grid">
-            <article className="mini-card">
-              <span className="mini-label">Totalpoäng</span>
-              <strong>{participantScoreDetail.totalPoints} p</strong>
-              <span className="status-note">Placering: {participantScoreDetail.positionLabel ?? '-'}</span>
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Gruppspel</span>
-              <strong>{participantScoreDetail.fixturePoints} p</strong>
-              <span className="status-note">Avgjorda matcher: {participantScoreDetail.settledMatches}</span>
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Grupplaceringar</span>
-              <strong>{participantScoreDetail.groupPlacementPoints} p</strong>
-              <span className="status-note">Avgjorda grupper: {participantScoreDetail.settledGroups}</span>
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Slutspel</span>
-              <strong>{participantScoreDetail.knockoutPoints} p</strong>
-              <span className="status-note">Avgjorda rundor: {participantScoreDetail.settledKnockoutRounds}</span>
-            </article>
-            <article className="mini-card">
-              <span className="mini-label">Extrafrågor</span>
-              <strong>{participantScoreDetail.specialPoints + participantScoreDetail.extraQuestionPoints} p</strong>
-              <span className="status-note">Avgjorda: {participantScoreDetail.settledSpecialPredictions + participantScoreDetail.settledQuestions}</span>
-            </article>
-          </div>
-
-          <details className="accordion-card">
-            <summary>
-              <strong>Avgjorda gruppspelsmatcher</strong>
-              <span className="count-badge">{settledFixtureEntries.length}</span>
-            </summary>
-            {settledFixtureEntries.length === 0 ? (
-              <p>Inga avgjorda gruppspelsmatcher ännu.</p>
+            {isLoading ? (
+                <p className="status-note">Laddar poängdetaljer...</p>
+            ) : !participantScoreDetail ? (
+                <p className="status-note">Ingen poängdata tillgänglig ännu.</p>
             ) : (
-              <ul className="score-breakdown-list">
-                {settledFixtureEntries.map((entry) => (
-                  <li className="score-breakdown-item" key={`${entry.matchId ?? entry.match}-${entry.reason}`}>
-                    <div className="score-breakdown-main">
-                      <strong>{entry.match}</strong>
-                      <div className="score-breakdown-badges">
-                        <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                        <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatFixtureReason(entry.reason)}</span>
-                      </div>
+                <>
+                    <div className="stats-grid">
+                        <article className="mini-card">
+                            <span className="mini-label">Totalpoäng</span>
+                            <strong>{participantScoreDetail.totalPoints} p</strong>
+                            <span className="status-note">Placering: {participantScoreDetail.positionLabel ?? '-'}</span>
+                        </article>
+                        <article className="mini-card">
+                            <span className="mini-label">Gruppspel</span>
+                            <strong>{participantScoreDetail.fixturePoints} p</strong>
+                            <span className="status-note">Avgjorda matcher: {participantScoreDetail.settledMatches}</span>
+                        </article>
+                        <article className="mini-card">
+                            <span className="mini-label">Grupplaceringar</span>
+                            <strong>{participantScoreDetail.groupPlacementPoints} p</strong>
+                            <span className="status-note">Avgjorda grupper: {participantScoreDetail.settledGroups}</span>
+                        </article>
+                        <article className="mini-card">
+                            <span className="mini-label">Slutspel</span>
+                            <strong>{participantScoreDetail.knockoutPoints} p</strong>
+                            <span className="status-note">Avgjorda rundor: {participantScoreDetail.settledKnockoutRounds}</span>
+                        </article>
+                        <article className="mini-card">
+                            <span className="mini-label">Extrafrågor</span>
+                            <strong>{participantScoreDetail.specialPoints + participantScoreDetail.extraQuestionPoints} p</strong>
+                            <span className="status-note">Avgjorda: {participantScoreDetail.settledSpecialPredictions + participantScoreDetail.settledQuestions}</span>
+                        </article>
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
 
-          <details className="accordion-card">
-            <summary>
-              <strong>Avgjorda grupplaceringar</strong>
-              <span className="count-badge">{settledGroupEntries.length}</span>
-            </summary>
-            {settledGroupEntries.length === 0 ? (
-              <p>Inga avgjorda grupplaceringar ännu.</p>
-            ) : (
-              <ul className="score-breakdown-list">
-                {settledGroupEntries.map((entry) => (
-                  <li className="score-breakdown-item" key={`${entry.group}-${entry.points}`}>
-                    <div className="score-breakdown-main">
-                      <strong>{entry.group}</strong>
-                      <div className="score-breakdown-badges">
-                        <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                        <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatGroupReason(entry.reason, entry.matchedPositions)}</span>
-                      </div>
-                    </div>
-                    {formatPositionsMeta(entry.matchedPositions) ? (
-                      <span className="score-breakdown-meta">{formatPositionsMeta(entry.matchedPositions)}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+                </>
             )}
-          </details>
-
-          <details className="accordion-card">
-            <summary>
-              <strong>Avgjorda slutspel</strong>
-              <span className="count-badge">{settledKnockoutEntries.length}</span>
-            </summary>
-            {settledKnockoutEntries.length === 0 ? (
-              <p>Inga avgjorda slutspelsprediktioner ännu.</p>
-            ) : (
-              <ul className="score-breakdown-list">
-                {settledKnockoutEntries.map((entry) => (
-                  <li className="score-breakdown-item" key={`${entry.round}-${entry.points}`}>
-                    <div className="score-breakdown-main">
-                      <strong>{entry.round}</strong>
-                      <div className="score-breakdown-badges">
-                        <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                        <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatRoundReason(entry.reason, entry.matchedTeams)}</span>
-                      </div>
-                    </div>
-                    {formatTeamsMeta(entry.matchedTeams) ? <span className="score-breakdown-meta">{formatTeamsMeta(entry.matchedTeams)}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
-
-          <details className="accordion-card">
-            <summary>
-              <strong>Avgjorda extrafrågor</strong>
-              <span className="count-badge">{settledSpecialEntries.length + settledExtraEntries.length}</span>
-            </summary>
-            {settledSpecialEntries.length === 0 && settledExtraEntries.length === 0 ? (
-              <p>Inga avgjorda extrafrågor ännu.</p>
-            ) : (
-              <ul className="score-breakdown-list">
-                {settledSpecialEntries.map((entry) => (
-                  <li className="score-breakdown-item" key={entry.key}>
-                    <div className="score-breakdown-main">
-                      <strong>{entry.label}</strong>
-                      <div className="score-breakdown-badges">
-                        <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                        <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatSpecialReason(entry.reason)}</span>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-                {settledExtraEntries.map((entry) => (
-                  <li className="score-breakdown-item" key={`${entry.questionId ?? 'unknown'}-${entry.points}`}>
-                    <div className="score-breakdown-main">
-                      <strong>{entry.questionText ?? 'Fråga'}</strong>
-                      <div className="score-breakdown-badges">
-                        <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                        <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatExtraReason(entry.reason)}</span>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </details>
-        </>
-      )}
-    </section>
-  )
+        </section>
+    )
 }
 
 export function ResultsPage({
-  participant,
-  leaderboard,
-  participantScoreDetail,
-  isParticipantScoreLoading,
-  results,
-  specialResults,
-  isResultsLoading,
+    participant,
+    leaderboard,
+    participantScoreDetail,
+    isParticipantScoreLoading,
+    results,
+    specialResults,
+    isResultsLoading,
 }: {
-  participant: ParticipantSession | null
-  leaderboard: LeaderboardEntry[]
-  participantScoreDetail: ParticipantScoreDetail | null
-  isParticipantScoreLoading: boolean
-  results: MatchResult[]
-  specialResults: SpecialResultsState
-  isResultsLoading: boolean
+    participant: ParticipantSession | null
+    leaderboard: LeaderboardEntry[]
+    participantScoreDetail: ParticipantScoreDetail | null
+    isParticipantScoreLoading: boolean
+    results: MatchResult[]
+    specialResults: SpecialResultsState
+    isResultsLoading: boolean
 }) {
-  const [activeStage, setActiveStage] = useState<'all' | MatchResultStage>('all')
-  const [activeStatus, setActiveStatus] = useState<'all' | MatchResultStatus>('all')
-  const displayedResults = results
-  const displayedSpecialResults = specialResults
-  const displayedParticipantScoreDetail = participantScoreDetail
-  const showResultsLoading = isResultsLoading
-  const showParticipantScoreLoading = isParticipantScoreLoading
+    const [activeSection, setActiveSection] = useState<MyTipsSectionTab>('Gruppspel')
+    const displayedResults = results
+    const displayedParticipantScoreDetail = participantScoreDetail
+    const showResultsLoading = isResultsLoading
+    const showParticipantScoreLoading = isParticipantScoreLoading
 
-  const currentEntry = participant
-    ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
-    : null
-  const displayedPositionLabel = displayedParticipantScoreDetail?.positionLabel ?? currentEntry?.positionLabel ?? '-'
-  const displayedTotalPoints =
-    displayedParticipantScoreDetail?.totalPoints ?? currentEntry?.totalPoints ?? 0
+    const currentEntry = participant
+        ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
+        : null
+    const displayedPositionLabel = displayedParticipantScoreDetail?.positionLabel ?? currentEntry?.positionLabel ?? '-'
+    const displayedTotalPoints =
+        displayedParticipantScoreDetail?.totalPoints ?? currentEntry?.totalPoints ?? 0
 
-  const filteredResults = displayedResults.filter((entry) => {
-    if (activeStage !== 'all' && entry.stage !== activeStage) {
-      return false
-    }
+    const completedCount = displayedResults.filter((entry) => entry.resultStatus === 'completed').length
+    const remainingCount = fixtureCounts.total - completedCount
 
-    if (activeStatus !== 'all' && entry.resultStatus !== activeStatus) {
-      return false
-    }
+    // Filter results by active section stage
+    const sectionStage: MatchResultStage | null = activeSection === 'Gruppspel' ? 'group' : activeSection === 'Slutspel' ? 'knockout' : null
+    const filteredResults = sectionStage
+        ? displayedResults.filter((entry) => entry.stage === sectionStage)
+        : []
 
-    return true
-  })
+    // Build lookup: matchId → breakdown entry (for tip display in result cards)
+    const breakdownByMatchId = new Map(
+        (displayedParticipantScoreDetail?.breakdown ?? []).map((e) => [e.matchId, e])
+    )
 
-  const liveCount = displayedResults.filter((entry) => entry.resultStatus === 'live').length
-  const completedCount = displayedResults.filter((entry) => entry.resultStatus === 'completed').length
-  const plannedCount = displayedResults.filter((entry) => entry.resultStatus === 'planned').length
+    // Breakdown entries for sections
+    const psd = displayedParticipantScoreDetail
+    const settledFixtureEntries = psd?.breakdown.filter((e) => e.reason !== 'unsettled') ?? []
+    const settledGroupEntries = psd?.groupPlacementBreakdown.filter((e) => e.reason !== 'unsettled-group') ?? []
+    const settledKnockoutEntries = psd?.knockoutBreakdown.filter((e) => e.reason !== 'unsettled-round') ?? []
+    const settledSpecialEntries = psd?.specialBreakdown.filter((e) => e.settled) ?? []
+    const settledExtraEntries = psd?.extraBreakdown.filter((e) => e.settled) ?? []
 
-  return (
-    <div className="page-stack">
-      <section className="panel panel-sticky-head page-hero">
-        <div>
-          <p className="eyebrow">Resultat & poäng</p>
-          <h1 className="section-title">Matchläge och din poäng just nu</h1>
-          <p className="lead-text" style={{ margin: 0 }}>
-            Följ officiella matchresultat, specialutfall och hur de påverkar din nuvarande ställning.
-          </p>
-        </div>
-        <span className="save-pill">{displayedPositionLabel} · {displayedTotalPoints} p</span>
-      </section>
+    return (
+        <div className="page-stack">
+            <section className="panel panel-sticky-head page-hero">
+                <div>
+                    <p className="eyebrow">Resultat & poäng</p>
+                    <h1 className="section-title">Matchläge och din poäng just nu</h1>
+                    <p className="lead-text" style={{ margin: 0 }}>
+                        Följ officiella matchresultat, specialutfall och hur de påverkar din nuvarande ställning.
+                    </p>
+                </div>
+                <span className="save-pill">{displayedPositionLabel} · {displayedTotalPoints} p</span>
+            </section>
 
-      <section className="start-stats-row">
-        <div className="start-stat">
-          <span>Din placering</span>
-          <strong>{displayedPositionLabel}</strong>
-        </div>
-        <div className="start-stat">
-          <span>Totalpoäng</span>
-          <strong>{displayedTotalPoints} p</strong>
-        </div>
-        <div className="start-stat">
-          <span>Avgjorda matcher</span>
-          <strong>{completedCount}</strong>
-        </div>
-      </section>
+            <section className="start-stats-row">
+                <div className="start-stat">
+                    <span>Din placering</span>
+                    <strong>{displayedPositionLabel}</strong>
+                </div>
+                <div className="start-stat">
+                    <span>Totalpoäng</span>
+                    <strong>{displayedTotalPoints} p</strong>
+                </div>
+                <div className="start-stat">
+                    <span>Avgjorda matcher</span>
+                    <strong>{completedCount}</strong>
+                </div>
+            </section>
 
-      <section className="summary-grid">
-        <article className="summary-card">
-          <h2>{liveCount}</h2>
-          <p>Live just nu</p>
-        </article>
-        <article className="summary-card">
-          <h2>{completedCount}</h2>
-          <p>Slutförda matcher</p>
-        </article>
-        <article className="summary-card">
-          <h2>{plannedCount}</h2>
-          <p>Planerade matcher</p>
-        </article>
-      </section>
-
-      <section className="panel results-panel">
-        <div className="section-heading compact">
-          <p className="eyebrow">Matcher</p>
-          <h2>Officiella resultat</h2>
-        </div>
-
-        <div className="results-toolbar">
-          <div className="tab-row" aria-label="Filtrera steg">
-            {[
-              { value: 'all', label: 'Alla' },
-              { value: 'group', label: 'Gruppspel' },
-              { value: 'knockout', label: 'Slutspel' },
-            ].map((option) => (
-              <button
-                className={activeStage === option.value ? 'tab-button active' : 'tab-button'}
-                key={option.value}
-                type="button"
-                onClick={() => setActiveStage(option.value as 'all' | MatchResultStage)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <label className="form-group results-select-group">
-            <span>Status</span>
-            <select value={activeStatus} onChange={(e) => setActiveStatus(e.target.value as 'all' | MatchResultStatus)}>
-              <option value="all">Alla statusar</option>
-              <option value="planned">Planerad</option>
-              <option value="live">Live</option>
-              <option value="completed">Slut</option>
-            </select>
-          </label>
-        </div>
-
-        {showResultsLoading ? (
-          <p className="status-note">Laddar officiella resultat...</p>
-        ) : filteredResults.length === 0 ? (
-          <p className="status-note">Inga matcher matchar filtret ännu.</p>
-        ) : (
-          <div className="results-grid">
-            {filteredResults.map((entry) => {
-              const scoreline =
-                entry.homeScore === null || entry.awayScore === null ? 'Ej avgjord ännu' : `${entry.homeScore}-${entry.awayScore}`
-
-              return (
-                <article className="result-card" key={entry.matchId}>
-                  <div className="result-card-header">
-                    <div>
-                      <span className="mini-label">{entry.stage === 'group' ? entry.groupCode ? `Grupp ${entry.groupCode}` : 'Gruppspel' : entry.round ?? 'Slutspel'}</span>
-                      <strong>{entry.homeTeam} - {entry.awayTeam}</strong>
-                    </div>
-                    <span className={`result-status-pill ${entry.resultStatus}`}>{formatMatchResultStatusLabel(entry.resultStatus)}</span>
-                  </div>
-
-                  <div className="result-scoreline-row">
-                    <span className="result-scoreline">{scoreline}</span>
-                    <span className="status-note">Avspark: {formatDateTimeLabel(entry.kickoffAt)}</span>
-                  </div>
-
-                  <div className="result-card-meta">
-                    <span>Match-ID: {entry.matchId}</span>
-                    <span>Senast uppdaterad: {formatDateTimeLabel(entry.updatedAt)}</span>
-                  </div>
+            <section className="summary-grid">
+                <article className="summary-card">
+                    <h2>{completedCount}</h2>
+                    <p>Slutförda matcher</p>
                 </article>
-              )
-            })}
-          </div>
-        )}
-      </section>
+                <article className="summary-card">
+                    <h2>{remainingCount}</h2>
+                    <p>Återstående matcher</p>
+                </article>
+            </section>
 
-      <section className="panel">
-        <div className="section-heading compact">
-          <p className="eyebrow">Special</p>
-          <h2>Avgjorda specialutfall</h2>
-        </div>
+            <section className="tab-row" aria-label="Sektioner">
+                {myTipsSectionTabs.map((tab) => (
+                    <button
+                        className={activeSection === tab ? 'tab-button active' : 'tab-button'}
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveSection(tab)}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </section>
 
-        <div className="stats-grid">
-          <article className="mini-card">
-            <span className="mini-label">Slutsegrare</span>
-            <strong>{displayedSpecialResults.winner || 'Inte satt ännu'}</strong>
-          </article>
-          <article className="mini-card">
-            <span className="mini-label">Skytteligavinnare</span>
-            <strong>{displayedSpecialResults.topScorer || 'Inte satt ännu'}</strong>
-          </article>
-          <article className="mini-card">
-            <span className="mini-label">Senast uppdaterad</span>
-            <strong>{formatDateTimeLabel(displayedSpecialResults.updatedAt)}</strong>
-          </article>
-        </div>
-      </section>
+            {activeSection === 'Gruppspel' && (
+                <section className="panel">
+                    {showParticipantScoreLoading ? (
+                        <p className="status-note">Laddar poängdetaljer...</p>
+                    ) : settledFixtureEntries.length === 0 ? (
+                        <p className="status-note">Inga avgjorda gruppspelsmatcher ännu.</p>
+                    ) : (
+                        <>
+                            <div className="fixture-breakdown-header">
+                                <span className="fixture-col-match">Match</span>
+                                <span className="fixture-col-cell">Resultat</span>
+                                <span className="fixture-col-spacer" />
+                                <span className="fixture-col-cell">Tips</span>
+                                <span className="fixture-col-cell">1X2</span>
+                                <span className="fixture-col-cell">Poäng</span>
+                            </div>
+                            <ul className="fixture-breakdown-list">
+                                {settledFixtureEntries.map((entry) => {
+                                    const actualResult = entry.result
+                                        ? `${entry.result.homeScore}-${entry.result.awayScore}`
+                                        : '—'
+                                    const predictedResult = entry.predictedHomeScore !== null && entry.predictedAwayScore !== null
+                                        ? `${entry.predictedHomeScore}-${entry.predictedAwayScore}`
+                                        : '—'
+                                    const scoreHit = entry.reason === 'exact-score'
+                                    const signHit = entry.reason === 'exact-score' || entry.reason === 'correct-sign'
 
-      <section className="panel">
-        <div className="section-heading compact">
-          <p className="eyebrow">Om poängvyn</p>
-          <h2>Varför syns poäng även i Mina tips?</h2>
-        </div>
-        <div className="lock-warning">
-          <ul>
-            <li><strong>Mina tips</strong> visar vad du har lämnat in.</li>
-            <li><strong>Resultat & poäng</strong> visar officiella utfall och hur de påverkar samma personliga poängdata.</li>
-            <li>Poängen hämtas från samma källa, men visas i två olika sammanhang för snabbare uppföljning.</li>
-          </ul>
-        </div>
-      </section>
+                                    return (
+                                        <li className="fixture-breakdown-row" key={entry.matchId ?? entry.match}>
+                                            <span className="fixture-col-match">{entry.match}</span>
+                                            <span className="fixture-col-cell">{actualResult}</span>
+                                            <span className="fixture-col-spacer" />
+                                            <span className={`fixture-col-cell tip-indicator ${scoreHit ? 'hit' : 'miss'}`}>{predictedResult}</span>
+                                            <span className={`fixture-col-cell tip-indicator ${signHit ? 'hit' : 'miss'}`}>{entry.predictedSign ?? '—'}</span>
+                                            <span className={`fixture-col-cell ${entry.points > 0 ? 'points-badge' : 'points-badge zero'}`}>{entry.points} p</span>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        </>
+                    )}
+                </section>
+            )}
 
-      <ParticipantScorePanel
-        eyebrow="Poäng"
-        title="Din poängöversikt"
-        participantScoreDetail={displayedParticipantScoreDetail}
-        isLoading={showParticipantScoreLoading}
-      />
-    </div>
-  )
+            {activeSection === 'Slutspel' && (
+                <section className="panel results-panel">
+                    <div className="section-heading compact">
+                        <p className="eyebrow">{activeSection === 'Gruppspel' ? 'Gruppspel' : 'Slutspel'}</p>
+                        <h2>Officiella resultat</h2>
+                    </div>
+
+                    {showResultsLoading ? (
+                        <p className="status-note">Laddar officiella resultat...</p>
+                    ) : filteredResults.length === 0 ? (
+                        <p className="status-note">Inga matcher ännu.</p>
+                    ) : (
+                        <div className="results-grid">
+                            {filteredResults.map((entry) => {
+                                const scoreline =
+                                    entry.homeScore === null || entry.awayScore === null ? 'Ej avgjord ännu' : `${entry.homeScore}-${entry.awayScore}`
+                                const bk = participant ? breakdownByMatchId.get(entry.matchId) : undefined
+                                const settled = bk && bk.reason !== 'unsettled'
+                                const actualSign = entry.homeScore !== null && entry.awayScore !== null
+                                    ? entry.homeScore > entry.awayScore ? '1' : entry.homeScore < entry.awayScore ? '2' : 'X'
+                                    : null
+
+                                return (
+                                    <article className="result-card" key={entry.matchId}>
+                                        <div className="result-card-header">
+                                            <div>
+                                                <span className="mini-label">{entry.stage === 'group' ? entry.groupCode ? `Grupp ${entry.groupCode}` : 'Gruppspel' : entry.round ?? 'Slutspel'}</span>
+                                                <strong>{entry.homeTeam} - {entry.awayTeam}</strong>
+                                            </div>
+                                        </div>
+
+                                        <div className="result-scoreline-row">
+                                            <span className="result-scoreline">{scoreline}</span>
+                                        </div>
+
+                                        {participant && settled && bk && (
+                                            <div className="result-card-tip">
+                                                <span>Ditt tips:</span>
+                                                <span className={`tip-indicator ${bk.reason === 'exact-score' ? 'hit' : 'miss'}`}>
+                                                    {bk.predictedHomeScore !== null && bk.predictedAwayScore !== null
+                                                        ? `${bk.predictedHomeScore}-${bk.predictedAwayScore}`
+                                                        : '—'}
+                                                </span>
+                                                {actualSign && (
+                                                    <span className={`tip-indicator ${bk.reason === 'exact-score' || bk.reason === 'correct-sign' ? 'hit' : 'miss'}`}>
+                                                        {bk.predictedSign ?? '—'}
+                                                    </span>
+                                                )}
+                                                <span className={bk.points > 0 ? 'points-badge' : 'points-badge zero'}>{bk.points} p</span>
+                                            </div>
+                                        )}
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {activeSection === 'Grupplaceringar' && (
+                <section className="panel">
+                    <div className="section-heading compact">
+                        <p className="eyebrow">Grupplaceringar</p>
+                        <h2>Avgjorda grupplaceringar</h2>
+                    </div>
+                    {showParticipantScoreLoading ? (
+                        <p className="status-note">Laddar poängdetaljer...</p>
+                    ) : settledGroupEntries.length === 0 ? (
+                        <p className="status-note">Inga avgjorda grupplaceringar ännu.</p>
+                    ) : (
+                        <ul className="score-breakdown-list">
+                            {settledGroupEntries.map((entry) => (
+                                <li className="score-breakdown-item" key={`${entry.group}-${entry.points}`}>
+                                    <div className="score-breakdown-main">
+                                        <strong>{entry.group}</strong>
+                                        <div className="score-breakdown-badges">
+                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
+                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatGroupReason(entry.reason, entry.matchedPositions)}</span>
+                                        </div>
+                                    </div>
+                                    {formatPositionsMeta(entry.matchedPositions) ? (
+                                        <span className="score-breakdown-meta">{formatPositionsMeta(entry.matchedPositions)}</span>
+                                    ) : null}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            )}
+
+            {activeSection === 'Extrafrågor' && (
+                <section className="panel">
+                    {showParticipantScoreLoading ? (
+                        <p className="status-note">Laddar poängdetaljer...</p>
+                    ) : (settledSpecialEntries.length === 0 && settledExtraEntries.length === 0) ? (
+                        <p className="status-note">Inga avgjorda extrafrågor ännu.</p>
+                    ) : (
+                        <ul className="score-breakdown-list">
+                            {settledSpecialEntries.map((entry) => (
+                                <li className="score-breakdown-item" key={entry.key}>
+                                    <div className="score-breakdown-main">
+                                        <strong>{entry.label}</strong>
+                                        <div className="score-breakdown-badges">
+                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
+                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatSpecialReason(entry.reason)}</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                            {settledExtraEntries.map((entry) => (
+                                <li className="score-breakdown-item" key={`${entry.questionId ?? 'unknown'}-${entry.points}`}>
+                                    <div className="score-breakdown-main">
+                                        <strong>{entry.questionText ?? 'Fråga'}</strong>
+                                        <div className="score-breakdown-badges">
+                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
+                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatExtraReason(entry.reason)}</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            )}
+
+            <ParticipantScorePanel
+                eyebrow="Poäng"
+                title="Din poängöversikt"
+                participantScoreDetail={displayedParticipantScoreDetail}
+                isLoading={showParticipantScoreLoading}
+            />
+        </div>
+    )
 }

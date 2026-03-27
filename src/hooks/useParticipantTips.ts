@@ -15,7 +15,7 @@ import { createDefaultFixtureTips, deriveSignFromScore, normalizePersistedTipsSt
  * Handles loading from /api/tips, mutations via handlers, and save/clear operations.
  * Syncs state with localStorage and manages save/clear messaging.
  */
-export function useParticipantTips(participant: ParticipantSession | null, isGlobalLockActive: boolean, globalDeadlineLabel: string) {
+export function useParticipantTips(participant: ParticipantSession | null, isGlobalLockActive: boolean, globalDeadlineLabel: string, onSessionInvalid?: () => void) {
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
   const [groupPlacements, setGroupPlacements] = useState<GroupPlacement[]>(groupPlacementTemplates)
   const [knockoutPredictions, setKnockoutPredictions] = useState<KnockoutPredictionRound[]>(knockoutPredictionTemplates)
@@ -46,6 +46,10 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       try {
         const response = await fetch(`/api/tips/${participant.participantId}`)
         if (!response.ok) {
+          if (response.status === 404) {
+            onSessionInvalid?.()
+            return
+          }
           setTipsSaveMessage('Kunde inte hämta sparade tips')
           return
         }

@@ -865,6 +865,71 @@ strong {
   padding: 0 22px 22px 40px;
 }
 
+/* Fixture breakdown — aligned column layout */
+.fixture-breakdown-header {
+  display: grid;
+  grid-template-columns: 1fr 56px 20px 56px 44px 60px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fixture-breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.fixture-breakdown-row {
+  display: grid;
+  grid-template-columns: 1fr 56px 20px 56px 44px 60px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.fixture-breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.fixture-col-match {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fixture-col-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  min-height: 28px;
+}
+
+.fixture-col-cell.tip-indicator {
+  border-radius: 8px;
+  padding: 4px 2px;
+}
+
+.fixture-col-cell.points-badge {
+  border-radius: 999px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+}
+
 .score-breakdown-list {
   list-style: none;
   margin: 0;
@@ -1080,6 +1145,46 @@ strong {
   font-size: 0.9rem;
 }
 
+/* Tip hit/miss indicators */
+.tip-hit {
+  background: rgba(16, 163, 127, 0.14);
+}
+
+.tip-miss {
+  background: rgba(185, 28, 28, 0.1);
+}
+
+.result-card-tip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.tip-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.tip-indicator.hit {
+  background: rgba(16, 163, 127, 0.14);
+  color: var(--brand-strong);
+  border-color: rgba(16, 163, 127, 0.2);
+}
+
+.tip-indicator.miss {
+  background: rgba(185, 28, 28, 0.1);
+  color: #991b1b;
+  border-color: rgba(185, 28, 28, 0.16);
+}
+
 .admin-filter-grid {
   display: grid;
   gap: 12px;
@@ -1126,7 +1231,7 @@ strong {
   gap: 6px;
 }
 
-.panel > .section-heading.compact {
+.panel>.section-heading.compact {
   margin-bottom: 12px;
 }
 
@@ -1177,6 +1282,7 @@ strong {
 }
 
 @media (max-width: 1080px) {
+
   .topbar,
   .hero-card,
   .panel-split,
@@ -1387,6 +1493,27 @@ strong {
 
   .score-breakdown-list {
     padding: 0 16px 16px;
+  }
+
+  .fixture-breakdown-header {
+    display: none;
+  }
+
+  .fixture-breakdown-row {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+    padding: 10px 10px 12px;
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .fixture-breakdown-row .fixture-col-match {
+    grid-column: 1 / -1;
+    margin-bottom: 2px;
+  }
+
+  .fixture-breakdown-row .fixture-col-spacer {
+    display: none;
   }
 
   .score-breakdown-main {
