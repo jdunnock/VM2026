@@ -20,6 +20,7 @@ export const navItems: NavItem[] = [
     { id: 'results', label: 'Resultat & poäng' },
     { id: 'tips', label: 'Lämna tips' },
     { id: 'mine', label: 'Mina tips' },
+    { id: 'alltips', label: 'Alla tips' },
     { id: 'rules', label: 'Regler' },
     { id: 'admin', label: 'Admin' },
 ]

@@ -822,6 +822,20 @@ Confirmed intentional data flows (not bugs):
 	- No changes to Phase B (leaderboard remains hidden).
 	- No changes to scoring logic or API.
 
+### 7.37 Alla tips — All Participants' Predictions Side-by-Side (2026-03-28)
+
+- New nav tab "Alla tips" visible only when logged in and in Phase C (after "Mina tips").
+- New `GET /api/tips/all` endpoint returns all participants with their persisted tips, sorted alphabetically by name.
+- New `AllTipsPage` with hero panel and section tabs (Gruppspel tab first; other tabs placeholder for later expansion).
+- Gruppspel tab renders a horizontal scrollable table:
+	- Rows: all 72 group-stage fixtures ordered by date.
+	- Columns: "Match", "Resultat", then one column per participant (alphabetical).
+	- Cell content: predicted score (e.g. "1-0") or "—" if no tip.
+	- Cell coloring: green (correct 1X2 sign) / red (wrong sign) based on match result; neutral if match not yet settled.
+	- "Match" and "Resultat" columns sticky on left.
+- Own column: subtle green highlight background; sticky on mobile so always visible.
+- Logged-in participant identified from session; data fetched when navigating to the page.
+
 ### 7.36 Consolidate Resultat & poäng top stats with ParticipantScorePanel (2026-03-27)
 
 - Removed three redundant stat sections from `Resultat & poäng` page:

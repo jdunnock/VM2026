@@ -5,6 +5,7 @@ import {
 import type {
   AdminQuestion,
   AdminSession,
+  AllTipsParticipant,
   ExtraAnswers,
   FixtureTip,
   GroupPlacement,
@@ -21,6 +22,7 @@ import { StartPage } from './pages/StartPage'
 import { ResultsPage } from './pages/ResultsPage'
 import { TipsPage } from './pages/TipsPage'
 import { MyTipsPage } from './pages/MyTipsPage'
+import { AllTipsPage } from './pages/AllTipsPage'
 import { RulesPage } from './pages/RulesPage'
 import { AdminPage } from './pages/AdminPage'
 import { useSession, useParticipantTips, usePhaseRouting } from './hooks'
@@ -163,6 +165,8 @@ function renderPage(
     results: MatchResult[]
     specialResults: SpecialResultsState
     isResultsLoading: boolean
+    allTipsParticipants: AllTipsParticipant[]
+    isAllTipsLoading: boolean
     phase: 'B' | 'C'
   },
 ) {
@@ -244,6 +248,15 @@ function renderPage(
           globalDeadlineLabel={pageProps.globalDeadlineLabel}
         />
       )
+    case 'alltips':
+      return (
+        <AllTipsPage
+          participant={pageProps.participant}
+          allTipsParticipants={pageProps.allTipsParticipants}
+          isLoading={pageProps.isAllTipsLoading}
+          results={pageProps.results}
+        />
+      )
     case 'admin':
       return <AdminPage adminSession={pageProps.adminSession} onAdminSessionChange={pageProps.onAdminSessionChange} />
     default:
@@ -301,6 +314,8 @@ export function App() {
   const [specialResults, setSpecialResults] = useState<SpecialResultsState>({ winner: '', topScorer: '' })
   const [isResultsLoading, setIsResultsLoading] = useState(false)
   const [publishedQuestions, setPublishedQuestions] = useState<AdminQuestion[]>([])
+  const [allTipsParticipants, setAllTipsParticipants] = useState<AllTipsParticipant[]>([])
+  const [isAllTipsLoading, setIsAllTipsLoading] = useState(false)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   // Load leaderboard
@@ -438,6 +453,32 @@ export function App() {
     loadPublishedQuestions()
   }, [activePage])
 
+  // Load all participants' tips when navigating to 'alltips'
+  useEffect(() => {
+    if (activePage !== 'alltips') return
+
+    const loadAllTips = async () => {
+      setIsAllTipsLoading(true)
+      try {
+        const response = await fetch('/api/tips/all')
+        if (!response.ok) {
+          setAllTipsParticipants([])
+          return
+        }
+        const payload = await response.json()
+        setAllTipsParticipants(Array.isArray(payload.participants) ? payload.participants : [])
+      } catch {
+        setAllTipsParticipants([])
+      } finally {
+        setIsAllTipsLoading(false)
+      }
+    }
+
+    loadAllTips()
+    // Also load results for hit/miss coloring
+    loadPublicResults()
+  }, [activePage])
+
   // Save tips with leaderboard and score refresh
   const onSaveTips = async () => {
     await saveParticipantTips(loadLeaderboard, loadParticipantScore)
@@ -479,7 +520,7 @@ export function App() {
       return false
     }
 
-    if (!isTrackingPhaseActive && item.id === 'results') {
+    if (!isTrackingPhaseActive && (item.id === 'results' || item.id === 'alltips')) {
       return false
     }
 
@@ -546,6 +587,8 @@ export function App() {
           results,
           specialResults,
           isResultsLoading,
+          allTipsParticipants,
+          isAllTipsLoading,
           phase: effectiveLifecyclePhase,
           adminSession,
           onChangeTip,

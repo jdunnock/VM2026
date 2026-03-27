@@ -1807,6 +1807,121 @@ strong {
   padding: 14px 18px;
 }
 
+/* ── Alla tips table ────────────────────────── */
+
+.alltips-table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
+.alltips-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.alltips-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.alltips-table th,
+.alltips-table td {
+  padding: 6px 10px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.alltips-table thead th {
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.alltips-col-match {
+  text-align: left !important;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--surface);
+  min-width: 140px;
+  max-width: 200px;
+  font-weight: 500;
+}
+
+.alltips-col-result {
+  position: sticky;
+  left: 140px;
+  z-index: 3;
+  background: var(--surface);
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.alltips-table thead .alltips-col-match,
+.alltips-table thead .alltips-col-result {
+  z-index: 4;
+}
+
+.alltips-col-participant {
+  min-width: 52px;
+}
+
+.alltips-own-col {
+  background: rgba(16, 163, 127, 0.06) !important;
+}
+
+.alltips-hit-exact {
+  background: rgba(16, 163, 127, 0.18);
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.alltips-hit-sign {
+  background: rgba(16, 163, 127, 0.08);
+  color: var(--brand-strong);
+}
+
+.alltips-miss {
+  background: rgba(185, 28, 28, 0.08);
+  color: #991b1b;
+}
+
+.alltips-own-col.alltips-hit-exact {
+  background: rgba(16, 163, 127, 0.24);
+}
+
+.alltips-own-col.alltips-hit-sign {
+  background: rgba(16, 163, 127, 0.14);
+}
+
+.alltips-own-col.alltips-miss {
+  background: rgba(185, 28, 28, 0.10);
+}
+
+@media (max-width: 600px) {
+  .alltips-col-match {
+    min-width: 110px;
+    max-width: 140px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .alltips-col-result {
+    left: 110px;
+    min-width: 50px;
+  }
+}
+
 @media (max-width: 1080px) {
   .tournament-info-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

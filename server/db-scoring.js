@@ -113,7 +113,7 @@ export async function getParticipantScoreByParticipantId(participantId) {
     }
 }
 
-async function listParticipantsWithTips() {
+export async function listParticipantsWithTips() {
     const rows = await all(
         `
       SELECT

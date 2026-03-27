@@ -6,11 +6,22 @@ import {
     deleteTipsByParticipantId,
     findParticipantById,
     getTipsByParticipantId,
+    listParticipantsWithTips,
     upsertTipsByParticipantId,
 } from './db.js'
 import { parseParticipantId, normalizeTipsPayload } from './validators.js'
 
 function createTipsRoutes(app) {
+    app.get('/api/tips/all', async (_req, res) => {
+        try {
+            const participants = await listParticipantsWithTips()
+            res.json({ participants })
+        } catch (error) {
+            console.error('All tips read error:', error)
+            res.status(500).json({ error: 'Kunde inte hämta alla tips.' })
+        }
+    })
+
     app.get('/api/tips/:participantId', async (req, res) => {
         const participantId = parseParticipantId(req.params.participantId)
 

@@ -1,4 +1,4 @@
-export type PageId = 'login' | 'start' | 'results' | 'tips' | 'mine' | 'rules' | 'admin'
+export type PageId = 'login' | 'start' | 'results' | 'tips' | 'mine' | 'alltips' | 'rules' | 'admin'
 
 export type NavItem = {
     id: PageId
@@ -192,6 +192,13 @@ export type PersistedTipsState = {
     knockoutPredictions: KnockoutPredictionRound[]
     specialPredictions: SpecialPredictions
     extraAnswers: ExtraAnswers
+}
+
+export type AllTipsParticipant = {
+    participantId: number
+    name: string
+    tips: PersistedTipsState | null
+    updatedAt: string | null
 }
 
 export const tipsSectionTabs = ['Gruppspel', 'Slutspel', 'Extrafrågor'] as const
