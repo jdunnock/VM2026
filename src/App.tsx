@@ -128,6 +128,7 @@ function renderPage(
   pageProps: {
     fixtureTips: FixtureTip[]
     lastSavedFixtureTips: FixtureTip[]
+    hasUnsavedChanges: boolean
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
     specialPredictions: SpecialPredictions
@@ -199,6 +200,7 @@ function renderPage(
         <TipsPage
           fixtureTips={pageProps.fixtureTips}
           savedFixtureTips={pageProps.lastSavedFixtureTips}
+          hasUnsavedChanges={pageProps.hasUnsavedChanges}
           groupPlacements={pageProps.groupPlacements}
           knockoutPredictions={pageProps.knockoutPredictions}
           specialPredictions={pageProps.specialPredictions}
@@ -252,7 +254,7 @@ export function App() {
   // Core session and routing hooks
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
   const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase } = usePhaseRouting()
-  const { fixtureTips, lastSavedFixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
+  const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
 
   const countdownLabel = (() => {
     const deadlineTimestamp = new Date(globalDeadlineStr).getTime()
@@ -509,6 +511,7 @@ export function App() {
         {renderPage(activePage, {
           fixtureTips,
           lastSavedFixtureTips,
+          hasUnsavedChanges,
           groupPlacements,
           knockoutPredictions,
           specialPredictions,

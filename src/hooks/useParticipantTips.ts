@@ -25,6 +25,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
   const [myTipsSavedLabel, setMyTipsSavedLabel] = useState('Senast uppdaterad: inte sparad')
   const [lastSavedFixtureTips, setLastSavedFixtureTips] = useState<FixtureTip[]>([])
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   // Load tips from API when participant changes
   useEffect(() => {
@@ -35,6 +36,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
       setLastSavedFixtureTips([])
+      setHasUnsavedChanges(false)
       setTipsSaveMessage('Inte sparad ännu')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
       return
@@ -56,6 +58,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
         setSpecialPredictions(normalizedState.specialPredictions)
         setExtraAnswers(normalizedState.extraAnswers)
 
+        setHasUnsavedChanges(false)
         if (payload.updatedAt) {
           setLastSavedFixtureTips(normalizedState.fixtureTips)
           const formatted = new Date(payload.updatedAt).toLocaleString('sv-SE')
@@ -83,6 +86,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setFixtureTips((current) =>
       current.map((tip) => {
         if (tip.match !== match || tip.status === 'Låst') {
@@ -128,6 +132,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setFixtureTips((current) =>
       current.map((tip) => {
         if (tip.match !== match || tip.status === 'Låst') {
@@ -149,6 +154,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setGroupPlacements((current) =>
       current.map((item) => {
         if (item.group !== group) {
@@ -188,6 +194,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setKnockoutPredictions((current) =>
       current.map((round) => {
         if (round.title !== roundTitle) {
@@ -207,6 +214,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setSpecialPredictions((current) => ({
       ...current,
       [key]: value,
@@ -218,6 +226,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       return
     }
 
+    setHasUnsavedChanges(true)
     setExtraAnswers((current) => {
       const next = { ...current }
       if (!answer) {
@@ -274,6 +283,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setSpecialPredictions(normalizedState.specialPredictions)
       setExtraAnswers(normalizedState.extraAnswers)
       const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
+      setHasUnsavedChanges(false)
       setTipsSaveMessage(`Sparad: ${formatted}`)
       setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
 
@@ -319,6 +329,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
       setLastSavedFixtureTips([])
+      setHasUnsavedChanges(false)
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
 
@@ -339,6 +350,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
   return {
     fixtureTips,
     lastSavedFixtureTips,
+    hasUnsavedChanges,
     groupPlacements,
     knockoutPredictions,
     specialPredictions,

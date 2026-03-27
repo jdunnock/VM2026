@@ -17,6 +17,7 @@ import { ExtraQuestionsCard } from './tips/ExtraQuestionsCard'
 export function TipsPage({
   fixtureTips,
   savedFixtureTips,
+  hasUnsavedChanges,
   groupPlacements,
   knockoutPredictions,
   specialPredictions,
@@ -38,6 +39,7 @@ export function TipsPage({
 }: {
   fixtureTips: FixtureTip[]
   savedFixtureTips: FixtureTip[]
+  hasUnsavedChanges: boolean
   groupPlacements: GroupPlacement[]
   knockoutPredictions: KnockoutPredictionRound[]
   specialPredictions: SpecialPredictions
@@ -83,6 +85,7 @@ export function TipsPage({
           {isGlobalLockActive ? <p className="status-note">Tips är låsta (deadline passerad: {globalDeadlineLabel}).</p> : null}
         </div>
         <div className="inline-actions">
+          {hasUnsavedChanges && <span className="save-pill unsaved">Osparade ändringar</span>}
           <span className="save-pill">{saveMessage}</span>
           <button className="primary-button" type="button" onClick={onSave} disabled={isSaving || isGlobalLockActive}>
             {isSaving ? 'Sparar...' : 'Spara'}
@@ -132,30 +135,30 @@ export function TipsPage({
         />
       ) : null}
 
-      {activeSection === 'Special' ? (
-        <SpecialPredictionsCard
-          specialPredictions={specialPredictions}
-          onChangeSpecialPrediction={onChangeSpecialPrediction}
-          isSaving={isSaving}
-          isGlobalLockActive={isGlobalLockActive}
-        />
-      ) : null}
-
       {activeSection === 'Extrafrågor' ? (
-        <ExtraQuestionsCard
-          publishedQuestions={publishedQuestions}
-          extraAnswers={extraAnswers}
-          onChangeExtraAnswer={onChangeExtraAnswer}
-          isSaving={isSaving}
-          isGlobalLockActive={isGlobalLockActive}
-          globalDeadlineLabel={globalDeadlineLabel}
-        />
+        <>
+          <SpecialPredictionsCard
+            specialPredictions={specialPredictions}
+            onChangeSpecialPrediction={onChangeSpecialPrediction}
+            isSaving={isSaving}
+            isGlobalLockActive={isGlobalLockActive}
+          />
+          <ExtraQuestionsCard
+            publishedQuestions={publishedQuestions}
+            extraAnswers={extraAnswers}
+            onChangeExtraAnswer={onChangeExtraAnswer}
+            isSaving={isSaving}
+            isGlobalLockActive={isGlobalLockActive}
+            globalDeadlineLabel={globalDeadlineLabel}
+          />
+        </>
       ) : null}
 
       <section className="action-bar">
-        <button className="ghost-button" type="button" onClick={onClear} disabled={isSaving || isGlobalLockActive}>Rensa sparade</button>
+        <button className="ghost-button" type="button" onClick={() => { if (window.confirm('Vill du verkligen rensa alla sparade tips? Detta kan inte ångras.')) { onClear() } }} disabled={isSaving || isGlobalLockActive}>Rensa sparade</button>
+        {hasUnsavedChanges && <span className="save-pill unsaved">Osparade ändringar</span>}
         <button className="primary-button" type="button" onClick={onSave} disabled={isSaving || isGlobalLockActive}>
-          {isSaving ? 'Sparar...' : 'Skicka in tips'}
+          {isSaving ? 'Sparar...' : 'Spara'}
         </button>
       </section>
     </div>

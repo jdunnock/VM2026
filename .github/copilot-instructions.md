@@ -3,7 +3,7 @@
 Use this repository as a project bootstrap template.
 
 Always:
-- update specification before or together with behavior changes
+- update specification before or together with behavior changes — NEVER defer spec updates to a later step
 - prefer one source of truth over duplicate workflow files
 - keep changes minimal and explicit
 - validate before commit when code or behavior changes

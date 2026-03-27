@@ -714,6 +714,34 @@ Confirmed intentional data flows (not bugs):
 	- No changes to existing result/special outcome data models.
 	- No changes to tips save/load logic.
 
+### 7.24 Hide leaderboard from Start page in Phase B (2026-03-27)
+
+- Included in this step:
+	- Remove the `Topplista / Aktuell ställning` panel from Start page Phase B layout.
+	- Hide `Din placering` and `Dina poäng` stat cards in Phase B; only `Status` card remains.
+	- Leaderboard and score stats remain visible only in Phase C, consistent with 7.18 phase mapping rule.
+	- Progress section (`Framsteg`) changes from `panel-split` to `panel` since leaderboard column is removed.
+- Excluded from this step:
+	- No changes to Phase C leaderboard rendering.
+	- No changes to participant stats cards (placement/points still shown).
+
+### 7.25 Tips page UX: unsaved indicator, button labels, clear confirmation (2026-03-27)
+
+- Included in this step:
+	- Add `hasUnsavedChanges` boolean state to `useParticipantTips` hook. Set true on any change handler, cleared on save success, load, clear, and logout.
+	- Show amber `Osparade ändringar` pill in both the tips page header bar and the bottom action bar when unsaved changes exist.
+	- Rename bottom save button from `Skicka in tips` to `Spara` (consistent with top bar).
+	- Add `window.confirm` dialog to `Rensa sparade` button to prevent accidental deletion.
+- Excluded from this step:
+	- No changes to save/load/clear logic itself.
+	- No new API endpoints.
+
+### 7.26 Merge Special and Extrafrågor tabs (2026-03-27)
+
+- `tipsSectionTabs` reduced from `['Gruppspel', 'Slutspel', 'Special', 'Extrafrågor']` to `['Gruppspel', 'Slutspel', 'Extrafrågor']`.
+- The former Special tab content (`SpecialPredictionsCard`: Slutsegrare, Skytteligavinnare) and former Extrafrågor content (`ExtraQuestionsCard`) now render together under the single Extrafrågor tab.
+- No data model or API changes; only UI tab structure affected.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

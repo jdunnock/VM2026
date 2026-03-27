@@ -647,6 +647,12 @@ strong {
   border: 1px solid rgba(16, 163, 127, 0.2);
 }
 
+.save-pill.unsaved {
+  background: rgba(234, 179, 8, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
 .status-badge.locked {
   background: rgba(180, 35, 24, 0.1);
   color: var(--danger);

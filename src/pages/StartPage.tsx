@@ -93,14 +93,18 @@ export function StartPage({
           </p>
         </div>
         <div className="start-stats">
-          <div className="start-stat">
-            <span>Din placering</span>
-            <strong>{currentEntry ? currentEntry.positionLabel : '-'}</strong>
-          </div>
-          <div className="start-stat">
-            <span>Dina poäng</span>
-            <strong>{currentEntry ? `${currentEntry.totalPoints} p` : '0 p'}</strong>
-          </div>
+          {isTrackingPhase && (
+            <>
+              <div className="start-stat">
+                <span>Din placering</span>
+                <strong>{currentEntry ? currentEntry.positionLabel : '-'}</strong>
+              </div>
+              <div className="start-stat">
+                <span>Dina poäng</span>
+                <strong>{currentEntry ? `${currentEntry.totalPoints} p` : '0 p'}</strong>
+              </div>
+            </>
+          )}
           <div className="start-stat">
             <span>Status</span>
             <strong>{participant ? (isTrackingPhase ? 'Turnering pågår' : tipsSaveMessage) : 'Inte inloggad'}</strong>
@@ -134,7 +138,7 @@ export function StartPage({
             </div>
           </section>
 
-          <section className="panel panel-split">
+          <section className="panel">
             <div>
               <div className="section-heading">
                 <p className="eyebrow">Framsteg</p>
@@ -157,14 +161,6 @@ export function StartPage({
                   )
                 })}
               </div>
-            </div>
-
-            <div className="updates-card">
-              <div className="section-heading compact">
-                <p className="eyebrow">Topplista</p>
-                <h2>Aktuell ställning</h2>
-              </div>
-              {renderLeaderboard()}
             </div>
           </section>
         </>
