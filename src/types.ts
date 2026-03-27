@@ -190,6 +190,9 @@ export type PersistedTipsState = {
 export const tipsSectionTabs = ['Gruppspel', 'Slutspel', 'Extrafrågor'] as const
 export type TipsSectionTab = (typeof tipsSectionTabs)[number]
 
+export const myTipsSectionTabs = ['Gruppspel', 'Grupplaceringar', 'Slutspel', 'Extrafrågor'] as const
+export type MyTipsSectionTab = (typeof myTipsSectionTabs)[number]
+
 export const adminQuestionCategories: AdminQuestionCategory[] = ['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor']
 
 export type AdminQuestionDraft = {

@@ -173,8 +173,7 @@ export const myTipsSections: Array<{ title: string; count: number; status: strin
   { title: 'Gruppspel', count: 104, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
   { title: 'Gruppplaceringar', count: 12, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: ['Grupp A: Kanada, SWE/POL/ALB/UKR, Ghana, Peru'] },
   { title: 'Slutspel', count: 31, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
-  { title: 'Special', count: 2, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: ['Slutsegrare: Argentina', 'Skytteligavinnare: Kylian Mbappé'] },
-  { title: 'Extrafrågor', count: 5, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
+  { title: 'Extrafrågor', count: 7, status: `Låser ${GLOBAL_DEADLINE_LABEL}`, items: [] },
 ]
 
 export const ruleRows: RuleRow[] = [

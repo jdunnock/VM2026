@@ -14,7 +14,7 @@ const adminAccessName = process.env.ADMIN_ACCESS_NAME ?? 'Admin'
 
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
-  : ['http://localhost:4173', 'http://localhost:5173']
+  : ['http://localhost:4173', 'http://localhost:5173', 'http://192.168.1.182:4173']
 
 function hashAccessCode(code) {
   return crypto.scryptSync(code, salt, 64).toString('hex')

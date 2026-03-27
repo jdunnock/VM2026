@@ -95,6 +95,7 @@ function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession)
               onChange={(e) => setName(e.target.value)}
               placeholder="Ditt namn"
               autoComplete="name"
+              autoCapitalize="none"
               required
             />
           </div>
@@ -255,6 +256,24 @@ export function App() {
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
   const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase } = usePhaseRouting()
   const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel)
+
+  // Guard: warn when navigating away from tips page with unsaved changes
+  const guardedSetActivePage = (nextPage: string) => {
+    if (activePage === 'tips' && hasUnsavedChanges && nextPage !== 'tips') {
+      if (!window.confirm('Du har osparade ändringar. Vill du lämna sidan utan att spara?')) {
+        return
+      }
+    }
+    setActivePage(nextPage as any)
+  }
+
+  // Guard: warn on browser close/refresh with unsaved tips
+  useEffect(() => {
+    if (!hasUnsavedChanges || activePage !== 'tips') return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasUnsavedChanges, activePage])
 
   const countdownLabel = (() => {
     const deadlineTimestamp = new Date(globalDeadlineStr).getTime()
@@ -478,7 +497,7 @@ export function App() {
               className={item.id === activePage ? 'nav-button active' : 'nav-button'}
               key={item.id}
               type="button"
-              onClick={() => setActivePage(normalizePageForPhase(item.id))}
+              onClick={() => guardedSetActivePage(normalizePageForPhase(item.id))}
             >
               {item.label}
             </button>

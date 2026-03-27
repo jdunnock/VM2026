@@ -741,6 +741,35 @@ Confirmed intentional data flows (not bugs):
 - `tipsSectionTabs` reduced from `['Gruppspel', 'Slutspel', 'Special', 'Extrafrågor']` to `['Gruppspel', 'Slutspel', 'Extrafrågor']`.
 - The former Special tab content (`SpecialPredictionsCard`: Slutsegrare, Skytteligavinnare) and former Extrafrågor content (`ExtraQuestionsCard`) now render together under the single Extrafrågor tab.
 - No data model or API changes; only UI tab structure affected.
+- Also applies to `Mina tips` page: `myTipsSections` merged Special (count 2) into Extrafrågor (count 7). The accordion card renders both special predictions and extra question answers together.
+
+### 7.27 Navigation guard for unsaved tips (2026-03-27)
+
+- When user is on the Tips page with unsaved changes and clicks a nav tab to leave, a `window.confirm` dialog asks: "Du har osparade ändringar. Vill du lämna sidan utan att spara?" Navigation is cancelled if the user declines.
+- A `beforeunload` handler is active while unsaved changes exist on the Tips page, warning the user on browser close or refresh.
+- No new state; reuses existing `hasUnsavedChanges` from `useParticipantTips`.
+
+### 7.28 Mina tips page: tab navigation (2026-03-27)
+
+- Replaced accordion layout on Mina tips page with tab-based navigation matching Lämna tips page.
+- New `myTipsSectionTabs` const: `['Gruppspel', 'Grupplaceringar', 'Slutspel', 'Extrafrågor']`.
+- Each tab shows its content section exclusively; `activeSection` state defaults to `'Gruppspel'`.
+- `myTipsSections` constant in constants.ts is now unused (accordion removed).
+- Poäng / Din poängöversikt section hidden entirely in Phase B; only shown in Phase C with the full score panel.
+
+### 7.29 Extrafrågor tab: category-based sections (2026-03-27)
+
+- Removed `SpecialPredictionsCard` and `ExtraQuestionsCard` component usage from TipsPage Extrafrågor tab.
+- Replaced with three inline category sections: Gruppspelsfrågor, Slutspelsfrågor, 33-33-33 frågor.
+- Special predictions (Slutsegrare, Skytteligavinnare) rendered inside the Slutspelsfrågor section.
+- Admin questions grouped by their `category` field; empty categories hidden (except Slutspelsfrågor which always shows due to special predictions).
+- No data model changes; same `specialPredictions` and `extraAnswers` payloads.
+
+### 7.30 Bugfix: iOS Safari auto-capitalization causes wrong account login (2026-03-27)
+
+- **Root cause**: iOS Safari auto-capitalizes the name input field. Typing "jarmo" becomes "Jarmo", which matches a different participant account (case-sensitive name lookup). The wrong account has no/incompatible saved tips, causing "saved tips don't show" and "card doesn't turn green" symptoms.
+- **Fix**: Added `autoCapitalize="none"` to the name `<input>` in LoginPage to prevent iOS keyboard from auto-capitalizing.
+- **Scope**: Frontend only (App.tsx LoginPage component). No server or data model changes.
 
 ## 8. Normalized Database Schema
 

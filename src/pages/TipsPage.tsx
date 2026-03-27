@@ -11,8 +11,6 @@ import type {
 import { tipsSectionTabs } from '../types'
 import { GroupsFixturesCard } from './tips/GroupsFixturesCard'
 import { KnockoutRoundsCard } from './tips/KnockoutRoundsCard'
-import { SpecialPredictionsCard } from './tips/SpecialPredictionsCard'
-import { ExtraQuestionsCard } from './tips/ExtraQuestionsCard'
 
 export function TipsPage({
   fixtureTips,
@@ -137,20 +135,69 @@ export function TipsPage({
 
       {activeSection === 'Extrafrågor' ? (
         <>
-          <SpecialPredictionsCard
-            specialPredictions={specialPredictions}
-            onChangeSpecialPrediction={onChangeSpecialPrediction}
-            isSaving={isSaving}
-            isGlobalLockActive={isGlobalLockActive}
-          />
-          <ExtraQuestionsCard
-            publishedQuestions={publishedQuestions}
-            extraAnswers={extraAnswers}
-            onChangeExtraAnswer={onChangeExtraAnswer}
-            isSaving={isSaving}
-            isGlobalLockActive={isGlobalLockActive}
-            globalDeadlineLabel={globalDeadlineLabel}
-          />
+          {(['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor'] as const).map((category) => {
+            const categoryQuestions = publishedQuestions.filter((q) => q.category === category)
+            const isSlutspel = category === 'Slutspelsfrågor'
+            if (!isSlutspel && categoryQuestions.length === 0) return null
+            return (
+              <section className="panel" key={category}>
+                <div className="section-heading compact">
+                  <p className="eyebrow">Extrafrågor</p>
+                  <h2>{category}</h2>
+                </div>
+                <div className="stacked-cards">
+                  {isSlutspel && (
+                    <>
+                      <article className="mini-card">
+                        <span className="mini-label">Slutsegrare</span>
+                        <input
+                          className="special-input"
+                          type="text"
+                          value={specialPredictions.winner}
+                          disabled={isSaving || isGlobalLockActive}
+                          onChange={(e) => onChangeSpecialPrediction('winner', e.target.value)}
+                        />
+                      </article>
+                      <article className="mini-card">
+                        <span className="mini-label">Skytteligavinnare</span>
+                        <input
+                          className="special-input"
+                          type="text"
+                          value={specialPredictions.topScorer}
+                          disabled={isSaving || isGlobalLockActive}
+                          onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
+                        />
+                      </article>
+                    </>
+                  )}
+                  {categoryQuestions.map((question) => {
+                    const isLocked = isGlobalLockActive
+                    const selectedAnswer = extraAnswers[String(question.id)] ?? ''
+                    return (
+                      <article className="mini-card" key={question.id}>
+                        <span className="mini-label">{question.questionText}</span>
+                        <span className="status-note">Låstid: {globalDeadlineLabel}</span>
+                        <select
+                          className="special-input"
+                          value={selectedAnswer}
+                          disabled={isSaving || isLocked}
+                          onChange={(e) => onChangeExtraAnswer(question.id, e.target.value)}
+                        >
+                          <option value="">Välj svar</option>
+                          {question.options.map((option) => (
+                            <option key={`${question.id}-${option}`} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                        <span className={isLocked ? 'status-badge locked' : 'status-badge'}>{isLocked ? 'Låst' : 'Öppen'}</span>
+                      </article>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })}
         </>
       ) : null}
 

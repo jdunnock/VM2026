@@ -1,13 +1,15 @@
-import { myTipsSections } from '../constants'
+import { useState } from 'react'
 import type {
   AdminQuestion,
   ExtraAnswers,
   FixtureTip,
   GroupPlacement,
   KnockoutPredictionRound,
+  MyTipsSectionTab,
   ParticipantScoreDetail,
   SpecialPredictions,
 } from '../types'
+import { myTipsSectionTabs } from '../types'
 import { ParticipantScorePanel } from './ResultsPage'
 
 export function MyTipsPage({
@@ -33,6 +35,7 @@ export function MyTipsPage({
   lastSavedLabel: string
   phase: 'B' | 'C'
 }) {
+  const [activeSection, setActiveSection] = useState<MyTipsSectionTab>('Gruppspel')
   const displayedScoreDetail = participantScoreDetail
   const showLoadingState = isParticipantScoreLoading
   const showScorePanel = phase === 'C'
@@ -59,96 +62,96 @@ export function MyTipsPage({
 
       <p className="lead-text" style={{ padding: '0 4px' }}>Här ser du exakt vad du har skickat in. Tips med status Låst kan inte redigeras.</p>
 
-      {showScorePanel ? (
+      {showScorePanel && (
         <ParticipantScorePanel
           eyebrow="Poäng"
           title="Din poängöversikt"
           participantScoreDetail={displayedScoreDetail}
           isLoading={showLoadingState}
         />
-      ) : (
+      )}
+
+      <section className="tab-row" aria-label="Sektioner">
+        {myTipsSectionTabs.map((tab) => (
+          <button
+            className={activeSection === tab ? 'tab-button active' : 'tab-button'}
+            key={tab}
+            type="button"
+            onClick={() => setActiveSection(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </section>
+
+      {activeSection === 'Gruppspel' && (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Match</th>
+                <th>Datum/tid</th>
+                <th>Resultat</th>
+                <th>1/X/2</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fixtureTips.map((row) => (
+                <tr key={row.match}>
+                  <td data-label="Match">{row.match}</td>
+                  <td data-label="Datum/tid">{row.date}</td>
+                  <td data-label="Resultat">{row.homeScore === '' || row.awayScore === '' ? '—' : `${row.homeScore}-${row.awayScore}`}</td>
+                  <td data-label="1/X/2">{row.sign || '—'}</td>
+                  <td data-label="Status">
+                    <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>
+                      {row.status === 'Låst' ? 'Låst' : 'Ändringsbar'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeSection === 'Grupplaceringar' && (
         <section className="panel">
-          <div className="section-heading compact">
-            <p className="eyebrow">Poäng</p>
-            <h2>Din poängöversikt</h2>
-          </div>
-          <p className="status-note">Poängvisning öppnas när turneringen är igång (Fas C).</p>
+          <ul>
+            {groupPlacements.map((group) => (
+              <li key={group.group}>{group.group}: {group.picks.join(', ')}</li>
+            ))}
+          </ul>
         </section>
       )}
 
-      <section className="accordion-list">
-        {myTipsSections.map((section) => (
-          <details className="accordion-card" key={section.title} open={section.title === 'Gruppspel'}>
-            <summary>
-              <strong>{section.title}</strong>
-              <span className="count-badge">{section.count}</span>
-            </summary>
-            {section.title === 'Gruppspel' ? (
-              <div className="table-wrap accordion-table">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Match</th>
-                      <th>Datum/tid</th>
-                      <th>Resultat</th>
-                      <th>1/X/2</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fixtureTips.map((row) => (
-                      <tr key={row.match}>
-                        <td data-label="Match">{row.match}</td>
-                        <td data-label="Datum/tid">{row.date}</td>
-                        <td data-label="Resultat">{row.homeScore === '' || row.awayScore === '' ? '—' : `${row.homeScore}-${row.awayScore}`}</td>
-                        <td data-label="1/X/2">{row.sign || '—'}</td>
-                        <td data-label="Status">
-                          <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>
-                            {row.status === 'Låst' ? 'Låst' : 'Ändringsbar'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : section.title === 'Gruppplaceringar' ? (
-              <ul>
-                {groupPlacements.map((group) => (
-                  <li key={group.group}>{group.group}: {group.picks.join(', ')}</li>
-                ))}
-              </ul>
-            ) : section.title === 'Slutspel' ? (
-              <ul>
-                {knockoutPredictions.map((round) => (
-                  <li key={round.title}>{round.title}: {round.picks.join(', ')}</li>
-                ))}
-              </ul>
-            ) : section.title === 'Special' ? (
-              <ul>
-                <li>Slutsegrare: {specialPredictions.winner}</li>
-                <li>Skytteligavinnare: {specialPredictions.topScorer}</li>
-              </ul>
-            ) : section.title === 'Extrafrågor' ? (
-              extraQuestionItems.length > 0 ? (
-                <ul>
-                  {extraQuestionItems.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Inga extrafrågor besvarade ännu.</p>
-              )
-            ) : section.items.length > 0 ? (
-              <ul>
-                {section.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            ) : null}
-          </details>
-        ))}
-      </section>
+      {activeSection === 'Slutspel' && (
+        <section className="panel">
+          <ul>
+            {knockoutPredictions.map((round) => (
+              <li key={round.title}>{round.title}: {round.picks.join(', ')}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {activeSection === 'Extrafrågor' && (
+        <section className="panel">
+          <ul>
+            <li>Slutsegrare: {specialPredictions.winner || '—'}</li>
+            <li>Skytteligavinnare: {specialPredictions.topScorer || '—'}</li>
+          </ul>
+          {extraQuestionItems.length > 0 ? (
+            <ul>
+              {extraQuestionItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>Inga extrafrågor besvarade ännu.</p>
+          )}
+        </section>
+      )}
     </div>
   )
 }
