@@ -1835,7 +1835,7 @@ strong {
 }
 
 .alltips-table thead th {
-  background: var(--surface);
+  background: var(--panel);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1851,9 +1851,10 @@ strong {
   position: sticky;
   left: 0;
   z-index: 3;
-  background: var(--surface);
+  background: var(--panel);
+  width: 140px;
   min-width: 140px;
-  max-width: 200px;
+  max-width: 140px;
   font-weight: 500;
 }
 
@@ -1861,8 +1862,9 @@ strong {
   position: sticky;
   left: 140px;
   z-index: 3;
-  background: var(--surface);
+  background: var(--panel);
   font-weight: 600;
+  width: 60px;
   min-width: 60px;
 }
 
@@ -1909,8 +1911,9 @@ strong {
 
 @media (max-width: 600px) {
   .alltips-col-match {
+    width: 110px;
     min-width: 110px;
-    max-width: 140px;
+    max-width: 110px;
     font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
