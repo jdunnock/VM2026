@@ -38,7 +38,6 @@ export function StartPage({
   const currentEntry = participant
     ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
     : null
-  const topEntries = leaderboard.slice(0, 5)
   const isTrackingPhase = phase === 'C'
 
   const filledFixtures = fixtureTips.filter((t) => t.sign !== '').length
@@ -63,13 +62,13 @@ export function StartPage({
   ]
 
   const renderLeaderboard = () => {
-    if (topEntries.length === 0) {
+    if (leaderboard.length === 0) {
       return <p className="status-note">Ingen poängställning ännu.</p>
     }
 
     return (
       <ul className="updates-list">
-        {topEntries.map((entry) => (
+        {leaderboard.map((entry) => (
           <li key={entry.participantId}>
             <strong>{entry.positionLabel}</strong> {entry.name} - {entry.totalPoints} p
           </li>

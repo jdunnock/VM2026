@@ -814,6 +814,14 @@ Confirmed intentional data flows (not bugs):
 - To revisit an earlier phase: `reset` → `setup` → desired `Cx`.
 - Deterministic: same seed always produces identical predictions and scores.
 
+### 7.35 Phase C leaderboard shows all participants (2026-03-27)
+
+- Included in this step:
+	- Phase C `Topplista / Aktuell ställning` panel on StartPage displays all participants in point order (previously limited to top 5).
+- Excluded from this step:
+	- No changes to Phase B (leaderboard remains hidden).
+	- No changes to scoring logic or API.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
