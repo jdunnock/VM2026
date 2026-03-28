@@ -133,7 +133,7 @@ export function TipsPage({
 
       {activeSection === 'Extrafrågor' ? (
         <>
-          {(['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor'] as const).map((category) => {
+          {(['Gruppspelsfrågor', 'Slutspelsfrågor', 'Turneringsfrågor', '33-33-33 frågor'] as const).map((category) => {
             const categoryQuestions = publishedQuestions.filter((q) => q.category === category)
             if (categoryQuestions.length === 0) return null
             return (

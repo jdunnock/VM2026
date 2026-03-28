@@ -49,7 +49,7 @@ export type KnockoutPredictionRound = {
 
 export type ExtraAnswers = Record<string, string>
 
-export type AdminQuestionCategory = 'Gruppspelsfrågor' | 'Slutspelsfrågor' | '33-33-33 frågor'
+export type AdminQuestionCategory = 'Gruppspelsfrågor' | 'Slutspelsfrågor' | 'Turneringsfrågor' | '33-33-33 frågor'
 export type AdminQuestionStatus = 'draft' | 'published'
 
 export type AdminQuestion = {
@@ -181,7 +181,7 @@ export type TipsSectionTab = (typeof tipsSectionTabs)[number]
 export const myTipsSectionTabs = ['Gruppspel', 'Grupplaceringar', 'Slutspel', 'Extrafrågor'] as const
 export type MyTipsSectionTab = (typeof myTipsSectionTabs)[number]
 
-export const adminQuestionCategories: AdminQuestionCategory[] = ['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor']
+export const adminQuestionCategories: AdminQuestionCategory[] = ['Gruppspelsfrågor', 'Slutspelsfrågor', 'Turneringsfrågor', '33-33-33 frågor']
 
 export type AdminQuestionDraft = {
     questionText: string

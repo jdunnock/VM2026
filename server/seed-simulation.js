@@ -241,7 +241,7 @@ const ADMIN_QUESTIONS = [
     },
     {
         questionText: 'Slutsegrare',
-        category: 'Slutspelsfrågor',
+        category: 'Turneringsfrågor',
         options: ['Brasilien', 'Frankrike', 'Argentina', 'Spanien', 'Tyskland', 'England'],
         correctAnswer: '',
         points: 4,
@@ -250,7 +250,7 @@ const ADMIN_QUESTIONS = [
     },
     {
         questionText: 'Skytteligavinnare',
-        category: 'Slutspelsfrågor',
+        category: 'Turneringsfrågor',
         options: ['Kylian Mbappé', 'Lionel Messi', 'Erling Haaland', 'Harry Kane', 'Vinícius Jr.', 'Lamine Yamal'],
         correctAnswer: '',
         points: 4,

@@ -153,7 +153,7 @@ function normalizeAdminQuestionPayload(payload) {
     const lockTime = typeof payload.lockTime === 'string' ? payload.lockTime.trim() : ''
     const status = typeof payload.status === 'string' ? payload.status.trim() : ''
 
-    const allowedCategories = ['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor']
+    const allowedCategories = ['Gruppspelsfrågor', 'Slutspelsfrågor', 'Turneringsfrågor', '33-33-33 frågor']
     const allowedStatuses = ['draft', 'published']
 
     if (!questionText) {

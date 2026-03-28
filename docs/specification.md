@@ -63,6 +63,7 @@ This document is the primary product and engineering specification for VM2026.
 ### 4.4 Admin-managed question categories
 - `Gruppspelsfrågor`
 - `Slutspelsfrågor`
+- `Turneringsfrågor`
 - `33-33-33 frågor`
 
 Each admin-managed question must support:
@@ -752,9 +753,9 @@ Confirmed intentional data flows (not bugs):
 ### 7.29 Extrafrågor tab: category-based sections (2026-03-27)
 
 - Removed `SpecialPredictionsCard` and `ExtraQuestionsCard` component usage from TipsPage Extrafrågor tab.
-- Replaced with three inline category sections: Gruppspelsfrågor, Slutspelsfrågor, 33-33-33 frågor.
-- Special predictions (Slutsegrare, Skytteligavinnare) rendered inside the Slutspelsfrågor section.
-- Admin questions grouped by their `category` field; empty categories hidden (except Slutspelsfrågor which always shows due to special predictions).
+- Replaced with four inline category sections: Gruppspelsfrågor, Slutspelsfrågor, Turneringsfrågor, 33-33-33 frågor.
+- Slutsegrare and Skytteligavinnare rendered inside the Turneringsfrågor section.
+- Admin questions grouped by their `category` field; empty categories hidden.
 - No data model changes; same `specialPredictions` and `extraAnswers` payloads.
 
 ### 7.30 Bugfix: iOS Safari auto-capitalization causes wrong account login (2026-03-27)
@@ -792,7 +793,7 @@ Confirmed intentional data flows (not bugs):
 - Script: `server/seed-simulation.js` — deterministic simulation data generator for Phase C QA testing.
 - npm shortcut: `npm run seed:sim -- <command>`
 - CLI commands: `setup | C0 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | reset`
-- **setup**: Creates 15 simulated participants (Anders, Björn, Cecilia, David, Erik, Fanny, Gustav, Helena, Isak, Julia, Karl, Laura, Magnus, Nora, Oscar), all with access code `1234`. Creates 5 published admin questions (2 Gruppspelsfrågor, 2 Slutspelsfrågor, 1 33-33-33). Generates complete predictions for each participant. Auto-backs up DB to `data/vm2026-pre-sim.db`.
+- **setup**: Creates 15 simulated participants (Anders, Björn, Cecilia, David, Erik, Fanny, Gustav, Helena, Isak, Julia, Karl, Laura, Magnus, Nora, Oscar), all with access code `1234`. Creates 7 published admin questions (2 Gruppspelsfrågor, 2 Slutspelsfrågor, 2 Turneringsfrågor, 1 33-33-33). Generates complete predictions for each participant. Auto-backs up DB to `data/vm2026-pre-sim.db`.
 - **C0**: No results (deadline passed, all scores = 0).
 - **C1**: Chronological group matches up to June 20 (~36 matches across all 12 groups). Groups A–F have 4 matches each (rounds 1+2), groups G–L have 2 matches each (round 1). Partial fixture + group placement scoring.
 - **C2**: All remaining group matches complete (72 total). Group placement scoring activates. 2 Gruppspelsfrågor settled.
@@ -800,8 +801,8 @@ Confirmed intentional data flows (not bugs):
 - **C4**: Round of 16 complete (8 matches). Knockout R16 scoring.
 - **C5**: Quarterfinals complete (4 matches). Knockout QF scoring (2 pts/team).
 - **C6**: Semifinals complete (2 matches). Knockout SF scoring. 2 Slutspelsfrågor settled.
-- **C7**: Final complete. Special results set (winner + topScorer). 33-33-33 fråga settled. Full scoring.
-- **reset**: Deletes sim participants by name, clears match_results, special_results, and sim admin_questions. Preserves non-sim users.
+- **C7**: Final complete. Slutsegrare, Skytteligavinnare, and 33-33-33 fråga settled. Full scoring.
+- **reset**: Deletes sim participants by name, clears match_results and sim admin_questions. Preserves non-sim users.
 - Prediction quality tiers: 3 experts (~65% correct signs), 7 average (~45%), 5 casual (~30%).
 - Phases are cumulative: run `setup` → `C0` → `C1` → … → `C7` in order.
 - To revisit an earlier phase: `reset` → `setup` → desired `Cx`.
