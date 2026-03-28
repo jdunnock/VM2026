@@ -150,10 +150,6 @@ const FINAL_RESULTS = [
     ['KO-F-1', 'Brasilien', 'Frankrike', 2, 1],
 ]
 
-// Tournament results
-const TOURNAMENT_WINNER = 'Brasilien'
-const TOP_SCORER = 'Kylian Mbappé'
-
 // ─── Kickoff times (UTC, from fixtures.ts) ───────────────────────────
 
 const GROUP_KICKOFFS = {
@@ -513,9 +509,9 @@ async function phaseSetup() {
     // Check if our sim questions already exist (by matching text)
     const simTexts = new Set(ADMIN_QUESTIONS.map(q => q.questionText))
     const existingSim = existingQuestions.filter(q => simTexts.has(q.questionText ?? q.question_text))
-    if (existingSim.length >= 5) {
+    if (existingSim.length >= ADMIN_QUESTIONS.length) {
         console.log(`  Sim questions already exist, reusing`)
-        questions = existingSim.slice(0, 5)
+        questions = existingSim.slice(0, ADMIN_QUESTIONS.length)
     } else {
         for (const qDef of ADMIN_QUESTIONS) {
             const q = await createAdminQuestion(qDef)
@@ -723,15 +719,12 @@ async function phaseC7() {
     await insertKnockoutResults(FINAL_RESULTS)
     console.log(`C7: Inserted ${FINAL_RESULTS.length} final match results`)
 
-    // Settle Slutsegrare (question 5) and Skytteligavinnare (question 6)
+    // Settle remaining questions: 33-33-33 (4), Slutsegrare (5), Skytteligavinnare (6)
     const questions = await listAdminQuestions()
+    await settleQuestion(4, questions)
     await settleQuestion(5, questions)
     await settleQuestion(6, questions)
-    console.log('C7: Settled Slutsegrare and Skytteligavinnare')
-
-    // Settle 33-33-33 frågor (question 4)
-    await settleQuestion(4, questions)
-    console.log('C7: Settled 33-33-33 fråga')
+    console.log('C7: Settled 33-33-33, Slutsegrare, and Skytteligavinnare')
 }
 
 async function phaseReset() {
