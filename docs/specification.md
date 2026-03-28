@@ -907,6 +907,20 @@ Confirmed intentional data flows (not bugs):
 - No cell coloring in this version.
 - No API or backend changes; answers already present in `allTipsParticipants[].tips.extraAnswers`.
 
+### 7.42 Extrafrågor — Searchable Combobox + Admin Player Picker (2026-03-28)
+
+- **Problem:** When extra questions ask for player names, free-text entry leads to inconsistent spelling, making scoring difficult.
+- **Solution:** Two-part approach:
+	1. **Static squad data file** (`data/vm2026-squads.json`): JSON mapping country names to arrays of player names. Covers all 48 World Cup nations. Updated once when official squads are announced.
+	2. **Admin player picker**: When editing a question, admin can click "Välj spelare" to open a modal that loads squad data. Admin searches/filters by country or name, selects relevant players, and appends them to the question's options list.
+	3. **Searchable combobox for participants**: When a question has >10 options, the `<select>` dropdown is replaced with a searchable text input + dropdown (`SearchableCombobox` component). Typing filters options in real time. Selecting an option sets the canonical name.
+- **Components:**
+	- `src/components/SearchableCombobox.tsx`: Reusable combobox with text filtering, keyboard navigation (ArrowDown/Up/Enter/Escape), and click-to-select.
+	- `src/pages/tips/ExtraQuestionsCard.tsx`: Uses `SearchableCombobox` when `options.length > 10`, otherwise regular `<select>`.
+	- `src/pages/admin/AdminQuestionsTab.tsx`: Added "Välj spelare" button + inline player picker panel that loads `data/vm2026-squads.json`, grouped by country, with search filter.
+- **Data flow:** Admin picks players → populates `options[]` → participant sees searchable combobox → selects canonical name → stored as `extraAnswers[questionId]`.
+- **No API or backend changes.** Squad data served as static JSON file.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

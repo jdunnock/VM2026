@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
     AdminQuestion,
@@ -5,6 +6,9 @@ import type {
     AdminQuestionDraft,
     AdminQuestionStatus,
 } from '../../types'
+import squadsData from '../../data/vm2026-squads.json'
+
+type SquadData = Record<string, string[]>
 
 type AdminQuestionsTabProps = {
     questionMessage: string
@@ -35,6 +39,38 @@ export function AdminQuestionsTab({
     saveQuestion,
     resetForm,
 }: AdminQuestionsTabProps) {
+    const [showPlayerPicker, setShowPlayerPicker] = useState(false)
+    const [playerSearch, setPlayerSearch] = useState('')
+    const [selectedCountry, setSelectedCountry] = useState('')
+
+    const squads = squadsData as SquadData
+
+    const existingOptions = new Set(
+        formState.optionsText.split('\n').map((s) => s.trim()).filter(Boolean)
+    )
+
+    function addPlayerToOptions(player: string) {
+        if (existingOptions.has(player)) return
+        const current = formState.optionsText.trim()
+        const updated = current ? `${current}\n${player}` : player
+        setFormState((prev) => ({ ...prev, optionsText: updated }))
+    }
+
+    function getFilteredPlayers(): Array<{ player: string; country: string }> {
+        const results: Array<{ player: string; country: string }> = []
+        const countries = selectedCountry ? [selectedCountry] : Object.keys(squads).sort()
+        const q = playerSearch.toLowerCase()
+        for (const country of countries) {
+            const players = squads[country] ?? []
+            for (const player of players) {
+                if (!q || player.toLowerCase().includes(q) || country.toLowerCase().includes(q)) {
+                    results.push({ player, country })
+                }
+            }
+        }
+        return results.slice(0, 100)
+    }
+
     return (
         <>
             <section className="panel">
@@ -127,6 +163,52 @@ export function AdminQuestionsTab({
                                 onChange={(e) => setFormState((current) => ({ ...current, optionsText: e.target.value }))}
                             />
                         </label>
+                        <button
+                            type="button"
+                            className="admin-link-btn"
+                            onClick={() => setShowPlayerPicker((v) => !v)}
+                        >
+                            {showPlayerPicker ? '▲ Stäng spelarväljare' : '▼ Välj spelare från trupper'}
+                        </button>
+                        {showPlayerPicker && (
+                            <div className="player-picker-panel">
+                                <div className="player-picker-controls">
+                                    <select
+                                        className="special-input"
+                                        value={selectedCountry}
+                                        onChange={(e) => setSelectedCountry(e.target.value)}
+                                    >
+                                        <option value="">Alla länder</option>
+                                        {Object.keys(squads).sort().map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        className="special-input"
+                                        type="text"
+                                        placeholder="Sök spelare…"
+                                        value={playerSearch}
+                                        onChange={(e) => setPlayerSearch(e.target.value)}
+                                    />
+                                </div>
+                                <div className="player-picker-list">
+                                    {getFilteredPlayers().map(({ player, country }) => (
+                                        <button
+                                            key={`${country}-${player}`}
+                                            type="button"
+                                            className={`player-picker-item${existingOptions.has(player) ? ' already-added' : ''}`}
+                                            onClick={() => addPlayerToOptions(player)}
+                                            disabled={existingOptions.has(player)}
+                                        >
+                                            {player} <span className="player-country">({country})</span>
+                                        </button>
+                                    ))}
+                                    {getFilteredPlayers().length === 0 && (
+                                        <p className="player-picker-empty">Inga spelare hittades</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         <label>
                             Rätt svar
                             <input

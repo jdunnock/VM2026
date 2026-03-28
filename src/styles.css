@@ -289,6 +289,136 @@ strong {
   box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
 }
 
+/* Searchable combobox */
+.searchable-combobox {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-combobox-input-wrap {
+  position: relative;
+}
+
+.searchable-combobox-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.searchable-combobox-clear:hover {
+  color: var(--ink);
+}
+
+.searchable-combobox-list {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.searchable-combobox-list li {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.searchable-combobox-list li.highlighted {
+  background: rgba(16, 163, 127, 0.1);
+}
+
+.searchable-combobox-list li.selected {
+  font-weight: 600;
+  color: var(--brand-strong);
+}
+
+.searchable-combobox-list li.no-results {
+  color: var(--muted);
+  cursor: default;
+  font-style: italic;
+}
+
+/* Admin player picker */
+.admin-link-btn {
+  background: none;
+  border: none;
+  color: var(--brand-strong);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 0;
+  text-align: left;
+}
+.admin-link-btn:hover {
+  text-decoration: underline;
+}
+.player-picker-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  background: #fff;
+}
+.player-picker-controls {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.player-picker-controls select,
+.player-picker-controls input {
+  flex: 1;
+}
+.player-picker-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.player-picker-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.player-picker-item:hover:not(:disabled) {
+  background: rgba(16, 163, 127, 0.12);
+  border-color: var(--brand-strong);
+}
+.player-picker-item.already-added {
+  opacity: 0.4;
+  cursor: default;
+}
+.player-country {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.player-picker-empty {
+  color: var(--muted);
+  font-style: italic;
+  margin: 8px 0;
+}
+
 .tip-input {
   width: 58px;
 }
