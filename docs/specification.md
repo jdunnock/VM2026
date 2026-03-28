@@ -1810,3 +1810,13 @@ Checklist run date: 2026-03-25
 	- **`server/db-scoring.js`** — converted to barrel re-export of the 5 previously exported functions from the new modules. All downstream consumers (`db.js`, `public-routes.js`, `tips-routes.js`) remain unchanged.
 - **Files changed:** `server/scoring-helpers.js` (new), `server/db-scoring-lookups.js` (new), `server/db-scoring-calc.js` (new), `server/db-scoring.js` (replaced with barrel re-export).
 - **No behavioral changes**: all exports, function signatures, and computation logic remain identical. This is a pure structural refactoring with added JSDoc documentation.
+### 7.47 App.tsx cleanup: renderPage prop grouping (2026-03-29)
+
+- **Problem:** `renderPage` accepts a flat object with 30+ properties, making the call site in `App()` noisy and hard to scan.
+- **Solution:** Group `renderPage` props into three semantic sub-objects: `tips` (tip data + mutations), `scores` (leaderboard, score detail, results, correctness), `ui` (session, phase, lock, touch, admin).
+  - Define `RenderPageTipsProps`, `RenderPageScoresProps`, `RenderPageUIProps` interfaces.
+  - `renderPage(activePage, { tips, scores, ui })` replaces the flat signature.
+  - Inside `renderPage`, unpack groups to pass individual props to page components — **page component interfaces remain unchanged**.
+  - Extract `LoginPage` to `src/pages/LoginPage.tsx`.
+- **Files changed:** `src/App.tsx`, `src/pages/LoginPage.tsx` (new).
+- **No behavioral changes**: all page rendering, prop passing, and user flows remain identical. This is a pure structural cleanup.

@@ -17,7 +17,7 @@ import type {
   ParticipantScoreDetail,
   ParticipantSession,
 } from './types'
-import { signIn, ApiError } from './api'
+import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
 import { TipsPage } from './pages/TipsPage'
 import { MyTipsPage } from './pages/MyTipsPage'
@@ -26,129 +26,54 @@ import { RulesPage } from './pages/RulesPage'
 import { AdminPage } from './pages/AdminPage'
 import { useSession, useParticipantTips, usePhaseRouting, useLeaderboard, useParticipantScoreDetail, usePublicData, useAllTipsData } from './hooks'
 
-function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession) => void }) {
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+interface RenderPageTipsProps {
+  fixtureTips: FixtureTip[]
+  lastSavedFixtureTips: FixtureTip[]
+  hasUnsavedChanges: boolean
+  groupPlacements: GroupPlacement[]
+  knockoutPredictions: KnockoutPredictionRound[]
+  extraAnswers: ExtraAnswers
+  onChangeTip: (
+    match: string,
+    key: 'homeScore' | 'awayScore' | 'sign',
+    value: number | '' | '1' | 'X' | '2',
+    source?: 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
+  ) => void
+  onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
+  onChangeGroupPlacement: (group: string, index: number, value: string) => void
+  onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
+  onChangeExtraAnswer: (questionId: number, answer: string) => void
+  onSaveTips: () => void
+  onClearTips: () => void
+  isSavingTips: boolean
+  tipsSaveMessage: string
+  myTipsSavedLabel: string
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+interface RenderPageScoresProps {
+  leaderboard: LeaderboardEntry[]
+  participantScoreDetail: ParticipantScoreDetail | null
+  isParticipantScoreLoading: boolean
+  results: MatchResult[]
+  allTipsParticipants: AllTipsParticipant[]
+  isAllTipsLoading: boolean
+  correctnessData: CorrectnessData | null
+}
 
-    const normalizedName = name.trim().replace(/\s+/g, ' ')
-    const normalizedCode = code.trim()
-
-    if (!normalizedName || !normalizedCode) {
-      setError('Namn och åtkomstkod krävs.')
-      return
-    }
-
-    setError('')
-    setIsSubmitting(true)
-
-    try {
-      const session = await signIn(normalizedName, normalizedCode)
-      onSuccess(session)
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message)
-      } else {
-        setError('Kunde inte ansluta till servern. Försök igen.')
-      }
-      setCode('')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-header">
-          <p className="eyebrow">Tipset</p>
-          <h1>Åtkomst</h1>
-          <p className="lead-text">Ange ditt namn och åtkomstkoden för att komma igång.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="name">Namn</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ditt namn"
-              autoComplete="name"
-              autoCapitalize="none"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="code">Åtkomstkod</label>
-            <input
-              id="code"
-              type="password"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Åtkomstkod"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? 'Kontrollerar...' : 'Gå vidare'}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
+interface RenderPageUIProps {
+  publishedQuestions: AdminQuestion[]
+  adminSession: AdminSession | null
+  onAdminSessionChange: (session: AdminSession | null) => void
+  isTouchDevice: boolean
+  isGlobalLockActive: boolean
+  globalDeadlineLabel: string
+  participant: ParticipantSession | null
+  phase: 'B' | 'C'
 }
 
 function renderPage(
   activePage: PageId,
-  pageProps: {
-    fixtureTips: FixtureTip[]
-    lastSavedFixtureTips: FixtureTip[]
-    hasUnsavedChanges: boolean
-    groupPlacements: GroupPlacement[]
-    knockoutPredictions: KnockoutPredictionRound[]
-    extraAnswers: ExtraAnswers
-    publishedQuestions: AdminQuestion[]
-    adminSession: AdminSession | null
-    onChangeTip: (
-      match: string,
-      key: 'homeScore' | 'awayScore' | 'sign',
-      value: number | '' | '1' | 'X' | '2',
-      source?: 'quick-score' | 'quick-sign' | 'fallback-score' | 'wheel-score',
-    ) => void
-    onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
-    onChangeGroupPlacement: (group: string, index: number, value: string) => void
-    onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
-    onChangeExtraAnswer: (questionId: number, answer: string) => void
-    onAdminSessionChange: (session: AdminSession | null) => void
-    onSaveTips: () => void
-    onClearTips: () => void
-    isSavingTips: boolean
-    tipsSaveMessage: string
-    myTipsSavedLabel: string
-    isTouchDevice: boolean
-    isGlobalLockActive: boolean
-    globalDeadlineLabel: string
-    participant: ParticipantSession | null
-    leaderboard: LeaderboardEntry[]
-    participantScoreDetail: ParticipantScoreDetail | null
-    isParticipantScoreLoading: boolean
-    results: MatchResult[]
-    allTipsParticipants: AllTipsParticipant[]
-    isAllTipsLoading: boolean
-    correctnessData: CorrectnessData | null
-    phase: 'B' | 'C'
-  },
+  { tips, scores, ui }: { tips: RenderPageTipsProps; scores: RenderPageScoresProps; ui: RenderPageUIProps },
 ) {
   switch (activePage) {
     case 'login':
@@ -156,77 +81,77 @@ function renderPage(
     case 'start':
       return (
         <StartPage
-          participant={pageProps.participant}
-          leaderboard={pageProps.leaderboard}
-          tipsSaveMessage={pageProps.tipsSaveMessage}
-          phase={pageProps.phase}
-          fixtureTips={pageProps.fixtureTips}
-          groupPlacements={pageProps.groupPlacements}
-          knockoutPredictions={pageProps.knockoutPredictions}
-          extraAnswers={pageProps.extraAnswers}
-          publishedQuestions={pageProps.publishedQuestions}
+          participant={ui.participant}
+          leaderboard={scores.leaderboard}
+          tipsSaveMessage={tips.tipsSaveMessage}
+          phase={ui.phase}
+          fixtureTips={tips.fixtureTips}
+          groupPlacements={tips.groupPlacements}
+          knockoutPredictions={tips.knockoutPredictions}
+          extraAnswers={tips.extraAnswers}
+          publishedQuestions={ui.publishedQuestions}
         />
       )
     case 'tips':
       return (
         <TipsPage
-          fixtureTips={pageProps.fixtureTips}
-          savedFixtureTips={pageProps.lastSavedFixtureTips}
-          hasUnsavedChanges={pageProps.hasUnsavedChanges}
-          groupPlacements={pageProps.groupPlacements}
-          knockoutPredictions={pageProps.knockoutPredictions}
-          extraAnswers={pageProps.extraAnswers}
-          publishedQuestions={pageProps.publishedQuestions}
-          onChangeTip={pageProps.onChangeTip}
-          onSetScorePreset={pageProps.onSetScorePreset}
-          onChangeGroupPlacement={pageProps.onChangeGroupPlacement}
-          onChangeKnockoutPrediction={pageProps.onChangeKnockoutPrediction}
-          onChangeExtraAnswer={pageProps.onChangeExtraAnswer}
-          onSave={pageProps.onSaveTips}
-          onClear={pageProps.onClearTips}
-          isSaving={pageProps.isSavingTips}
-          saveMessage={pageProps.tipsSaveMessage}
-          isTouchDevice={pageProps.isTouchDevice}
-          isGlobalLockActive={pageProps.isGlobalLockActive}
-          globalDeadlineLabel={pageProps.globalDeadlineLabel}
+          fixtureTips={tips.fixtureTips}
+          savedFixtureTips={tips.lastSavedFixtureTips}
+          hasUnsavedChanges={tips.hasUnsavedChanges}
+          groupPlacements={tips.groupPlacements}
+          knockoutPredictions={tips.knockoutPredictions}
+          extraAnswers={tips.extraAnswers}
+          publishedQuestions={ui.publishedQuestions}
+          onChangeTip={tips.onChangeTip}
+          onSetScorePreset={tips.onSetScorePreset}
+          onChangeGroupPlacement={tips.onChangeGroupPlacement}
+          onChangeKnockoutPrediction={tips.onChangeKnockoutPrediction}
+          onChangeExtraAnswer={tips.onChangeExtraAnswer}
+          onSave={tips.onSaveTips}
+          onClear={tips.onClearTips}
+          isSaving={tips.isSavingTips}
+          saveMessage={tips.tipsSaveMessage}
+          isTouchDevice={ui.isTouchDevice}
+          isGlobalLockActive={ui.isGlobalLockActive}
+          globalDeadlineLabel={ui.globalDeadlineLabel}
         />
       )
     case 'mine':
       return (
         <MyTipsPage
-          fixtureTips={pageProps.fixtureTips}
-          groupPlacements={pageProps.groupPlacements}
-          knockoutPredictions={pageProps.knockoutPredictions}
-          extraAnswers={pageProps.extraAnswers}
-          publishedQuestions={pageProps.publishedQuestions}
-          participantScoreDetail={pageProps.participantScoreDetail}
-          isParticipantScoreLoading={pageProps.isParticipantScoreLoading}
-          lastSavedLabel={pageProps.myTipsSavedLabel}
-          phase={pageProps.phase}
-          participant={pageProps.participant}
-          leaderboard={pageProps.leaderboard}
+          fixtureTips={tips.fixtureTips}
+          groupPlacements={tips.groupPlacements}
+          knockoutPredictions={tips.knockoutPredictions}
+          extraAnswers={tips.extraAnswers}
+          publishedQuestions={ui.publishedQuestions}
+          participantScoreDetail={scores.participantScoreDetail}
+          isParticipantScoreLoading={scores.isParticipantScoreLoading}
+          lastSavedLabel={tips.myTipsSavedLabel}
+          phase={ui.phase}
+          participant={ui.participant}
+          leaderboard={scores.leaderboard}
         />
       )
     case 'rules':
       return (
         <RulesPage
-          phase={pageProps.phase}
-          globalDeadlineLabel={pageProps.globalDeadlineLabel}
+          phase={ui.phase}
+          globalDeadlineLabel={ui.globalDeadlineLabel}
         />
       )
     case 'alltips':
       return (
         <AllTipsPage
-          participant={pageProps.participant}
-          allTipsParticipants={pageProps.allTipsParticipants}
-          isLoading={pageProps.isAllTipsLoading}
-          results={pageProps.results}
-          publishedQuestions={pageProps.publishedQuestions}
-          correctnessData={pageProps.correctnessData}
+          participant={ui.participant}
+          allTipsParticipants={scores.allTipsParticipants}
+          isLoading={scores.isAllTipsLoading}
+          results={scores.results}
+          publishedQuestions={ui.publishedQuestions}
+          correctnessData={scores.correctnessData}
         />
       )
     case 'admin':
-      return <AdminPage adminSession={pageProps.adminSession} onAdminSessionChange={pageProps.onAdminSessionChange} />
+      return <AdminPage adminSession={ui.adminSession} onAdminSessionChange={ui.onAdminSessionChange} />
     default:
       return null
   }
@@ -395,37 +320,43 @@ export function App() {
 
       <main className="content-shell">
         {renderPage(activePage, {
-          fixtureTips,
-          lastSavedFixtureTips,
-          hasUnsavedChanges,
-          groupPlacements,
-          knockoutPredictions,
-          extraAnswers,
-          publishedQuestions,
-          participant,
-          leaderboard,
-          participantScoreDetail,
-          isParticipantScoreLoading,
-          results,
-          allTipsParticipants,
-          isAllTipsLoading,
-          correctnessData,
-          phase: effectiveLifecyclePhase,
-          adminSession,
-          onChangeTip,
-          onSetScorePreset,
-          onChangeGroupPlacement,
-          onChangeKnockoutPrediction,
-          onChangeExtraAnswer,
-          onAdminSessionChange: setAdminSession,
-          onSaveTips,
-          onClearTips,
-          isSavingTips: isTipsSaving,
-          tipsSaveMessage,
-          myTipsSavedLabel,
-          isTouchDevice,
-          isGlobalLockActive,
-          globalDeadlineLabel,
+          tips: {
+            fixtureTips,
+            lastSavedFixtureTips,
+            hasUnsavedChanges,
+            groupPlacements,
+            knockoutPredictions,
+            extraAnswers,
+            onChangeTip,
+            onSetScorePreset,
+            onChangeGroupPlacement,
+            onChangeKnockoutPrediction,
+            onChangeExtraAnswer,
+            onSaveTips,
+            onClearTips,
+            isSavingTips: isTipsSaving,
+            tipsSaveMessage,
+            myTipsSavedLabel,
+          },
+          scores: {
+            leaderboard,
+            participantScoreDetail,
+            isParticipantScoreLoading,
+            results,
+            allTipsParticipants,
+            isAllTipsLoading,
+            correctnessData,
+          },
+          ui: {
+            publishedQuestions,
+            adminSession,
+            onAdminSessionChange: setAdminSession,
+            isTouchDevice,
+            isGlobalLockActive,
+            globalDeadlineLabel,
+            participant,
+            phase: effectiveLifecyclePhase as 'B' | 'C',
+          },
         })}
       </main>
 
