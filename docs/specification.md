@@ -876,10 +876,10 @@ Confirmed intentional data flows (not bugs):
 ### 7.39 Alla tips — Grupplaceringar tab (2026-03-28)
 
 - Adds "Grupplaceringar" as second tab on the Alla tips page.
-- Table structure mirrors the Gruppspel tab pattern: horizontal scrollable table with sticky left columns and own-column highlight.
+- Table structure mirrors the Gruppspel tab pattern: horizontal scrollable table with sticky left columns.
 	- Rows: one per group (Grupp A through Grupp L, 12 rows).
-	- Columns: "Grupp" (sticky), then one column per participant (alphabetical).
-	- Cell content: numbered list of 4 predicted team placements (1–4) or "—" if no prediction.
+	- Columns: "Grupp" (sticky), "Mitt tips" (sticky, logged-in participant's picks), then one column per other participant (alphabetical, scrollable).
+	- Cell content: left-aligned numbered list of 4 predicted team placements (1–4) or "—" if no prediction.
 - Group codes derived from `GROUP_TEAMS` in `fixtures.ts` (new export: `allGroupCodes`).
 - No cell coloring in this version (actual group standings not yet available on frontend).
 - No API or backend changes; data already present in `allTipsParticipants[].tips.groupPlacements`.
