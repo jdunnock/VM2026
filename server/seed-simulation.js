@@ -197,7 +197,7 @@ const ADMIN_QUESTIONS = [
     {
         questionText: 'Vilken grupp får flest mål totalt?',
         category: 'Gruppspelsfrågor',
-        options: ['Grupp A-D', 'Grupp E-H', 'Grupp I-L'],
+        options: ['Grupp A', 'Grupp B', 'Grupp C', 'Grupp D', 'Grupp E', 'Grupp F', 'Grupp G', 'Grupp H', 'Grupp I', 'Grupp J', 'Grupp K', 'Grupp L'],
         correctAnswer: '',
         points: 3,
         lockTime: '2026-06-09T22:00:00',
@@ -206,7 +206,7 @@ const ADMIN_QUESTIONS = [
     {
         questionText: 'Hur många 0-0-matcher blir det i gruppspelet?',
         category: 'Gruppspelsfrågor',
-        options: ['0-3', '4-6', '7+'],
+        options: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
         correctAnswer: '',
         points: 3,
         lockTime: '2026-06-09T22:00:00',
@@ -224,7 +224,7 @@ const ADMIN_QUESTIONS = [
     {
         questionText: 'Hur många mål görs i kvartsfinalerna totalt?',
         category: 'Slutspelsfrågor',
-        options: ['0-8', '9-12', '13+'],
+        options: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24'],
         correctAnswer: '',
         points: 4,
         lockTime: '2026-06-28T22:00:00',
@@ -260,7 +260,7 @@ const ADMIN_QUESTIONS = [
 ]
 
 // Correct answers per question index (applied during settlement phases)
-const QUESTION_ANSWERS = ['Grupp E-H', '4-6', 'Ja', '9-12', 'Sydamerika', 'Brasilien', 'Kylian Mbappé']
+const QUESTION_ANSWERS = ['Grupp F', '5', 'Ja', '14', 'Sydamerika', 'Brasilien', 'Kylian Mbappé']
 
 // ─── Deterministic pseudo-random ─────────────────────────────────────
 
