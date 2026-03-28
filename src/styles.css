@@ -1932,6 +1932,7 @@ strong {
   text-align: left;
 }
 
+.alltips-group-table td.alltips-col-match,
 .alltips-group-table td.alltips-col-participant,
 .alltips-group-table td.alltips-col-result {
   vertical-align: top;
@@ -1953,6 +1954,24 @@ strong {
   .alltips-col-result {
     left: 110px;
     min-width: 50px;
+  }
+
+  .alltips-group-table .alltips-col-match {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.72rem;
+  }
+
+  .alltips-group-table .alltips-col-result {
+    left: 52px;
+    min-width: 44px;
+  }
+
+  .alltips-group-table .alltips-group-picks {
+    font-size: 0.72rem;
   }
 }
 
