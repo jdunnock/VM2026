@@ -9,6 +9,9 @@ import {
     listParticipantScores,
     listPublishedAdminQuestions,
     findParticipantById,
+    buildGroupStandingsLookups,
+    buildKnockoutRoundLookups,
+    buildPublishedQuestionLookups,
 } from './db.js'
 import { parseParticipantId, parseMatchId } from './validators.js'
 
@@ -28,6 +31,45 @@ function createPublicRoutes(app, globalDeadline) {
         } catch (error) {
             console.error('Results read error:', error)
             res.status(500).json({ error: 'Kunde inte hämta matchresultat.' })
+        }
+    })
+
+    app.get('/api/results/correctness', async (_req, res) => {
+        try {
+            const [groupStandingsLookups, knockoutRoundLookups, questionLookups] = await Promise.all([
+                buildGroupStandingsLookups(),
+                buildKnockoutRoundLookups(),
+                buildPublishedQuestionLookups(),
+            ])
+
+            const groupStandings = {}
+            for (const [groupCode, standing] of groupStandingsLookups.byGroup.entries()) {
+                groupStandings[groupCode] = {
+                    settled: standing.settled,
+                    actualPicks: standing.actualPicks,
+                }
+            }
+
+            const knockoutRounds = {}
+            for (const [round, lookup] of knockoutRoundLookups.byRound.entries()) {
+                knockoutRounds[round] = {
+                    settled: lookup.settled,
+                    actualTeams: lookup.actualTeams,
+                }
+            }
+
+            const extraAnswers = {}
+            for (const [id, question] of questionLookups.byId.entries()) {
+                extraAnswers[id] = {
+                    correctAnswer: question.correctAnswer || null,
+                    settled: Boolean(question.correctAnswer),
+                }
+            }
+
+            res.json({ groupStandings, knockoutRounds, extraAnswers })
+        } catch (error) {
+            console.error('Correctness data read error:', error)
+            res.status(500).json({ error: 'Kunde inte hämta rättningsdata.' })
         }
     })
 

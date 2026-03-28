@@ -168,6 +168,12 @@ export type PersistedTipsState = {
     extraAnswers: ExtraAnswers
 }
 
+export type CorrectnessData = {
+    groupStandings: Record<string, { settled: boolean; actualPicks: string[] | null }>
+    knockoutRounds: Record<string, { settled: boolean; actualTeams: string[] }>
+    extraAnswers: Record<string, { correctAnswer: string | null; settled: boolean }>
+}
+
 export type AllTipsParticipant = {
     participantId: number
     name: string

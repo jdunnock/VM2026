@@ -2062,6 +2062,16 @@ strong {
   text-align: left;
 }
 
+.alltips-group-picks span.alltips-hit-exact {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.alltips-group-picks span.alltips-miss {
+  color: #991b1b;
+  text-decoration: line-through;
+}
+
 .alltips-extra-table .alltips-col-match {
   width: 200px;
   min-width: 200px;

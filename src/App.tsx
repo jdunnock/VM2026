@@ -6,6 +6,7 @@ import type {
   AdminQuestion,
   AdminSession,
   AllTipsParticipant,
+  CorrectnessData,
   ExtraAnswers,
   FixtureTip,
   GroupPlacement,
@@ -160,6 +161,7 @@ function renderPage(
     results: MatchResult[]
     allTipsParticipants: AllTipsParticipant[]
     isAllTipsLoading: boolean
+    correctnessData: CorrectnessData | null
     phase: 'B' | 'C'
   },
 ) {
@@ -235,6 +237,7 @@ function renderPage(
           isLoading={pageProps.isAllTipsLoading}
           results={pageProps.results}
           publishedQuestions={pageProps.publishedQuestions}
+          correctnessData={pageProps.correctnessData}
         />
       )
     case 'admin':
@@ -294,6 +297,7 @@ export function App() {
   const [publishedQuestions, setPublishedQuestions] = useState<AdminQuestion[]>([])
   const [allTipsParticipants, setAllTipsParticipants] = useState<AllTipsParticipant[]>([])
   const [isAllTipsLoading, setIsAllTipsLoading] = useState(false)
+  const [correctnessData, setCorrectnessData] = useState<CorrectnessData | null>(null)
   const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   // Load leaderboard
@@ -434,8 +438,23 @@ export function App() {
     }
 
     loadAllTips()
-    // Also load results for hit/miss coloring
+    // Also load results and correctness data for hit/miss coloring
     loadPublicResults()
+
+    const loadCorrectnessData = async () => {
+      try {
+        const response = await fetch('/api/results/correctness')
+        if (response.ok) {
+          setCorrectnessData(await response.json())
+        } else {
+          setCorrectnessData(null)
+        }
+      } catch {
+        setCorrectnessData(null)
+      }
+    }
+
+    loadCorrectnessData()
   }, [activePage])
 
   // Save tips with leaderboard and score refresh
@@ -545,6 +564,7 @@ export function App() {
           results,
           allTipsParticipants,
           isAllTipsLoading,
+          correctnessData,
           phase: effectiveLifecyclePhase,
           adminSession,
           onChangeTip,

@@ -1754,4 +1754,27 @@ Checklist run date: 2026-03-25
 - TipsPage Extrafrågor tab uses `SearchableCombobox` when a question has >10 options.
 - Deleted `db-special.js`, removed `special_results` and `participant_special_predictions` table schemas, removed dead validator functions (`isValidSpecialPredictions`, `normalizeSpecialResultsPayload`), cleaned test payloads.
 - `seed-simulation.js` updated: removed `generateSpecialPredictions`, `upsertSpecialResults` import/usage; added Slutsegrare and Skytteligavinnare as admin questions in `ADMIN_QUESTIONS` (category: Turneringsfrågor); settling now uses `settleQuestion()` in phaseC7.
+
+### 7.44 Alla tips — Correctness Highlighting for Grupplaceringar, Slutspel, Extrafrågor (2026-03-28)
+
+- **Problem:** Gruppspel tab on AllTipsPage already shows green/red hit/miss coloring per participant. The remaining three tabs (Grupplaceringar, Slutspel, Extrafrågor) displayed predictions with no indication of correctness.
+- **Solution:**
+	- New read-only API endpoint `GET /api/results/correctness` returns answer-key data:
+		- `groupStandings`: per group code — `{ settled: boolean, actualPicks: string[] | null }` derived from completed group matches using `deriveSettledGroupStanding()`.
+		- `knockoutRounds`: per round title — `{ settled: boolean, actualTeams: string[] }` derived from completed knockout matches.
+		- `extraAnswers`: per question id — `{ correctAnswer: string | null, settled: boolean }` from admin questions table.
+	- Correctness data loaded in `App.tsx` when navigating to the Alla tips page.
+	- **Grupplaceringar tab**: "Facit" column shows actual group standings when settled. Each team in a participant's prediction is highlighted per-position: green (`alltips-hit-exact`) if correct position, red (`alltips-miss`) if wrong.
+	- **Slutspel tab**: "Facit" column shows actual teams per round when settled. Each team in a participant's prediction is highlighted: green if team participated in the round, red if not.
+	- **Extrafrågor tab**: "Rätt svar" column shows correct answer when settled. Each participant's answer cell is highlighted: green if matches correct answer (case-insensitive), red if wrong.
+	- All three tabs now show all participants in a unified column layout (consistent with Gruppspel tab), with the logged-in user's column highlighted via `alltips-own-col`.
+	- Unsettled items show no highlighting (neutral display).
+	- Reuses existing CSS classes (`alltips-hit-exact`, `alltips-miss`, `alltips-own-col`).
+- **Backend changes:**
+	- Exported `buildGroupStandingsLookups()`, `buildKnockoutRoundLookups()`, `buildPublishedQuestionLookups()` from `db-scoring.js`.
+	- Added `GET /api/results/correctness` route in `public-routes.js`.
+- **Frontend changes:**
+	- New `CorrectnessData` type in `types.ts`.
+	- `App.tsx`: new state `correctnessData`, fetched from `/api/results/correctness` when `activePage === 'alltips'`.
+	- `AllTipsPage.tsx`: `correctnessData` prop added; highlighting logic in Grupplaceringar, Slutspel, and Extrafrågor tabs.
 	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.

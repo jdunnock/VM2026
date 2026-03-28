@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { AdminQuestion, AllTipsParticipant, ExtraAnswers, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
+import type { AdminQuestion, AllTipsParticipant, CorrectnessData, ExtraAnswers, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
 import { allGroupCodes, groupStageFixtureTemplates } from '../fixtures'
 import { knockoutPredictionTemplates } from '../constants'
 import { deriveSignFromScore } from '../utils'
@@ -39,12 +39,14 @@ export function AllTipsPage({
     isLoading,
     results,
     publishedQuestions,
+    correctnessData,
 }: {
     participant: ParticipantSession | null
     allTipsParticipants: AllTipsParticipant[]
     isLoading: boolean
     results: MatchResult[]
     publishedQuestions: AdminQuestion[]
+    correctnessData: CorrectnessData | null
 }) {
     const [activeSection, setActiveSection] = useState<AllTipsSectionTab>('Gruppspel')
 
@@ -154,11 +156,15 @@ export function AllTipsPage({
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Omgång</th>
-                                    <th className="alltips-col-result alltips-own-col">Mitt tips</th>
-                                    {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => (
+                                    <th className="alltips-col-result">Facit</th>
+                                    {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className="alltips-col-participant"
+                                            className={
+                                                p.participantId === participant?.participantId
+                                                    ? 'alltips-col-participant alltips-own-col'
+                                                    : 'alltips-col-participant'
+                                            }
                                         >
                                             {p.name}
                                         </th>
@@ -167,41 +173,45 @@ export function AllTipsPage({
                             </thead>
                             <tbody>
                                 {knockoutPredictionTemplates.map((round) => {
-                                    const ownParticipant = participant
-                                        ? allTipsParticipants.find((p) => p.participantId === participant.participantId)
-                                        : undefined
-                                    const ownPicks = findKnockoutPicks(
-                                        ownParticipant?.tips?.knockoutPredictions as KnockoutPredictionRound[] | undefined,
-                                        round.title,
-                                    )
-                                    const hasOwnPicks = ownPicks.length > 0 && ownPicks.some((t) => t !== '')
+                                    const roundLookup = correctnessData?.knockoutRounds[round.title]
+                                    const isSettled = roundLookup?.settled === true
+                                    const actualTeams = roundLookup?.actualTeams ?? []
+                                    const actualTeamKeys = new Set(actualTeams.map((t) => t.toLowerCase()))
 
                                     return (
                                         <tr key={round.title}>
                                             <td className="alltips-col-match">{round.title}</td>
-                                            <td className="alltips-col-result alltips-own-col">
-                                                {hasOwnPicks ? (
+                                            <td className="alltips-col-result">
+                                                {isSettled ? (
                                                     <div className="alltips-group-picks">
-                                                        {ownPicks.filter((t) => t !== '').map((team, i) => (
+                                                        {actualTeams.map((team, i) => (
                                                             <span key={i}>{team}</span>
                                                         ))}
                                                     </div>
                                                 ) : '—'}
                                             </td>
-                                            {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => {
+                                            {allTipsParticipants.map((p) => {
                                                 const picks = findKnockoutPicks(
                                                     p.tips?.knockoutPredictions as KnockoutPredictionRound[] | undefined,
                                                     round.title,
                                                 )
                                                 const hasPicks = picks.length > 0 && picks.some((t) => t !== '')
+                                                const isOwn = p.participantId === participant?.participantId
 
                                                 return (
-                                                    <td key={p.participantId} className="alltips-col-participant">
+                                                    <td key={p.participantId} className={isOwn ? 'alltips-col-participant alltips-own-col' : 'alltips-col-participant'}>
                                                         {hasPicks ? (
                                                             <div className="alltips-group-picks">
-                                                                {picks.filter((t) => t !== '').map((team, i) => (
-                                                                    <span key={i}>{team}</span>
-                                                                ))}
+                                                                {picks.filter((t) => t !== '').map((team, i) => {
+                                                                    let spanClass = ''
+                                                                    if (isSettled) {
+                                                                        const hit = actualTeamKeys.has(team.toLowerCase())
+                                                                        spanClass = hit ? 'alltips-hit-exact' : 'alltips-miss'
+                                                                    }
+                                                                    return (
+                                                                        <span key={i} className={spanClass}>{team}</span>
+                                                                    )
+                                                                })}
                                                             </div>
                                                         ) : '—'}
                                                     </td>
@@ -222,11 +232,15 @@ export function AllTipsPage({
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Grupp</th>
-                                    <th className="alltips-col-result alltips-own-col">Mitt tips</th>
-                                    {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => (
+                                    <th className="alltips-col-result">Facit</th>
+                                    {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className="alltips-col-participant"
+                                            className={
+                                                p.participantId === participant?.participantId
+                                                    ? 'alltips-col-participant alltips-own-col'
+                                                    : 'alltips-col-participant'
+                                            }
                                         >
                                             {p.name}
                                         </th>
@@ -236,41 +250,44 @@ export function AllTipsPage({
                             <tbody>
                                 {allGroupCodes.map((code) => {
                                     const groupName = `Grupp ${code}`
-                                    const ownParticipant = participant
-                                        ? allTipsParticipants.find((p) => p.participantId === participant.participantId)
-                                        : undefined
-                                    const ownPicks = findGroupPlacements(
-                                        ownParticipant?.tips?.groupPlacements as GroupPlacement[] | undefined,
-                                        groupName,
-                                    )
-                                    const hasOwnPicks = ownPicks.length > 0 && ownPicks.some((t) => t !== '')
+                                    const standing = correctnessData?.groupStandings[code]
+                                    const isSettled = standing?.settled === true
+                                    const actualPicks = standing?.actualPicks ?? []
 
                                     return (
                                         <tr key={code}>
                                             <td className="alltips-col-match">{groupName}</td>
-                                            <td className="alltips-col-result alltips-own-col">
-                                                {hasOwnPicks ? (
+                                            <td className="alltips-col-result">
+                                                {isSettled ? (
                                                     <div className="alltips-group-picks">
-                                                        {ownPicks.map((team, i) => (
-                                                            <span key={i}>{i + 1}. {team || '—'}</span>
+                                                        {actualPicks.map((team, i) => (
+                                                            <span key={i}>{i + 1}. {team}</span>
                                                         ))}
                                                     </div>
                                                 ) : '—'}
                                             </td>
-                                            {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => {
+                                            {allTipsParticipants.map((p) => {
                                                 const picks = findGroupPlacements(
                                                     p.tips?.groupPlacements as GroupPlacement[] | undefined,
                                                     groupName,
                                                 )
                                                 const hasPicks = picks.length > 0 && picks.some((t) => t !== '')
+                                                const isOwn = p.participantId === participant?.participantId
 
                                                 return (
-                                                    <td key={p.participantId} className="alltips-col-participant">
+                                                    <td key={p.participantId} className={isOwn ? 'alltips-col-participant alltips-own-col' : 'alltips-col-participant'}>
                                                         {hasPicks ? (
                                                             <div className="alltips-group-picks">
-                                                                {picks.map((team, i) => (
-                                                                    <span key={i}>{i + 1}. {team || '—'}</span>
-                                                                ))}
+                                                                {picks.map((team, i) => {
+                                                                    let spanClass = ''
+                                                                    if (isSettled && team) {
+                                                                        const hit = actualPicks[i] && team.toLowerCase() === actualPicks[i].toLowerCase()
+                                                                        spanClass = hit ? 'alltips-hit-exact' : 'alltips-miss'
+                                                                    }
+                                                                    return (
+                                                                        <span key={i} className={spanClass}>{i + 1}. {team || '—'}</span>
+                                                                    )
+                                                                })}
                                                             </div>
                                                         ) : '—'}
                                                     </td>
@@ -291,11 +308,15 @@ export function AllTipsPage({
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Fråga</th>
-                                    <th className="alltips-col-result alltips-own-col">Mitt tips</th>
-                                    {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => (
+                                    <th className="alltips-col-result">Rätt svar</th>
+                                    {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className="alltips-col-participant"
+                                            className={
+                                                p.participantId === participant?.participantId
+                                                    ? 'alltips-col-participant alltips-own-col'
+                                                    : 'alltips-col-participant'
+                                            }
                                         >
                                             {p.name}
                                         </th>
@@ -304,24 +325,29 @@ export function AllTipsPage({
                             </thead>
                             <tbody>
                                 {publishedQuestions.map((question) => {
-                                    const ownParticipant = participant
-                                        ? allTipsParticipants.find((p) => p.participantId === participant.participantId)
-                                        : undefined
-                                    const ownAnswers = ownParticipant?.tips?.extraAnswers as ExtraAnswers | undefined
-                                    const ownAnswer = ownAnswers?.[String(question.id)] || ''
+                                    const questionCorrectness = correctnessData?.extraAnswers[String(question.id)]
+                                    const isSettled = questionCorrectness?.settled === true
+                                    const correctAnswer = questionCorrectness?.correctAnswer ?? null
 
                                     return (
                                         <tr key={question.id}>
                                             <td className="alltips-col-match">{question.questionText}</td>
-                                            <td className="alltips-col-result alltips-own-col">
-                                                {ownAnswer || '—'}
+                                            <td className="alltips-col-result">
+                                                {isSettled && correctAnswer ? correctAnswer : '—'}
                                             </td>
-                                            {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => {
+                                            {allTipsParticipants.map((p) => {
                                                 const answers = p.tips?.extraAnswers as ExtraAnswers | undefined
                                                 const answer = answers?.[String(question.id)] || ''
+                                                const isOwn = p.participantId === participant?.participantId
+
+                                                let cellClass = isOwn ? 'alltips-col-participant alltips-own-col' : 'alltips-col-participant'
+                                                if (isSettled && answer && correctAnswer) {
+                                                    const hit = answer.toLowerCase() === correctAnswer.toLowerCase()
+                                                    cellClass += hit ? ' alltips-hit-exact' : ' alltips-miss'
+                                                }
 
                                                 return (
-                                                    <td key={p.participantId} className="alltips-col-participant">
+                                                    <td key={p.participantId} className={cellClass}>
                                                         {answer || '—'}
                                                     </td>
                                                 )

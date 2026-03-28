@@ -200,7 +200,7 @@ async function buildCompletedResultLookups() {
     return { byId, byGroupMatchDate, byGroupMatch }
 }
 
-async function buildPublishedQuestionLookups() {
+export async function buildPublishedQuestionLookups() {
     const rows = await all(
         `
       SELECT
@@ -231,7 +231,7 @@ async function buildPublishedQuestionLookups() {
     return { byId }
 }
 
-async function buildGroupStandingsLookups() {
+export async function buildGroupStandingsLookups() {
     const rows = await all(
         `
       SELECT
@@ -267,7 +267,7 @@ async function buildGroupStandingsLookups() {
     return { byGroup }
 }
 
-async function buildKnockoutRoundLookups() {
+export async function buildKnockoutRoundLookups() {
     const rows = await all(
         `
       SELECT round, home_team, away_team
