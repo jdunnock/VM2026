@@ -1753,4 +1753,5 @@ Checklist run date: 2026-03-25
 - TipsPage Extrafrågor tab uses `SearchableCombobox` when a question has >10 options.
 - Backend `normalizeTipsPayload` made `specialPredictions` optional for backward compatibility with existing saved data.
 - DB tables `special_results` and `participant_special_predictions` kept but no longer read or written.
+- `seed-simulation.js` updated: removed `generateSpecialPredictions`, `upsertSpecialResults` import/usage; added Slutsegrare and Skytteligavinnare as admin questions in `ADMIN_QUESTIONS`; settling now uses `settleQuestion()` in phaseC7.
 	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.

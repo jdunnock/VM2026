@@ -12,7 +12,6 @@ import { initDatabase, closeDatabase } from './db-schema.js'
 import { createParticipant, findParticipantByName } from './db-participants.js'
 import { upsertTipsByParticipantId, deleteTipsByParticipantId } from './db-tips.js'
 import { upsertMatchResult } from './db-results.js'
-import { upsertSpecialResults } from './db-special.js'
 import { createAdminQuestion, updateAdminQuestion, listAdminQuestions } from './db-questions.js'
 import { hashAccessCode } from './middleware.js'
 
@@ -244,10 +243,28 @@ const ADMIN_QUESTIONS = [
         lockTime: '2026-06-09T22:00:00',
         status: 'published',
     },
+    {
+        questionText: 'Slutsegrare',
+        category: 'Slutspelsfrågor',
+        options: ['Brasilien', 'Frankrike', 'Argentina', 'Spanien', 'Tyskland', 'England'],
+        correctAnswer: '',
+        points: 4,
+        lockTime: '2026-06-09T22:00:00',
+        status: 'published',
+    },
+    {
+        questionText: 'Skytteligavinnare',
+        category: 'Slutspelsfrågor',
+        options: ['Kylian Mbappé', 'Lionel Messi', 'Erling Haaland', 'Harry Kane', 'Vinícius Jr.', 'Lamine Yamal'],
+        correctAnswer: '',
+        points: 4,
+        lockTime: '2026-06-09T22:00:00',
+        status: 'published',
+    },
 ]
 
 // Correct answers per question index (applied during settlement phases)
-const QUESTION_ANSWERS = ['Grupp E-H', '4-6', 'Ja', '9-12', 'Sydamerika']
+const QUESTION_ANSWERS = ['Grupp E-H', '4-6', 'Ja', '9-12', 'Sydamerika', 'Brasilien', 'Kylian Mbappé']
 
 // ─── Deterministic pseudo-random ─────────────────────────────────────
 
@@ -417,26 +434,6 @@ function generateKnockoutPredictions(participantIndex) {
     return predictions
 }
 
-function generateSpecialPredictions(participantIndex) {
-    const rng = makeRng(participantIndex * 3571 + 97)
-    const isExpert = EXPERT.includes(participantIndex)
-
-    const winnerOptions = ['Brasilien', 'Frankrike', 'Argentina', 'Spanien', 'Tyskland', 'England']
-    const scorerOptions = ['Kylian Mbappé', 'Lionel Messi', 'Erling Haaland', 'Harry Kane', 'Vinícius Jr.', 'Lamine Yamal']
-
-    let winner, topScorer
-
-    if (isExpert && rng() > 0.4) {
-        winner = TOURNAMENT_WINNER
-        topScorer = rng() > 0.5 ? TOP_SCORER : scorerOptions[Math.floor(rng() * scorerOptions.length)]
-    } else {
-        winner = winnerOptions[Math.floor(rng() * winnerOptions.length)]
-        topScorer = scorerOptions[Math.floor(rng() * scorerOptions.length)]
-    }
-
-    return { winner, topScorer }
-}
-
 function generateExtraAnswers(participantIndex, simQuestions, allPublishedQuestions) {
     const rng = makeRng(participantIndex * 2203 + 41)
     const isExpert = EXPERT.includes(participantIndex)
@@ -537,7 +534,6 @@ async function phaseSetup() {
             fixtureTips: generateFixtureTips(i),
             groupPlacements: generateGroupPlacements(i),
             knockoutPredictions: generateKnockoutPredictions(i),
-            specialPredictions: generateSpecialPredictions(i),
             extraAnswers: generateExtraAnswers(i, questions, allPublished),
         }
         await upsertTipsByParticipantId(participantIds[i], tips)
@@ -727,12 +723,13 @@ async function phaseC7() {
     await insertKnockoutResults(FINAL_RESULTS)
     console.log(`C7: Inserted ${FINAL_RESULTS.length} final match results`)
 
-    // Set special results
-    await upsertSpecialResults({ winner: TOURNAMENT_WINNER, topScorer: TOP_SCORER })
-    console.log(`C7: Set special results: winner=${TOURNAMENT_WINNER}, topScorer=${TOP_SCORER}`)
+    // Settle Slutsegrare (question 5) and Skytteligavinnare (question 6)
+    const questions = await listAdminQuestions()
+    await settleQuestion(5, questions)
+    await settleQuestion(6, questions)
+    console.log('C7: Settled Slutsegrare and Skytteligavinnare')
 
     // Settle 33-33-33 frågor (question 4)
-    const questions = await listAdminQuestions()
     await settleQuestion(4, questions)
     console.log('C7: Settled 33-33-33 fråga')
 }
@@ -748,7 +745,6 @@ async function phaseReset() {
             await run('DELETE FROM participant_fixture_tips WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participant_group_placements WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participant_knockout_predictions WHERE participant_id = ?', [p.id])
-            await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participants WHERE id = ?', [p.id])
             console.log(`  Deleted participant "${name}" (id=${p.id})`)
@@ -758,10 +754,6 @@ async function phaseReset() {
     // Clear all match results
     await run('DELETE FROM match_results')
     console.log('  Cleared match_results')
-
-    // Clear special results
-    await run('DELETE FROM special_results')
-    console.log('  Cleared special_results')
 
     // Clear admin questions (only sim questions)
     const simTexts = new Set(ADMIN_QUESTIONS.map(q => q.questionText))
