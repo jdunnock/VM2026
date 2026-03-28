@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import type { AllTipsParticipant, FixtureTip, MatchResult, ParticipantSession } from '../types'
-import { groupStageFixtureTemplates } from '../fixtures'
+import type { AllTipsParticipant, FixtureTip, GroupPlacement, MatchResult, ParticipantSession } from '../types'
+import { allGroupCodes, groupStageFixtureTemplates } from '../fixtures'
 import { deriveSignFromScore } from '../utils'
 
-type AllTipsSectionTab = 'Gruppspel'
+type AllTipsSectionTab = 'Gruppspel' | 'Grupplaceringar'
 
-const sectionTabs: AllTipsSectionTab[] = ['Gruppspel']
+const sectionTabs: AllTipsSectionTab[] = ['Gruppspel', 'Grupplaceringar']
 
 function getSign(homeScore: number | '', awayScore: number | ''): '' | '1' | 'X' | '2' {
     return deriveSignFromScore(homeScore, awayScore)
@@ -18,6 +18,12 @@ function findTipForFixture(tips: FixtureTip[] | undefined, fixtureId: string): F
 
 function findResult(results: MatchResult[], fixtureId: string): MatchResult | undefined {
     return results.find((r) => r.matchId === fixtureId)
+}
+
+function findGroupPlacements(placements: GroupPlacement[] | undefined, groupName: string): string[] {
+    if (!placements) return []
+    const entry = placements.find((g) => g.group === groupName)
+    return entry?.picks ?? []
 }
 
 export function AllTipsPage({
@@ -121,6 +127,65 @@ export function AllTipsPage({
                                                 return (
                                                     <td key={p.participantId} className={cellClass}>
                                                         {tipLabel}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+            {!isLoading && activeSection === 'Grupplaceringar' && (
+                <section className="panel alltips-table-wrap">
+                    <div className="alltips-scroll">
+                        <table className="alltips-table alltips-group-table">
+                            <thead>
+                                <tr>
+                                    <th className="alltips-col-match">Grupp</th>
+                                    {allTipsParticipants.map((p) => (
+                                        <th
+                                            key={p.participantId}
+                                            className={
+                                                p.participantId === participant?.participantId
+                                                    ? 'alltips-col-participant alltips-own-col'
+                                                    : 'alltips-col-participant'
+                                            }
+                                        >
+                                            {p.name}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {allGroupCodes.map((code) => {
+                                    const groupName = `Grupp ${code}`
+                                    return (
+                                        <tr key={code}>
+                                            <td className="alltips-col-match">{groupName}</td>
+                                            {allTipsParticipants.map((p) => {
+                                                const picks = findGroupPlacements(
+                                                    p.tips?.groupPlacements as GroupPlacement[] | undefined,
+                                                    groupName,
+                                                )
+                                                const hasPicks = picks.length > 0 && picks.some((t) => t !== '')
+
+                                                let cellClass = 'alltips-col-participant'
+                                                if (p.participantId === participant?.participantId) {
+                                                    cellClass += ' alltips-own-col'
+                                                }
+
+                                                return (
+                                                    <td key={p.participantId} className={cellClass}>
+                                                        {hasPicks ? (
+                                                            <div className="alltips-group-picks">
+                                                                {picks.map((team, i) => (
+                                                                    <span key={i}>{i + 1}. {team || '—'}</span>
+                                                                ))}
+                                                            </div>
+                                                        ) : '—'}
                                                     </td>
                                                 )
                                             })}

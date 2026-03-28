@@ -328,6 +328,8 @@ export const fixtureCounts = {
   total: allTournamentFixtures.length,
 } as const
 
+export const allGroupCodes = Object.keys(GROUP_TEAMS).sort()
+
 export const groupStageFixtureTemplates: FixtureTemplateRow[] = groupStageFixtures.map((fixture) => ({
   id: fixture.id,
   group: fixture.group,
