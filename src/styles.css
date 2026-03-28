@@ -1886,6 +1886,10 @@ strong {
   background: rgba(16, 163, 127, 0.06) !important;
 }
 
+.alltips-col-result.alltips-own-col {
+  background: #f0faf6 !important;
+}
+
 .alltips-table thead .alltips-own-col {
   background: #f0faf6 !important;
 }
