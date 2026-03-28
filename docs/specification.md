@@ -895,6 +895,18 @@ Confirmed intentional data flows (not bugs):
 - No cell coloring in this version (actual knockout results comparison not implemented).
 - No API or backend changes; data already present in `allTipsParticipants[].tips.knockoutPredictions`.
 
+### 7.41 Alla tips — Extrafrågor tab (2026-03-28)
+
+- Adds "Extrafrågor" as fourth and final tab on the Alla tips page.
+- Table structure mirrors the Grupplaceringar/Slutspel tab pattern: horizontal scrollable table with sticky left columns.
+	- Rows: one per published extra question (dynamic, fetched from `publishedQuestions`).
+	- Columns: "Fråga" (sticky), "Mitt tips" (sticky, logged-in participant's answer), then one column per other participant (alphabetical, scrollable).
+	- Cell content: participant's selected answer text or "—" if unanswered.
+- Questions sourced from `GET /api/questions/published` (same data already loaded in App.tsx).
+- `publishedQuestions` prop added to AllTipsPage component.
+- No cell coloring in this version.
+- No API or backend changes; answers already present in `allTipsParticipants[].tips.extraAnswers`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

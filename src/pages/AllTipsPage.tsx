@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import type { AllTipsParticipant, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
+import type { AdminQuestion, AllTipsParticipant, ExtraAnswers, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
 import { allGroupCodes, groupStageFixtureTemplates } from '../fixtures'
 import { knockoutPredictionTemplates } from '../constants'
 import { deriveSignFromScore } from '../utils'
 
-type AllTipsSectionTab = 'Gruppspel' | 'Grupplaceringar' | 'Slutspel'
+type AllTipsSectionTab = 'Gruppspel' | 'Grupplaceringar' | 'Slutspel' | 'Extrafrågor'
 
-const sectionTabs: AllTipsSectionTab[] = ['Gruppspel', 'Grupplaceringar', 'Slutspel']
+const sectionTabs: AllTipsSectionTab[] = ['Gruppspel', 'Grupplaceringar', 'Slutspel', 'Extrafrågor']
 
 function getSign(homeScore: number | '', awayScore: number | ''): '' | '1' | 'X' | '2' {
     return deriveSignFromScore(homeScore, awayScore)
@@ -38,11 +38,13 @@ export function AllTipsPage({
     allTipsParticipants,
     isLoading,
     results,
+    publishedQuestions,
 }: {
     participant: ParticipantSession | null
     allTipsParticipants: AllTipsParticipant[]
     isLoading: boolean
     results: MatchResult[]
+    publishedQuestions: AdminQuestion[]
 }) {
     const [activeSection, setActiveSection] = useState<AllTipsSectionTab>('Gruppspel')
 
@@ -271,6 +273,56 @@ export function AllTipsPage({
                                                                 ))}
                                                             </div>
                                                         ) : '—'}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+            {!isLoading && activeSection === 'Extrafrågor' && (
+                <section className="panel alltips-table-wrap">
+                    <div className="alltips-scroll">
+                        <table className="alltips-table alltips-group-table">
+                            <thead>
+                                <tr>
+                                    <th className="alltips-col-match">Fråga</th>
+                                    <th className="alltips-col-result alltips-own-col">Mitt tips</th>
+                                    {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => (
+                                        <th
+                                            key={p.participantId}
+                                            className="alltips-col-participant"
+                                        >
+                                            {p.name}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {publishedQuestions.map((question) => {
+                                    const ownParticipant = participant
+                                        ? allTipsParticipants.find((p) => p.participantId === participant.participantId)
+                                        : undefined
+                                    const ownAnswers = ownParticipant?.tips?.extraAnswers as ExtraAnswers | undefined
+                                    const ownAnswer = ownAnswers?.[String(question.id)] || ''
+
+                                    return (
+                                        <tr key={question.id}>
+                                            <td className="alltips-col-match">{question.questionText}</td>
+                                            <td className="alltips-col-result alltips-own-col">
+                                                {ownAnswer || '—'}
+                                            </td>
+                                            {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => {
+                                                const answers = p.tips?.extraAnswers as ExtraAnswers | undefined
+                                                const answer = answers?.[String(question.id)] || ''
+
+                                                return (
+                                                    <td key={p.participantId} className="alltips-col-participant">
+                                                        {answer || '—'}
                                                     </td>
                                                 )
                                             })}

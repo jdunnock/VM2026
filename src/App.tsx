@@ -241,6 +241,7 @@ function renderPage(
           allTipsParticipants={pageProps.allTipsParticipants}
           isLoading={pageProps.isAllTipsLoading}
           results={pageProps.results}
+          publishedQuestions={pageProps.publishedQuestions}
         />
       )
     case 'admin':
