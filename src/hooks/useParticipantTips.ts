@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { groupPlacementTemplates, knockoutPredictionTemplates } from '../constants'
+import { fetchTips, saveTips, deleteTips, ApiError } from '../api'
 import type {
   ExtraAnswers,
   FixtureTip,
@@ -10,9 +11,8 @@ import type {
 import { createDefaultFixtureTips, deriveSignFromScore, normalizePersistedTipsState } from '../utils'
 
 /**
- * Manages participant tips state: fixture tips, group placements, knockout predictions, special predictions, extra answers.
- * Handles loading from /api/tips, mutations via handlers, and save/clear operations.
- * Syncs state with localStorage and manages save/clear messaging.
+ * Manages participant tips state: fixture tips, group placements, knockout predictions, extra answers.
+ * Handles loading from API, mutations via handlers, and save/clear operations.
  */
 export function useParticipantTips(participant: ParticipantSession | null, isGlobalLockActive: boolean, globalDeadlineLabel: string, onSessionInvalid?: () => void) {
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
@@ -41,17 +41,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
 
     const loadTips = async () => {
       try {
-        const response = await fetch(`/api/tips/${participant.participantId}`)
-        if (!response.ok) {
-          if (response.status === 404) {
-            onSessionInvalid?.()
-            return
-          }
-          setTipsSaveMessage('Kunde inte hämta sparade tips')
-          return
-        }
-
-        const payload = await response.json()
+        const payload = await fetchTips(participant.participantId)
         const normalizedState = normalizePersistedTipsState(payload.tips)
         setFixtureTips(normalizedState.fixtureTips)
         setGroupPlacements(normalizedState.groupPlacements)
@@ -68,7 +58,11 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
           setTipsSaveMessage('Inte sparad ännu')
           setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          onSessionInvalid?.()
+          return
+        }
         setTipsSaveMessage('Kunde inte hämta sparade tips')
       }
     }
@@ -227,7 +221,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     })
   }
 
-  const onSaveTips = async (onLoadLeaderboard?: () => Promise<void>, onLoadScore?: (pid: number) => Promise<void>) => {
+  const onSaveTips = async (onAfterSave?: () => Promise<void>) => {
     if (!participant) {
       return
     }
@@ -241,26 +235,12 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     setTipsSaveMessage('Sparar...')
 
     try {
-      const response = await fetch(`/api/tips/${participant.participantId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tips: {
-            fixtureTips,
-            groupPlacements,
-            knockoutPredictions,
-            extraAnswers,
-          },
-        }),
+      const payload = await saveTips(participant.participantId, {
+        fixtureTips,
+        groupPlacements,
+        knockoutPredictions,
+        extraAnswers,
       })
-
-      const payload = await response.json()
-      if (!response.ok) {
-        setTipsSaveMessage(payload.error ?? 'Kunde inte spara tips')
-        return
-      }
 
       const normalizedState = normalizePersistedTipsState(payload.tips)
       setFixtureTips(normalizedState.fixtureTips)
@@ -273,21 +253,15 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setTipsSaveMessage(`Sparad: ${formatted}`)
       setMyTipsSavedLabel(`Senast uppdaterad: ${formatted}`)
 
-      if (onLoadLeaderboard) {
-        await onLoadLeaderboard()
-      }
-
-      if (onLoadScore) {
-        await onLoadScore(participant.participantId)
-      }
-    } catch {
-      setTipsSaveMessage('Kunde inte spara tips')
+      await onAfterSave?.()
+    } catch (err) {
+      setTipsSaveMessage(err instanceof ApiError ? err.message : 'Kunde inte spara tips')
     } finally {
       setIsTipsSaving(false)
     }
   }
 
-  const onClearTips = async (onLoadLeaderboard?: () => Promise<void>, onLoadScore?: (pid: number) => Promise<void>) => {
+  const onClearTips = async (onAfterClear?: () => Promise<void>) => {
     if (!participant) {
       return
     }
@@ -300,14 +274,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     setIsTipsSaving(true)
 
     try {
-      const response = await fetch(`/api/tips/${participant.participantId}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        setTipsSaveMessage('Kunde inte rensa tips')
-        return
-      }
+      await deleteTips(participant.participantId)
 
       setFixtureTips(createDefaultFixtureTips())
       setGroupPlacements(groupPlacementTemplates)
@@ -318,13 +285,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setTipsSaveMessage('Sparade tips rensade')
       setMyTipsSavedLabel('Senast uppdaterad: inte sparad')
 
-      if (onLoadLeaderboard) {
-        await onLoadLeaderboard()
-      }
-
-      if (onLoadScore) {
-        await onLoadScore(participant.participantId)
-      }
+      await onAfterClear?.()
     } catch {
       setTipsSaveMessage('Kunde inte rensa tips')
     } finally {

@@ -17,13 +17,14 @@ import type {
   ParticipantScoreDetail,
   ParticipantSession,
 } from './types'
+import { signIn, ApiError } from './api'
 import { StartPage } from './pages/StartPage'
 import { TipsPage } from './pages/TipsPage'
 import { MyTipsPage } from './pages/MyTipsPage'
 import { AllTipsPage } from './pages/AllTipsPage'
 import { RulesPage } from './pages/RulesPage'
 import { AdminPage } from './pages/AdminPage'
-import { useSession, useParticipantTips, usePhaseRouting } from './hooks'
+import { useSession, useParticipantTips, usePhaseRouting, useLeaderboard, useParticipantScoreDetail, usePublicData, useAllTipsData } from './hooks'
 
 function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession) => void }) {
   const [name, setName] = useState('')
@@ -46,31 +47,15 @@ function LoginPage({ onSuccess }: { onSuccess: (participant: ParticipantSession)
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/auth/sign-in', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: normalizedName,
-          code: normalizedCode,
-        }),
-      })
-
-      const payload = await response.json()
-
-      if (!response.ok) {
-        setError(payload.error ?? 'Ett oväntat fel inträffade. Försök igen.')
-        setCode('')
-        return
+      const session = await signIn(normalizedName, normalizedCode)
+      onSuccess(session)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Kunde inte ansluta till servern. Försök igen.')
       }
-
-      onSuccess({
-        participantId: payload.participantId,
-        name: payload.name,
-      })
-    } catch {
-      setError('Kunde inte ansluta till servern. Försök igen.')
+      setCode('')
     } finally {
       setIsSubmitting(false)
     }
@@ -256,6 +241,15 @@ export function App() {
     setIsLoggedIn(false)
   })
 
+  // Data hooks
+  const { leaderboard, loadLeaderboard } = useLeaderboard(participant)
+  const { participantScoreDetail, isParticipantScoreLoading, loadParticipantScore } = useParticipantScoreDetail(participant, activePage)
+  const { results, publishedQuestions } = usePublicData(activePage)
+  const { allTipsParticipants, isAllTipsLoading, correctnessData } = useAllTipsData(activePage)
+
+  // UI state
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+
   // Guard: warn when navigating away from tips page with unsaved changes
   const guardedSetActivePage = (nextPage: string) => {
     if (activePage === 'tips' && hasUnsavedChanges && nextPage !== 'tips') {
@@ -289,69 +283,6 @@ export function App() {
     return `${daysUntilDeadline} dagar kvar`
   })()
 
-  // Local state for results, leaderboard, scores, and UI state
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [participantScoreDetail, setParticipantScoreDetail] = useState<ParticipantScoreDetail | null>(null)
-  const [isParticipantScoreLoading, setIsParticipantScoreLoading] = useState(false)
-  const [results, setResults] = useState<MatchResult[]>([])
-  const [publishedQuestions, setPublishedQuestions] = useState<AdminQuestion[]>([])
-  const [allTipsParticipants, setAllTipsParticipants] = useState<AllTipsParticipant[]>([])
-  const [isAllTipsLoading, setIsAllTipsLoading] = useState(false)
-  const [correctnessData, setCorrectnessData] = useState<CorrectnessData | null>(null)
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
-
-  // Load leaderboard
-  const loadLeaderboard = async () => {
-    try {
-      const response = await fetch('/api/scores')
-      if (!response.ok) {
-        setLeaderboard([])
-        return
-      }
-
-      const payload = await response.json()
-      const nextLeaderboard = Array.isArray(payload.scores) ? (payload.scores as LeaderboardEntry[]) : []
-      setLeaderboard(nextLeaderboard)
-    } catch {
-      setLeaderboard([])
-    }
-  }
-
-  // Load participant score detail
-  const loadParticipantScore = async (participantId: number) => {
-    setIsParticipantScoreLoading(true)
-    try {
-      const response = await fetch(`/api/scores/${participantId}`)
-      if (!response.ok) {
-        setParticipantScoreDetail(null)
-        return
-      }
-
-      const payload = await response.json()
-      setParticipantScoreDetail(payload as ParticipantScoreDetail)
-    } catch {
-      setParticipantScoreDetail(null)
-    } finally {
-      setIsParticipantScoreLoading(false)
-    }
-  }
-
-  // Load public results and special results
-  const loadPublicResults = async () => {
-    try {
-      const resultsResponse = await fetch('/api/results')
-
-      if (resultsResponse.ok) {
-        const payload = await resultsResponse.json()
-        setResults(Array.isArray(payload.results) ? (payload.results as MatchResult[]) : [])
-      } else {
-        setResults([])
-      }
-    } catch {
-      setResults([])
-    }
-  }
-
   // Detect touch device
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -366,105 +297,19 @@ export function App() {
     return () => media.removeEventListener('change', updateTouchMode)
   }, [])
 
-  // Load leaderboard when participant changes
-  useEffect(() => {
-    loadLeaderboard()
-  }, [participant])
-
-  // Load participant score detail when participant or active page changes
-  useEffect(() => {
-    if (!participant) {
-      setParticipantScoreDetail(null)
-      return
-    }
-
-    if (activePage !== 'mine') {
-      return
-    }
-
-    loadParticipantScore(participant.participantId)
-  }, [participant, activePage])
-
-  // Load public results when active page changes to 'mine' (Phase C needs results)
-  useEffect(() => {
-    if (activePage !== 'mine') {
-      return
-    }
-
-    loadPublicResults()
-  }, [activePage])
-
-  // Load published questions when active page changes
-  useEffect(() => {
-    const loadPublishedQuestions = async () => {
-      try {
-        const response = await fetch('/api/questions/published')
-        if (!response.ok) {
-          return
-        }
-
-        const payload = await response.json()
-        const normalizedQuestions = Array.isArray(payload.questions)
-          ? (payload.questions as AdminQuestion[])
-          : []
-        setPublishedQuestions(normalizedQuestions)
-      } catch {
-        setPublishedQuestions([])
-      }
-    }
-
-    loadPublishedQuestions()
-  }, [activePage])
-
-  // Load all participants' tips when navigating to 'alltips'
-  useEffect(() => {
-    if (activePage !== 'alltips') return
-
-    const loadAllTips = async () => {
-      setIsAllTipsLoading(true)
-      try {
-        const response = await fetch('/api/tips/all')
-        if (!response.ok) {
-          setAllTipsParticipants([])
-          return
-        }
-        const payload = await response.json()
-        setAllTipsParticipants(Array.isArray(payload.participants) ? payload.participants : [])
-      } catch {
-        setAllTipsParticipants([])
-      } finally {
-        setIsAllTipsLoading(false)
-      }
-    }
-
-    loadAllTips()
-    // Also load results and correctness data for hit/miss coloring
-    loadPublicResults()
-
-    const loadCorrectnessData = async () => {
-      try {
-        const response = await fetch('/api/results/correctness')
-        if (response.ok) {
-          setCorrectnessData(await response.json())
-        } else {
-          setCorrectnessData(null)
-        }
-      } catch {
-        setCorrectnessData(null)
-      }
-    }
-
-    loadCorrectnessData()
-  }, [activePage])
-
-  // Save tips with leaderboard and score refresh
+  // Save/clear tips with leaderboard and score refresh
   const onSaveTips = async () => {
-    await saveParticipantTips(loadLeaderboard, loadParticipantScore)
+    await saveParticipantTips(async () => {
+      await loadLeaderboard()
+      if (participant) await loadParticipantScore(participant.participantId)
+    })
   }
 
-  // Clear tips with leaderboard and score refresh
   const onClearTips = async () => {
-    await clearParticipantTips(loadLeaderboard, loadParticipantScore)
+    await clearParticipantTips(async () => {
+      await loadLeaderboard()
+      if (participant) await loadParticipantScore(participant.participantId)
+    })
   }
 
   // Logout participant

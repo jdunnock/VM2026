@@ -1778,3 +1778,24 @@ Checklist run date: 2026-03-25
 	- `App.tsx`: new state `correctnessData`, fetched from `/api/results/correctness` when `activePage === 'alltips'`.
 	- `AllTipsPage.tsx`: `correctnessData` prop added; highlighting logic in Grupplaceringar, Slutspel, and Extrafrågor tabs.
 	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.
+
+### 7.45 Refactor: Centralized API layer + custom hooks extraction (2026-03-28)
+
+- **Problem:** App.tsx had grown to ~600 lines with 9 independent state slices, 7 inline fetch functions, and 5 useEffect hooks. API calls were scattered across App.tsx, hooks, and page components with inconsistent error handling (some silently reset state, no standardized error pattern). The `useParticipantTips` hook accepted callback functions (`onLoadLeaderboard`, `onLoadScore`) creating tight coupling between hooks.
+- **Solution:**
+	- **New centralized API layer** (`src/api/`):
+		- `client.ts`: typed fetch wrapper (`apiGet`, `apiPost`, `apiPut`, `apiDelete`) with `ApiError` class for standardized error handling. All API calls go through this single point.
+		- `endpoints.ts`: typed endpoint functions (`fetchLeaderboard`, `fetchParticipantScore`, `fetchPublicResults`, `fetchCorrectnessData`, `fetchPublishedQuestions`, `fetchTips`, `saveTips`, `deleteTips`, `fetchAllTips`, `fetchConfig`, `signIn`). Each function handles response normalization (e.g., extracting arrays from wrapper objects).
+		- `index.ts`: barrel export for clean imports.
+	- **New custom hooks** extracted from App.tsx:
+		- `useLeaderboard(participant)` — leaderboard state + auto-load on participant change.
+		- `useParticipantScoreDetail(participant, activePage)` — score detail state + auto-load when on 'mine' page.
+		- `usePublicData(activePage)` — match results + published questions, loaded on relevant page changes.
+		- `useAllTipsData(activePage)` — all participants' tips + correctness data, loaded only on 'alltips' page.
+	- **Updated existing hooks:**
+		- `useParticipantTips`: replaced raw `fetch()` calls with `fetchTips`, `saveTips`, `deleteTips` from API layer. Simplified callback pattern from `(onLoadLeaderboard, onLoadScore)` to single `onAfterSave`/`onAfterClear` callback.
+		- `usePhaseRouting`: replaced raw `fetch('/api/config')` with `fetchConfig()` from API layer.
+	- **App.tsx reduced from ~600 to ~350 lines**: removed 9 useState declarations, 5 useEffect hooks, and 7 inline async functions. Replaced with 4 hook calls.
+	- **LoginPage**: replaced raw `fetch('/api/auth/sign-in')` with `signIn()` from API layer, using `ApiError` for error messages.
+- **Files changed:** `src/api/client.ts` (new), `src/api/endpoints.ts` (new), `src/api/index.ts` (new), `src/hooks/useLeaderboard.ts` (new), `src/hooks/useParticipantScoreDetail.ts` (new), `src/hooks/usePublicData.ts` (new), `src/hooks/useAllTipsData.ts` (new), `src/hooks/useParticipantTips.ts`, `src/hooks/usePhaseRouting.ts`, `src/hooks/index.ts`, `src/App.tsx`.
+- **No behavioral changes**: API calls, timing, and error fallback behavior remain identical. This is a pure structural refactoring.

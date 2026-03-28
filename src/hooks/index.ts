@@ -1,3 +1,7 @@
 export { useSession } from './useSession'
 export { useParticipantTips } from './useParticipantTips'
 export { usePhaseRouting } from './usePhaseRouting'
+export { useLeaderboard } from './useLeaderboard'
+export { useParticipantScoreDetail } from './useParticipantScoreDetail'
+export { usePublicData } from './usePublicData'
+export { useAllTipsData } from './useAllTipsData'

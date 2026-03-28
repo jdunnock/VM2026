@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { GLOBAL_DEADLINE_FALLBACK } from '../constants'
+import { fetchConfig } from '../api'
 import type { PageId } from '../types'
 
 /**
@@ -19,8 +20,7 @@ export function usePhaseRouting() {
 
   // Fetch global deadline from /api/config on mount
   useEffect(() => {
-    fetch('/api/config')
-      .then((res) => res.json())
+    fetchConfig()
       .then((data) => {
         if (typeof data?.globalDeadline === 'string' && data.globalDeadline) {
           setGlobalDeadlineStr(data.globalDeadline)
