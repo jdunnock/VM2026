@@ -128,7 +128,6 @@ test('scores API awards exact, sign-only, wrong, missing-tip, and unsettled matc
         fixtureTips: [fixtureTip],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -251,7 +250,6 @@ test('scores API supports legacy fallback without fixtureId', async () => {
         ],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -287,7 +285,6 @@ test('scores API includes extra question scoring', async () => {
         fixtureTips: [],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {
             [String(questionId)]: 'A',
         },
@@ -298,7 +295,6 @@ test('scores API includes extra question scoring', async () => {
         fixtureTips: [],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {
             [String(questionId)]: 'B',
         },
@@ -355,7 +351,6 @@ test('scores API returns leaderboard ordering with shared ranks', async () => {
         ],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -452,7 +447,6 @@ test('scores API group placement: all correct, partial, and none correct', async
             },
         ],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -466,7 +460,6 @@ test('scores API group placement: all correct, partial, and none correct', async
             },
         ],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -480,7 +473,6 @@ test('scores API group placement: all correct, partial, and none correct', async
             },
         ],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -540,7 +532,6 @@ test('scores API knockout predictions: settled round awards per-team points', as
                 picks: allTeams,
             },
         ],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -554,7 +545,6 @@ test('scores API knockout predictions: settled round awards per-team points', as
                 picks: allTeams.slice(0, 10),
             },
         ],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -643,7 +633,6 @@ test('scores API edge case: partial match results track settled and unsettled co
         ],
         groupPlacements: [],
         knockoutPredictions: [],
-        specialPredictions: { winner: '', topScorer: '' },
         extraAnswers: {},
     })
 
@@ -689,7 +678,6 @@ test('tips API preserves full knockout round pick lengths (32/16/8/4/2)', async 
             fixtureTips: [],
             groupPlacements: [],
             knockoutPredictions,
-            specialPredictions: { winner: '', topScorer: '' },
             extraAnswers: {},
         },
     })

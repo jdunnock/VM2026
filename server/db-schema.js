@@ -59,15 +59,6 @@ export async function initDatabase() {
   `)
 
   await run(`
-    CREATE TABLE IF NOT EXISTS special_results (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      winner TEXT NOT NULL DEFAULT '',
-      top_scorer TEXT NOT NULL DEFAULT '',
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-
-  await run(`
     CREATE TABLE IF NOT EXISTS participant_fixture_tips (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       participant_id INTEGER NOT NULL,
@@ -110,19 +101,6 @@ export async function initDatabase() {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       synced_from_json BOOLEAN DEFAULT 0,
       UNIQUE(participant_id, round_title, position),
-      FOREIGN KEY (participant_id) REFERENCES participants (id)
-    )
-  `)
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS participant_special_predictions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      participant_id INTEGER NOT NULL UNIQUE,
-      winner_team TEXT,
-      top_scorer_name TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      synced_from_json BOOLEAN DEFAULT 0,
       FOREIGN KEY (participant_id) REFERENCES participants (id)
     )
   `)

@@ -739,6 +739,8 @@ async function phaseReset() {
             await run('DELETE FROM participant_group_placements WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participant_knockout_predictions WHERE participant_id = ?', [p.id])
             await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [p.id])
+            // Legacy table — delete if it still exists
+            await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [p.id]).catch(() => {})
             await run('DELETE FROM participants WHERE id = ?', [p.id])
             console.log(`  Deleted participant "${name}" (id=${p.id})`)
         }

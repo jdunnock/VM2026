@@ -100,17 +100,6 @@ function isValidKnockoutPredictions(knockoutPredictions) {
     })
 }
 
-function isValidSpecialPredictions(specialPredictions) {
-    if (!specialPredictions || typeof specialPredictions !== 'object') {
-        return false
-    }
-
-    return (
-        typeof specialPredictions.winner === 'string' &&
-        typeof specialPredictions.topScorer === 'string'
-    )
-}
-
 function isValidExtraAnswers(extraAnswers) {
     if (!extraAnswers || typeof extraAnswers !== 'object' || Array.isArray(extraAnswers)) {
         return false
@@ -280,17 +269,6 @@ function normalizeMatchResultPayload(payload, matchId) {
         awayScore,
         resultStatus,
         settledAt: settledAtRaw || null,
-    }
-}
-
-function normalizeSpecialResultsPayload(payload) {
-    if (!payload || typeof payload !== 'object') {
-        return null
-    }
-
-    return {
-        winner: typeof payload.winner === 'string' ? payload.winner.trim() : '',
-        topScorer: typeof payload.topScorer === 'string' ? payload.topScorer.trim() : '',
     }
 }
 
