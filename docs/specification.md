@@ -852,6 +852,27 @@ Confirmed intentional data flows (not bugs):
 - `ParticipantScorePanel` component remains exported but is no longer used on the `Resultat & poäng` page (still available for other pages).
 - No API or data model changes.
 
+### 7.38 Merge Resultat & poäng into Mina tips (2026-03-28)
+
+- Motivation: `Resultat & poäng` and `Mina tips` had identical 4-tab structure (Gruppspel, Grupplaceringar, Slutspel, Extrafrågor) with overlapping participant score data. Users had to switch between pages in Phase C to compare predictions with results.
+- Decision: Remove `Resultat & poäng` as a separate page. Enrich `Mina tips` so it adapts by lifecycle phase:
+	- **Phase B**: Shows submitted predictions only (no stats, no results).
+	- **Phase C**: Shows predictions enriched with actual results and scoring inline per tab.
+- Changes:
+	- Removed `'results'` from `PageId` union type and nav items.
+	- Removed `ResultsPage` component and its file (`src/pages/ResultsPage.tsx`).
+	- Updated `Mina tips` page hero to adapt copy by phase (Phase C: "Dina tips och matchresultat").
+	- Added 6 stats mini-cards in Phase C (Placering, Matcher, Gruppspel, Grupplaceringar, Slutspel, Extrafrågor) — adopted from former ResultsPage layout.
+	- Gruppspel tab in Phase C: enriched fixture-breakdown layout with Match, Resultat, Tips, 1X2, Poäng columns and hit/miss indicators.
+	- Grupplaceringar tab in Phase C: inline scoring with points and reason badges per group (no accordion).
+	- Slutspel tab in Phase C: inline scoring with points and reason badges per round (no accordion).
+	- Extrafrågor tab in Phase C: inline scoring with points and reason badges per item (no accordion).
+	- Accordion pattern removed from Phase C display in favor of always-visible inline scoring.
+	- App.tsx fetch logic updated: `mine` page in Phase C also loads results via `loadPublicResults()`.
+	- Updated `normalizePageForPhase` to redirect `'results'` → `'mine'`.
+- Supersedes: 7.14 (Participant-facing results and score view), partially supersedes 7.36 (stats consolidation).
+- No API or backend changes.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

@@ -37,8 +37,8 @@ export function usePhaseRouting() {
       return 'mine'
     }
 
-    if (!isTrackingPhaseActive && page === 'results') {
-      return 'tips'
+    if (!isTrackingPhaseActive && page === 'results' as string) {
+      return 'mine'
     }
 
     return page

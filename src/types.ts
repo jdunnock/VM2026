@@ -1,4 +1,4 @@
-export type PageId = 'login' | 'start' | 'results' | 'tips' | 'mine' | 'alltips' | 'rules' | 'admin'
+export type PageId = 'login' | 'start' | 'tips' | 'mine' | 'alltips' | 'rules' | 'admin'
 
 export type NavItem = {
     id: PageId

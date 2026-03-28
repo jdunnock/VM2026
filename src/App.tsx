@@ -16,10 +16,8 @@ import type {
   ParticipantScoreDetail,
   ParticipantSession,
   SpecialPredictions,
-  SpecialResultsState,
 } from './types'
 import { StartPage } from './pages/StartPage'
-import { ResultsPage } from './pages/ResultsPage'
 import { TipsPage } from './pages/TipsPage'
 import { MyTipsPage } from './pages/MyTipsPage'
 import { AllTipsPage } from './pages/AllTipsPage'
@@ -163,8 +161,6 @@ function renderPage(
     participantScoreDetail: ParticipantScoreDetail | null
     isParticipantScoreLoading: boolean
     results: MatchResult[]
-    specialResults: SpecialResultsState
-    isResultsLoading: boolean
     allTipsParticipants: AllTipsParticipant[]
     isAllTipsLoading: boolean
     phase: 'B' | 'C'
@@ -186,18 +182,6 @@ function renderPage(
           specialPredictions={pageProps.specialPredictions}
           extraAnswers={pageProps.extraAnswers}
           publishedQuestions={pageProps.publishedQuestions}
-        />
-      )
-    case 'results':
-      return (
-        <ResultsPage
-          participant={pageProps.participant}
-          leaderboard={pageProps.leaderboard}
-          participantScoreDetail={pageProps.participantScoreDetail}
-          isParticipantScoreLoading={pageProps.isParticipantScoreLoading}
-          results={pageProps.results}
-          specialResults={pageProps.specialResults}
-          isResultsLoading={pageProps.isResultsLoading}
         />
       )
     case 'tips':
@@ -239,6 +223,8 @@ function renderPage(
           isParticipantScoreLoading={pageProps.isParticipantScoreLoading}
           lastSavedLabel={pageProps.myTipsSavedLabel}
           phase={pageProps.phase}
+          participant={pageProps.participant}
+          leaderboard={pageProps.leaderboard}
         />
       )
     case 'rules':
@@ -415,16 +401,16 @@ export function App() {
       return
     }
 
-    if (activePage !== 'mine' && activePage !== 'results') {
+    if (activePage !== 'mine') {
       return
     }
 
     loadParticipantScore(participant.participantId)
   }, [participant, activePage])
 
-  // Load public results when active page changes to 'results'
+  // Load public results when active page changes to 'mine' (Phase C needs results)
   useEffect(() => {
-    if (activePage !== 'results') {
+    if (activePage !== 'mine') {
       return
     }
 
@@ -520,7 +506,7 @@ export function App() {
       return false
     }
 
-    if (!isTrackingPhaseActive && (item.id === 'results' || item.id === 'alltips')) {
+    if (!isTrackingPhaseActive && item.id === 'alltips') {
       return false
     }
 
@@ -585,8 +571,6 @@ export function App() {
           participantScoreDetail,
           isParticipantScoreLoading,
           results,
-          specialResults,
-          isResultsLoading,
           allTipsParticipants,
           isAllTipsLoading,
           phase: effectiveLifecyclePhase,
