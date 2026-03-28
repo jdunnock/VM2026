@@ -1799,3 +1799,14 @@ Checklist run date: 2026-03-25
 	- **LoginPage**: replaced raw `fetch('/api/auth/sign-in')` with `signIn()` from API layer, using `ApiError` for error messages.
 - **Files changed:** `src/api/client.ts` (new), `src/api/endpoints.ts` (new), `src/api/index.ts` (new), `src/hooks/useLeaderboard.ts` (new), `src/hooks/useParticipantScoreDetail.ts` (new), `src/hooks/usePublicData.ts` (new), `src/hooks/useAllTipsData.ts` (new), `src/hooks/useParticipantTips.ts`, `src/hooks/usePhaseRouting.ts`, `src/hooks/index.ts`, `src/App.tsx`.
 - **No behavioral changes**: API calls, timing, and error fallback behavior remain identical. This is a pure structural refactoring.
+
+### 7.46 Refactor: db-scoring.js split into focused modules (2026-03-28)
+
+- **Problem:** `server/db-scoring.js` had grown to 878 lines with 25 functions (5 exported, 20 private) mixing three distinct concerns: pure text normalization utilities, database lookup builders, and scoring calculation/ranking logic.
+- **Solution:** Split into three focused modules behind the existing barrel re-export:
+	- **`server/scoring-helpers.js`** — 8 pure functions with no DB dependencies: `normalizeText`, `normalizeComparableText`, `normalizeGroupCode`, `normalizeMatchLabel`, `extractGroupCode`, `uniqueNormalizedTexts`, `buildGroupMatchDateKey`, `buildGroupMatchKey`. All functions have JSDoc annotations.
+	- **`server/db-scoring-lookups.js`** — 7 database lookup builders + 1 pure helper (`deriveSettledGroupStanding`): `buildScoringLookups`, `listParticipantsWithTips`, `getParticipantWithTipsById`, `buildCompletedResultLookups`, `buildPublishedQuestionLookups`, `buildGroupStandingsLookups`, `buildKnockoutRoundLookups`. All functions have JSDoc annotations.
+	- **`server/db-scoring-calc.js`** — 9 scoring/ranking functions: `listParticipantScores`, `getParticipantScoreByParticipantId`, `calculateParticipantScore`, `rankParticipantScoreSummaries`, `scoreFixtureTip`, `scoreExtraAnswer`, `resolveResultForTip`, `derivePredictedSign`, `deriveOutcomeSign`. All functions have JSDoc annotations.
+	- **`server/db-scoring.js`** — converted to barrel re-export of the 5 previously exported functions from the new modules. All downstream consumers (`db.js`, `public-routes.js`, `tips-routes.js`) remain unchanged.
+- **Files changed:** `server/scoring-helpers.js` (new), `server/db-scoring-lookups.js` (new), `server/db-scoring-calc.js` (new), `server/db-scoring.js` (replaced with barrel re-export).
+- **No behavioral changes**: all exports, function signatures, and computation logic remain identical. This is a pure structural refactoring with added JSDoc documentation.
