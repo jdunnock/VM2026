@@ -287,7 +287,7 @@ export function AllTipsPage({
             {!isLoading && activeSection === 'Extrafrågor' && (
                 <section className="panel alltips-table-wrap">
                     <div className="alltips-scroll">
-                        <table className="alltips-table alltips-group-table">
+                        <table className="alltips-table alltips-group-table alltips-extra-table">
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Fråga</th>

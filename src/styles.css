@@ -1932,6 +1932,18 @@ strong {
   text-align: left;
 }
 
+.alltips-extra-table .alltips-col-match {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.alltips-extra-table .alltips-col-result {
+  left: 200px;
+}
+
 .alltips-group-table td.alltips-col-match,
 .alltips-group-table td.alltips-col-participant,
 .alltips-group-table td.alltips-col-result {
@@ -1972,6 +1984,19 @@ strong {
 
   .alltips-group-table .alltips-group-picks {
     font-size: 0.72rem;
+  }
+
+  .alltips-extra-table .alltips-col-match {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.72rem;
+  }
+
+  .alltips-extra-table .alltips-col-result {
+    left: 120px;
   }
 }
 
