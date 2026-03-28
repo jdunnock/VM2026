@@ -47,11 +47,6 @@ export type KnockoutPredictionRound = {
     picks: string[]
 }
 
-export type SpecialPredictions = {
-    winner: string
-    topScorer: string
-}
-
 export type ExtraAnswers = Record<string, string>
 
 export type AdminQuestionCategory = 'Gruppspelsfrågor' | 'Slutspelsfrågor' | '33-33-33 frågor'
@@ -102,12 +97,6 @@ export type MatchResult = {
     updatedAt: string
 }
 
-export type SpecialResultsState = {
-    winner: string
-    topScorer: string
-    updatedAt?: string | null
-}
-
 export type FixtureScoreBreakdown = {
     matchId: string | null
     match: string
@@ -141,17 +130,6 @@ export type KnockoutScoreBreakdown = {
     reason: string
 }
 
-export type SpecialScoreBreakdown = {
-    key: keyof SpecialPredictions
-    label: string
-    predictedValue: string
-    actualValue: string | null
-    points: number
-    maxPoints: number
-    settled: boolean
-    reason: string
-}
-
 export type ExtraScoreBreakdown = {
     questionId: number | null
     questionText: string | null
@@ -169,17 +147,14 @@ export type ParticipantScoreDetail = {
     fixturePoints: number
     groupPlacementPoints: number
     knockoutPoints: number
-    specialPoints: number
     extraQuestionPoints: number
     settledMatches: number
     settledGroups: number
     settledKnockoutRounds: number
-    settledSpecialPredictions: number
     settledQuestions: number
     breakdown: FixtureScoreBreakdown[]
     groupPlacementBreakdown: GroupPlacementScoreBreakdown[]
     knockoutBreakdown: KnockoutScoreBreakdown[]
-    specialBreakdown: SpecialScoreBreakdown[]
     extraBreakdown: ExtraScoreBreakdown[]
     updatedAt: string | null
     rank: number | null
@@ -190,7 +165,6 @@ export type PersistedTipsState = {
     fixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
-    specialPredictions: SpecialPredictions
     extraAnswers: ExtraAnswers
 }
 

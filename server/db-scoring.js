@@ -6,7 +6,6 @@ import {
     KNOCKOUT_ROUND_POINTS,
     KNOCKOUT_ROUND_TEAM_COUNTS,
 } from './db-core.js'
-import { getSpecialResults } from './db-special.js'
 import { mapMatchResultRow } from './db-results.js'
 import { parseJsonOrNull } from './json-utils.js'
 
@@ -15,20 +14,19 @@ import { parseJsonOrNull } from './json-utils.js'
  * to avoid redundant database queries.
  */
 async function buildScoringLookups() {
-    const [lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups, specialResults] = await Promise.all([
+    const [lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups] = await Promise.all([
         buildCompletedResultLookups(),
         buildPublishedQuestionLookups(),
         buildGroupStandingsLookups(),
         buildKnockoutRoundLookups(),
-        getSpecialResults(),
     ])
 
-    return { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups, specialResults }
+    return { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups }
 }
 
 export async function listParticipantScores() {
     const participants = await listParticipantsWithTips()
-    const { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups, specialResults } = await buildScoringLookups()
+    const { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups } = await buildScoringLookups()
 
     const summaries = participants.map((participant) => {
         const score = calculateParticipantScore(
@@ -37,7 +35,6 @@ export async function listParticipantScores() {
             questionLookups,
             groupStandingsLookups,
             knockoutRoundLookups,
-            specialResults,
         )
         return {
             participantId: score.participantId,
@@ -48,7 +45,6 @@ export async function listParticipantScores() {
             fixturePoints: score.fixturePoints,
             groupPlacementPoints: score.groupPlacementPoints,
             knockoutPoints: score.knockoutPoints,
-            specialPoints: score.specialPoints,
             extraQuestionPoints: score.extraQuestionPoints,
             updatedAt: participant.updatedAt,
         }
@@ -64,7 +60,7 @@ export async function getParticipantScoreByParticipantId(participantId) {
     }
 
     // Build all lookups once and share across score calculation and ranking
-    const { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups, specialResults } = await buildScoringLookups()
+    const { lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups } = await buildScoringLookups()
 
     // Calculate full score for this participant
     const score = calculateParticipantScore(
@@ -73,7 +69,6 @@ export async function getParticipantScoreByParticipantId(participantId) {
         questionLookups,
         groupStandingsLookups,
         knockoutRoundLookups,
-        specialResults,
     )
 
     // Build score summaries for all participants using shared lookups (no double-read)
@@ -85,7 +80,6 @@ export async function getParticipantScoreByParticipantId(participantId) {
             questionLookups,
             groupStandingsLookups,
             knockoutRoundLookups,
-            specialResults,
         )
         return {
             participantId: s.participantId,
@@ -96,7 +90,6 @@ export async function getParticipantScoreByParticipantId(participantId) {
             fixturePoints: s.fixturePoints,
             groupPlacementPoints: s.groupPlacementPoints,
             knockoutPoints: s.knockoutPoints,
-            specialPoints: s.specialPoints,
             extraQuestionPoints: s.extraQuestionPoints,
             updatedAt: p.updatedAt,
         }
@@ -327,13 +320,10 @@ async function buildKnockoutRoundLookups() {
     return { byRound }
 }
 
-function calculateParticipantScore(participant, lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups, specialResults) {
+function calculateParticipantScore(participant, lookups, questionLookups, groupStandingsLookups, knockoutRoundLookups) {
     const rawFixtureTips = Array.isArray(participant.tips?.fixtureTips) ? participant.tips.fixtureTips : []
     const rawGroupPlacements = Array.isArray(participant.tips?.groupPlacements) ? participant.tips.groupPlacements : []
     const rawKnockoutPredictions = Array.isArray(participant.tips?.knockoutPredictions) ? participant.tips.knockoutPredictions : []
-    const rawSpecialPredictions = participant.tips?.specialPredictions && typeof participant.tips.specialPredictions === 'object'
-        ? participant.tips.specialPredictions
-        : { winner: '', topScorer: '' }
     const rawExtraAnswers =
         participant.tips?.extraAnswers && typeof participant.tips.extraAnswers === 'object' && !Array.isArray(participant.tips.extraAnswers)
             ? participant.tips.extraAnswers
@@ -343,12 +333,10 @@ function calculateParticipantScore(participant, lookups, questionLookups, groupS
     let fixturePoints = 0
     let groupPlacementPoints = 0
     let knockoutPoints = 0
-    let specialPoints = 0
     let extraQuestionPoints = 0
     let settledMatches = 0
     let settledGroups = 0
     let settledKnockoutRounds = 0
-    let settledSpecialPredictions = 0
     let settledQuestions = 0
 
     const breakdown = rawFixtureTips.map((tip) => {
@@ -458,19 +446,6 @@ function calculateParticipantScore(participant, lookups, questionLookups, groupS
         }
     })
 
-    const specialBreakdown = [
-        scoreSpecialPrediction('winner', 'Slutsegrare', rawSpecialPredictions.winner, specialResults.winner, 4),
-        scoreSpecialPrediction('topScorer', 'Skytteligavinnare', rawSpecialPredictions.topScorer, specialResults.topScorer, 4),
-    ].map((entry) => {
-        if (entry.settled) {
-            settledSpecialPredictions += 1
-        }
-
-        totalPoints += entry.points
-        specialPoints += entry.points
-        return entry
-    })
-
     const extraBreakdown = Object.entries(rawExtraAnswers).map(([questionIdRaw, selectedAnswer]) => {
         const questionId = Number(questionIdRaw)
         const normalizedAnswer = typeof selectedAnswer === 'string' ? selectedAnswer.trim() : ''
@@ -503,17 +478,14 @@ function calculateParticipantScore(participant, lookups, questionLookups, groupS
         fixturePoints,
         groupPlacementPoints,
         knockoutPoints,
-        specialPoints,
         extraQuestionPoints,
         settledMatches,
         settledGroups,
         settledKnockoutRounds,
-        settledSpecialPredictions,
         settledQuestions,
         breakdown,
         groupPlacementBreakdown,
         knockoutBreakdown,
-        specialBreakdown,
         extraBreakdown,
         updatedAt: participant.updatedAt,
     }
@@ -671,45 +643,6 @@ function deriveSettledGroupStanding(groupRows) {
     return {
         settled: true,
         actualPicks,
-    }
-}
-
-function scoreSpecialPrediction(key, label, predictedValue, actualValue, maxPoints) {
-    const normalizedPredictedValue = normalizeText(predictedValue)
-    const normalizedActualValue = normalizeText(actualValue)
-
-    if (!normalizedActualValue) {
-        return {
-            key,
-            label,
-            predictedValue: normalizedPredictedValue,
-            actualValue: null,
-            points: 0,
-            reason: 'unsettled-special',
-            settled: false,
-        }
-    }
-
-    if (normalizeComparableText(normalizedPredictedValue) === normalizeComparableText(normalizedActualValue)) {
-        return {
-            key,
-            label,
-            predictedValue: normalizedPredictedValue,
-            actualValue: normalizedActualValue,
-            points: maxPoints,
-            reason: 'correct-special',
-            settled: true,
-        }
-    }
-
-    return {
-        key,
-        label,
-        predictedValue: normalizedPredictedValue,
-        actualValue: normalizedActualValue,
-        points: 0,
-        reason: 'wrong-special',
-        settled: true,
     }
 }
 

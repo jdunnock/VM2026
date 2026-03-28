@@ -5,7 +5,6 @@
 import {
     getMatchResultById,
     getParticipantScoreByParticipantId,
-    getSpecialResults,
     listMatchResults,
     listParticipantScores,
     listPublishedAdminQuestions,
@@ -83,16 +82,6 @@ function createPublicRoutes(app, globalDeadline) {
         } catch (error) {
             console.error('Participant score read error:', error)
             res.status(500).json({ error: 'Kunde inte hämta deltagarens poäng.' })
-        }
-    })
-
-    app.get('/api/special-results', async (_req, res) => {
-        try {
-            const results = await getSpecialResults()
-            res.json(results)
-        } catch (error) {
-            console.error('Special results read error:', error)
-            res.status(500).json({ error: 'Kunde inte hämta specialresultat.' })
         }
     })
 

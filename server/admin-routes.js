@@ -7,19 +7,16 @@ import {
     deleteAdminQuestion,
     getAdminQuestionById,
     getMatchResultById,
-    getSpecialResults,
     listAdminQuestions,
     listMatchResults,
     updateAdminQuestion,
     upsertMatchResult,
-    upsertSpecialResults,
 } from './db.js'
 import {
     parseEntityId,
     parseMatchId,
     normalizeAdminQuestionPayload,
     normalizeMatchResultPayload,
-    normalizeSpecialResultsPayload,
 } from './validators.js'
 
 function createAdminRoutes(app) {
@@ -40,32 +37,6 @@ function createAdminRoutes(app) {
         } catch (error) {
             console.error('Admin results read error:', error)
             res.status(500).json({ error: 'Kunde inte hämta adminresultat.' })
-        }
-    })
-
-    app.get('/api/admin/special-results', async (_req, res) => {
-        try {
-            const results = await getSpecialResults()
-            res.json(results)
-        } catch (error) {
-            console.error('Admin special results read error:', error)
-            res.status(500).json({ error: 'Kunde inte hämta specialresultat.' })
-        }
-    })
-
-    app.put('/api/admin/special-results', async (req, res) => {
-        const payload = normalizeSpecialResultsPayload(req.body)
-        if (!payload) {
-            res.status(400).json({ error: 'Ogiltigt specialresultat-format.' })
-            return
-        }
-
-        try {
-            const savedResults = await upsertSpecialResults(payload)
-            res.json(savedResults)
-        } catch (error) {
-            console.error('Admin special results upsert error:', error)
-            res.status(500).json({ error: 'Kunde inte spara specialresultat.' })
         }
     })
 

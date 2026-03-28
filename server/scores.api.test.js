@@ -573,60 +573,6 @@ test('scores API knockout predictions: settled round awards per-team points', as
     assert.equal(partialScore.data.knockoutBreakdown[0].matchedTeams.length, 10)
 })
 
-test('scores API special predictions: winner and topScorer', async () => {
-    // Admin sets special outcomes
-    const specialResponse = await request(
-        'PUT',
-        '/api/admin/special-results',
-        {
-            winner: 'Argentina',
-            topScorer: 'Kylian Mbappé',
-        },
-        { 'x-admin-code': 'vm2026-admin' },
-    )
-    assert.equal(specialResponse.status, 200)
-
-    const correctWinnerParticipant = await createParticipant('Special Winner Correct', 'sp-1')
-    await saveTips(correctWinnerParticipant, {
-        fixtureTips: [],
-        groupPlacements: [],
-        knockoutPredictions: [],
-        specialPredictions: { winner: 'Argentina', topScorer: 'Random Player' },
-        extraAnswers: {},
-    })
-
-    const correctScorerParticipant = await createParticipant('Special Scorer Correct', 'sp-2')
-    await saveTips(correctScorerParticipant, {
-        fixtureTips: [],
-        groupPlacements: [],
-        knockoutPredictions: [],
-        specialPredictions: { winner: 'France', topScorer: 'Kylian Mbappé' },
-        extraAnswers: {},
-    })
-
-    const botCorrectParticipant = await createParticipant('Special Both Correct', 'sp-3')
-    await saveTips(botCorrectParticipant, {
-        fixtureTips: [],
-        groupPlacements: [],
-        knockoutPredictions: [],
-        specialPredictions: { winner: 'Argentina', topScorer: 'Kylian Mbappé' },
-        extraAnswers: {},
-    })
-
-    const winnerScore = await request('GET', `/api/scores/${correctWinnerParticipant}`)
-    const scorerScore = await request('GET', `/api/scores/${correctScorerParticipant}`)
-    const bothScore = await request('GET', `/api/scores/${botCorrectParticipant}`)
-
-    assert.equal(winnerScore.status, 200)
-    assert.equal(winnerScore.data.specialPoints, 4)
-
-    assert.equal(scorerScore.status, 200)
-    assert.equal(scorerScore.data.specialPoints, 4)
-
-    assert.equal(bothScore.status, 200)
-    assert.equal(bothScore.data.specialPoints, 8)
-})
-
 test('scores API edge case: partial match results track settled and unsettled correctly', async () => {
     const matchIds = ['SET-C-1', 'SET-C-2', 'SET-C-3', 'SET-C-4']
 

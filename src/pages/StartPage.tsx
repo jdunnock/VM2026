@@ -7,7 +7,6 @@ import type {
     KnockoutPredictionRound,
     LeaderboardEntry,
     ParticipantSession,
-    SpecialPredictions,
 } from '../types'
 
 type StartPageProps = {
@@ -18,7 +17,6 @@ type StartPageProps = {
     fixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
-    specialPredictions: SpecialPredictions
     extraAnswers: ExtraAnswers
     publishedQuestions: AdminQuestion[]
 }
@@ -31,7 +29,6 @@ export function StartPage({
     fixtureTips,
     groupPlacements,
     knockoutPredictions,
-    specialPredictions,
     extraAnswers,
     publishedQuestions,
 }: StartPageProps) {
@@ -46,18 +43,15 @@ export function StartPage({
     const totalGroups = groupPlacements.length
     const filledKnockout = knockoutPredictions.reduce((acc, r) => acc + r.picks.filter((p) => p.trim() !== '').length, 0)
     const totalKnockout = knockoutPredictions.reduce((acc, r) => acc + r.picks.length, 0)
-    const filledSpecial = (specialPredictions.winner.trim() ? 1 : 0) + (specialPredictions.topScorer.trim() ? 1 : 0)
-    const totalSpecial = 2
     const filledExtra = publishedQuestions.filter((q) => extraAnswers[String(q.id)]?.trim()).length
     const totalExtra = publishedQuestions.length
-    const totalFilled = filledFixtures + filledGroups + filledKnockout + filledSpecial + filledExtra
-    const grandTotal = totalFixtures + totalGroups + totalKnockout + totalSpecial + totalExtra
+    const totalFilled = filledFixtures + filledGroups + filledKnockout + filledExtra
+    const grandTotal = totalFixtures + totalGroups + totalKnockout + totalExtra
     const overallPct = grandTotal > 0 ? Math.round((totalFilled / grandTotal) * 100) : 0
     const progressItems = [
         { label: 'Gruppspel', filled: filledFixtures, total: totalFixtures },
         { label: 'Grupplaceringar', filled: filledGroups, total: totalGroups },
         { label: 'Slutspel', filled: filledKnockout, total: totalKnockout },
-        { label: 'Special', filled: filledSpecial, total: totalSpecial },
         { label: 'Extrafrågor', filled: filledExtra, total: totalExtra },
     ]
 

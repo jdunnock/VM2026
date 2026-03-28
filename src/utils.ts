@@ -2,7 +2,6 @@ import type {
   FixtureTip,
   GroupPlacement,
   KnockoutPredictionRound,
-  SpecialPredictions,
   ExtraAnswers,
   PersistedTipsState,
   MatchResultStatus,
@@ -14,7 +13,6 @@ import {
   fixtureTemplates,
   groupPlacementTemplates,
   knockoutPredictionTemplates,
-  defaultSpecialPredictions,
   defaultAdminResultDraft,
 } from './constants'
 
@@ -129,19 +127,6 @@ export function normalizeGroupPlacements(rawPlacements: unknown): GroupPlacement
   })
 }
 
-export function normalizeSpecialPredictions(rawSpecial: unknown): SpecialPredictions {
-  if (!rawSpecial || typeof rawSpecial !== 'object') {
-    return defaultSpecialPredictions
-  }
-
-  const candidate = rawSpecial as Partial<SpecialPredictions>
-
-  return {
-    winner: typeof candidate.winner === 'string' && candidate.winner.trim() ? candidate.winner : defaultSpecialPredictions.winner,
-    topScorer: typeof candidate.topScorer === 'string' && candidate.topScorer.trim() ? candidate.topScorer : defaultSpecialPredictions.topScorer,
-  }
-}
-
 export function normalizeExtraAnswers(rawExtraAnswers: unknown): ExtraAnswers {
   if (!rawExtraAnswers || typeof rawExtraAnswers !== 'object' || Array.isArray(rawExtraAnswers)) {
     return {}
@@ -236,7 +221,6 @@ export function normalizePersistedTipsState(rawTips: unknown): PersistedTipsStat
       fixtureTips: normalizeFixtureTips(rawTips),
       groupPlacements: groupPlacementTemplates,
       knockoutPredictions: knockoutPredictionTemplates,
-      specialPredictions: defaultSpecialPredictions,
       extraAnswers: {},
     }
   }
@@ -246,7 +230,6 @@ export function normalizePersistedTipsState(rawTips: unknown): PersistedTipsStat
       fixtureTips: createDefaultFixtureTips(),
       groupPlacements: groupPlacementTemplates,
       knockoutPredictions: knockoutPredictionTemplates,
-      specialPredictions: defaultSpecialPredictions,
       extraAnswers: {},
     }
   }
@@ -257,7 +240,6 @@ export function normalizePersistedTipsState(rawTips: unknown): PersistedTipsStat
     fixtureTips: normalizeFixtureTips(candidate.fixtureTips),
     groupPlacements: normalizeGroupPlacements(candidate.groupPlacements),
     knockoutPredictions: normalizeKnockoutPredictions(candidate.knockoutPredictions),
-    specialPredictions: normalizeSpecialPredictions(candidate.specialPredictions),
     extraAnswers: normalizeExtraAnswers((candidate as { extraAnswers?: unknown }).extraAnswers),
   }
 }
@@ -354,18 +336,6 @@ export function formatRoundReason(reason: string, matchedTeams: string[]) {
 
   if (reason === 'wrong-round-teams') {
     return 'Inga rätta lag'
-  }
-
-  return 'Inte avgjord ännu'
-}
-
-export function formatSpecialReason(reason: string) {
-  if (reason === 'correct-special') {
-    return 'Korrekt specialtips'
-  }
-
-  if (reason === 'wrong-special') {
-    return 'Missad special'
   }
 
   return 'Inte avgjord ännu'

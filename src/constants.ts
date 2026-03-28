@@ -5,13 +5,9 @@ import type {
     RuleRow,
     GroupPlacement,
     KnockoutPredictionRound,
-    SpecialPredictions,
-    AdminQuestionCategory,
     AdminQuestionDraft,
-    AdminQuestionStatus,
     AdminResultDraft,
     MatchResultStage,
-    MatchResultStatus,
     AdminFixtureTemplate,
 } from './types'
 
@@ -34,8 +30,6 @@ export const categoryItems = [
     { label: 'Gruppspelsmatcher', count: fixtureCounts.groupStage },
     { label: 'Grupplaceringar', count: 12 },
     { label: 'Slutspel', count: 31 },
-    { label: 'Slutsegrare', count: 1 },
-    { label: 'Skytteligavinnare', count: 1 },
     { label: 'Extrafrågor', count: 5 },
 ]
 
@@ -93,10 +87,6 @@ export function getAvailableGroupTeams(placement: GroupPlacement, index: number)
     return availableTeams
 }
 
-export const defaultSpecialPredictions: SpecialPredictions = {
-    winner: 'Argentina',
-    topScorer: 'Kylian Mbappé',
-}
 
 export const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
 export const ADMIN_SESSION_STORAGE_KEY = 'vm2026.adminSession'

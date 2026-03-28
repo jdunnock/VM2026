@@ -304,10 +304,6 @@ function normalizeTipsPayload(tips) {
             fixtureTips: tips,
             groupPlacements: [],
             knockoutPredictions: [],
-            specialPredictions: {
-                winner: '',
-                topScorer: '',
-            },
             extraAnswers: {},
         }
     }
@@ -319,7 +315,6 @@ function normalizeTipsPayload(tips) {
     const fixtureTips = tips.fixtureTips
     const groupPlacements = tips.groupPlacements
     const knockoutPredictions = Array.isArray(tips.knockoutPredictions) ? tips.knockoutPredictions : []
-    const specialPredictions = tips.specialPredictions
     const extraAnswers = tips.extraAnswers ?? {}
 
     if (!isValidFixtureTips(fixtureTips)) {
@@ -334,10 +329,6 @@ function normalizeTipsPayload(tips) {
         return null
     }
 
-    if (!isValidSpecialPredictions(specialPredictions)) {
-        return null
-    }
-
     if (!isValidExtraAnswers(extraAnswers)) {
         return null
     }
@@ -346,7 +337,6 @@ function normalizeTipsPayload(tips) {
         fixtureTips,
         groupPlacements,
         knockoutPredictions,
-        specialPredictions,
         extraAnswers,
     }
 }
@@ -359,11 +349,9 @@ export {
     isValidFixtureTips,
     isValidGroupPlacements,
     isValidKnockoutPredictions,
-    isValidSpecialPredictions,
     isValidExtraAnswers,
     normalizeNullableScore,
     normalizeAdminQuestionPayload,
     normalizeMatchResultPayload,
-    normalizeSpecialResultsPayload,
     normalizeTipsPayload,
 }

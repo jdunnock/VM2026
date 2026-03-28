@@ -90,26 +90,6 @@ async function syncKnockoutPredictionsToNormalized(participantId, knockoutPredic
     }
 }
 
-async function syncSpecialPredictionsToNormalized(participantId, specialPredictions) {
-    await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [participantId])
-
-    if (!specialPredictions || typeof specialPredictions !== 'object') {
-        return
-    }
-
-    const winnerTeam = specialPredictions.winner || null
-    const topScorerName = specialPredictions.topScorer || null
-
-    await run(
-        `
-      INSERT OR REPLACE INTO participant_special_predictions
-      (participant_id, winner_team, top_scorer_name, created_at, updated_at, synced_from_json)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
-    `,
-        [participantId, winnerTeam, topScorerName],
-    )
-}
-
 async function syncExtraAnswersToNormalized(participantId, extraAnswers) {
     await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [participantId])
 
@@ -155,7 +135,6 @@ export async function upsertTipsByParticipantId(participantId, tips) {
         if (tips.fixtureTips) await syncFixtureTipsToNormalized(participantId, tips.fixtureTips)
         if (tips.groupPlacements) await syncGroupPlacementsToNormalized(participantId, tips.groupPlacements)
         if (tips.knockoutPredictions) await syncKnockoutPredictionsToNormalized(participantId, tips.knockoutPredictions)
-        if (tips.specialPredictions) await syncSpecialPredictionsToNormalized(participantId, tips.specialPredictions)
         if (tips.extraAnswers) await syncExtraAnswersToNormalized(participantId, tips.extraAnswers)
 
         return getTipsByParticipantId(participantId)
@@ -168,7 +147,6 @@ export async function deleteTipsByParticipantId(participantId) {
         await run('DELETE FROM participant_fixture_tips WHERE participant_id = ?', [participantId])
         await run('DELETE FROM participant_group_placements WHERE participant_id = ?', [participantId])
         await run('DELETE FROM participant_knockout_predictions WHERE participant_id = ?', [participantId])
-        await run('DELETE FROM participant_special_predictions WHERE participant_id = ?', [participantId])
         await run('DELETE FROM participant_extra_answers WHERE participant_id = ?', [participantId])
     })
 }

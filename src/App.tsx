@@ -15,7 +15,6 @@ import type {
   PageId,
   ParticipantScoreDetail,
   ParticipantSession,
-  SpecialPredictions,
 } from './types'
 import { StartPage } from './pages/StartPage'
 import { TipsPage } from './pages/TipsPage'
@@ -132,7 +131,6 @@ function renderPage(
     hasUnsavedChanges: boolean
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
-    specialPredictions: SpecialPredictions
     extraAnswers: ExtraAnswers
     publishedQuestions: AdminQuestion[]
     adminSession: AdminSession | null
@@ -145,7 +143,6 @@ function renderPage(
     onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
     onChangeGroupPlacement: (group: string, index: number, value: string) => void
     onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
-    onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
     onChangeExtraAnswer: (questionId: number, answer: string) => void
     onAdminSessionChange: (session: AdminSession | null) => void
     onSaveTips: () => void
@@ -179,7 +176,6 @@ function renderPage(
           fixtureTips={pageProps.fixtureTips}
           groupPlacements={pageProps.groupPlacements}
           knockoutPredictions={pageProps.knockoutPredictions}
-          specialPredictions={pageProps.specialPredictions}
           extraAnswers={pageProps.extraAnswers}
           publishedQuestions={pageProps.publishedQuestions}
         />
@@ -192,14 +188,12 @@ function renderPage(
           hasUnsavedChanges={pageProps.hasUnsavedChanges}
           groupPlacements={pageProps.groupPlacements}
           knockoutPredictions={pageProps.knockoutPredictions}
-          specialPredictions={pageProps.specialPredictions}
           extraAnswers={pageProps.extraAnswers}
           publishedQuestions={pageProps.publishedQuestions}
           onChangeTip={pageProps.onChangeTip}
           onSetScorePreset={pageProps.onSetScorePreset}
           onChangeGroupPlacement={pageProps.onChangeGroupPlacement}
           onChangeKnockoutPrediction={pageProps.onChangeKnockoutPrediction}
-          onChangeSpecialPrediction={pageProps.onChangeSpecialPrediction}
           onChangeExtraAnswer={pageProps.onChangeExtraAnswer}
           onSave={pageProps.onSaveTips}
           onClear={pageProps.onClearTips}
@@ -216,7 +210,6 @@ function renderPage(
           fixtureTips={pageProps.fixtureTips}
           groupPlacements={pageProps.groupPlacements}
           knockoutPredictions={pageProps.knockoutPredictions}
-          specialPredictions={pageProps.specialPredictions}
           extraAnswers={pageProps.extraAnswers}
           publishedQuestions={pageProps.publishedQuestions}
           participantScoreDetail={pageProps.participantScoreDetail}
@@ -255,7 +248,7 @@ export function App() {
   // Core session and routing hooks
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
   const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase, phaseOverride, setPhaseOverride } = usePhaseRouting()
-  const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeSpecialPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel, () => {
+  const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel, () => {
     setParticipant(null)
     setIsLoggedIn(false)
   })
@@ -298,8 +291,6 @@ export function App() {
   const [participantScoreDetail, setParticipantScoreDetail] = useState<ParticipantScoreDetail | null>(null)
   const [isParticipantScoreLoading, setIsParticipantScoreLoading] = useState(false)
   const [results, setResults] = useState<MatchResult[]>([])
-  const [specialResults, setSpecialResults] = useState<SpecialResultsState>({ winner: '', topScorer: '' })
-  const [isResultsLoading, setIsResultsLoading] = useState(false)
   const [publishedQuestions, setPublishedQuestions] = useState<AdminQuestion[]>([])
   const [allTipsParticipants, setAllTipsParticipants] = useState<AllTipsParticipant[]>([])
   const [isAllTipsLoading, setIsAllTipsLoading] = useState(false)
@@ -343,13 +334,8 @@ export function App() {
 
   // Load public results and special results
   const loadPublicResults = async () => {
-    setIsResultsLoading(true)
-
     try {
-      const [resultsResponse, specialResultsResponse] = await Promise.all([
-        fetch('/api/results'),
-        fetch('/api/special-results'),
-      ])
+      const resultsResponse = await fetch('/api/results')
 
       if (resultsResponse.ok) {
         const payload = await resultsResponse.json()
@@ -357,22 +343,8 @@ export function App() {
       } else {
         setResults([])
       }
-
-      if (specialResultsResponse.ok) {
-        const payload = await specialResultsResponse.json()
-        setSpecialResults({
-          winner: typeof payload.winner === 'string' ? payload.winner : '',
-          topScorer: typeof payload.topScorer === 'string' ? payload.topScorer : '',
-          updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : null,
-        })
-      } else {
-        setSpecialResults({ winner: '', topScorer: '' })
-      }
     } catch {
       setResults([])
-      setSpecialResults({ winner: '', topScorer: '' })
-    } finally {
-      setIsResultsLoading(false)
     }
   }
 
@@ -564,7 +536,6 @@ export function App() {
           hasUnsavedChanges,
           groupPlacements,
           knockoutPredictions,
-          specialPredictions,
           extraAnswers,
           publishedQuestions,
           participant,
@@ -580,7 +551,6 @@ export function App() {
           onSetScorePreset,
           onChangeGroupPlacement,
           onChangeKnockoutPrediction,
-          onChangeSpecialPrediction,
           onChangeExtraAnswer,
           onAdminSessionChange: setAdminSession,
           onSaveTips,

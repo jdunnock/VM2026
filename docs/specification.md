@@ -60,11 +60,7 @@ This document is the primary product and engineering specification for VM2026.
 	- `Semifinal`
 	- `Final`
 
-### 4.4 Special predictions
-- `Slutsegrare`
-- `Skytteligavinnare`
-
-### 4.5 Admin-managed question categories
+### 4.4 Admin-managed question categories
 - `Gruppspelsfrågor`
 - `Slutspelsfrågor`
 - `33-33-33 frågor`
@@ -91,10 +87,7 @@ Each admin-managed question must support:
 ### 5.3 Knockout lock
 - Knockout predictions lock at the global deadline (`2026-06-09 22:00`).
 
-### 5.4 Special prediction lock
-- `Slutsegrare` and `Skytteligavinnare` lock at the global deadline (`2026-06-09 22:00`).
-
-### 5.5 Admin question lock
+### 5.4 Admin question lock
 - Published question answering locks at the same global deadline (`2026-06-09 22:00`).
 - No match-specific or question-specific participant lock timestamps are used in this mode.
 
@@ -1744,4 +1737,20 @@ Checklist run date: 2026-03-25
 	- Removed "Avgjorda specialutfall" heading and Slutsegrare/Skytteligavinnare mini-cards from ResultsPage Extrafrågor tab (2026-03-28): redundant display; breakdown list remains.
 	- Replaced Gruppspel result cards with aligned fixture breakdown table on ResultsPage (2026-03-28): removed the "Officiella resultat" card grid from the Gruppspel tab. Replaced with a columnar breakdown showing match name, actual result, predicted result (green/red hit indicator), predicted 1X2 sign (green/red), and points per match. Slutspel tab still uses result cards. CSS grid layout ensures columns align across rows.
 	- Added visual spacer between Resultat and Tips columns in fixture breakdown (2026-03-28): introduces a gap column in the CSS grid to visually separate the official result from the user's prediction.
+
+### 7.43 Remove hardcoded special predictions — use admin questions (2026-03-28)
+- **Motivation**: all prediction questions should be fully configurable through admin UI (text, options, points, category, lock). Hardcoded Slutsegrare/Skytteligavinnare prevented this.
+- Removed the `SpecialPredictions`, `SpecialResultsState`, `SpecialScoreBreakdown` types and all related code.
+- Removed `specialPredictions` state from `useParticipantTips` hook; tips payload no longer includes `specialPredictions`.
+- Removed `specialResults` state, `/api/special-results`, and `/api/admin/special-results` endpoints.
+- Removed `scoreSpecialPrediction()` from scoring engine; `specialPoints`, `specialBreakdown`, `settledSpecialPredictions` removed from score response.
+- Removed hardcoded Slutsegrare/Skytteligavinnare inputs from TipsPage Extrafrågor tab.
+- Removed special breakdown display from MyTipsPage; only `extraBreakdown` is shown.
+- Removed Special progress row from StartPage tips-progress panel.
+- Removed special results section from AdminResultsTab (admin tab renamed to "Resultat").
+- Admin creates these questions through the existing admin questions UI with appropriate options (from squads data) and category (Slutspelsfrågor).
+- Answers stored and scored via the existing `extraAnswers` / `scoreExtraAnswer()` system.
+- TipsPage Extrafrågor tab uses `SearchableCombobox` when a question has >10 options.
+- Backend `normalizeTipsPayload` made `specialPredictions` optional for backward compatibility with existing saved data.
+- DB tables `special_results` and `participant_special_predictions` kept but no longer read or written.
 	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.

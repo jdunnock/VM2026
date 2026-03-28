@@ -4,7 +4,6 @@ import type {
     MatchResult,
     MatchResultStage,
     MatchResultStatus,
-    SpecialResultsState,
     AdminWorkspaceTab,
     AdminResultDraft,
 } from '../../types'
@@ -26,9 +25,6 @@ type AdminResultsTabProps = {
     setResultDraft: Dispatch<SetStateAction<AdminResultDraft>>
     saveMatchResult: () => void
     resetResultDraft: () => void
-    specialResults: SpecialResultsState
-    setSpecialResults: Dispatch<SetStateAction<SpecialResultsState>>
-    saveSpecialResults: () => void
     filteredSavedResults: MatchResult[]
     setActiveAdminTab: Dispatch<SetStateAction<AdminWorkspaceTab>>
 }
@@ -49,9 +45,6 @@ export function AdminResultsTab({
     setResultDraft,
     saveMatchResult,
     resetResultDraft,
-    specialResults,
-    setSpecialResults,
-    saveSpecialResults,
     filteredSavedResults,
     setActiveAdminTab,
 }: AdminResultsTabProps) {
@@ -64,7 +57,7 @@ export function AdminResultsTab({
                 </div>
                 <div className="lock-warning">
                     <ul>
-                        <li>Här i Admin uppdaterar du officiella matchresultat och specialutfall.</li>
+                        <li>Här i Admin uppdaterar du officiella matchresultat.</li>
                         <li>Deltagare ser dessa utfall i <strong>Resultat & poäng</strong> som read-only.</li>
                         <li>Samma utfallsdata används i båda vyerna, men endast Admin kan göra ändringar.</li>
                     </ul>
@@ -192,39 +185,6 @@ export function AdminResultsTab({
                         ) : (
                             <p>Ingen match matchar ditt filter ännu.</p>
                         )}
-                    </article>
-
-                    <article className="mini-card emphasis">
-                        <span className="mini-label">Special</span>
-                        <h2>Slututfall</h2>
-                        <div className="stacked-actions">
-                            <label>
-                                Slutsegrare
-                                <input
-                                    className="special-input"
-                                    type="text"
-                                    value={specialResults.winner}
-                                    onChange={(e) => setSpecialResults((current) => ({ ...current, winner: e.target.value }))}
-                                />
-                            </label>
-                            <label>
-                                Skytteligavinnare
-                                <input
-                                    className="special-input"
-                                    type="text"
-                                    value={specialResults.topScorer}
-                                    onChange={(e) => setSpecialResults((current) => ({ ...current, topScorer: e.target.value }))}
-                                />
-                            </label>
-                        </div>
-                        {specialResults.updatedAt ? (
-                            <p className="status-note">Senast uppdaterad: {new Date(specialResults.updatedAt).toLocaleString('sv-SE')}</p>
-                        ) : null}
-                        <div className="stacked-actions">
-                            <button className="primary-button" type="button" disabled={isResultSaving} onClick={saveSpecialResults}>
-                                {isResultSaving ? 'Sparar...' : 'Spara specialresultat'}
-                            </button>
-                        </div>
                     </article>
                 </div>
             </section>

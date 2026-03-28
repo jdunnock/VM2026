@@ -11,7 +11,6 @@ import type {
   AdminSession,
   AdminWorkspaceTab,
   MatchResult,
-  SpecialResultsState,
 } from '../types'
 import { adminQuestionCategories } from '../types'
 import {
@@ -33,7 +32,6 @@ export function AdminPage({
   const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('questions')
   const [questions, setQuestions] = useState<AdminQuestion[]>([])
   const [results, setResults] = useState<MatchResult[]>([])
-  const [specialResults, setSpecialResults] = useState<SpecialResultsState>({ winner: '', topScorer: '' })
   const [isLoading, setIsLoading] = useState(true)
   const [isResultsLoading, setIsResultsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -109,7 +107,6 @@ export function AdminPage({
   const loadResultsData = async () => {
     if (!adminSession) {
       setResults([])
-      setSpecialResults({ winner: '', topScorer: '' })
       setIsResultsLoading(false)
       return
     }
@@ -117,34 +114,19 @@ export function AdminPage({
     const headers = getAdminHeaders()
     if (!headers) {
       setResults([])
-      setSpecialResults({ winner: '', topScorer: '' })
       setIsResultsLoading(false)
       return
     }
 
     setIsResultsLoading(true)
     try {
-      const [resultsResponse, specialResponse] = await Promise.all([
-        fetch('/api/admin/results', { headers }),
-        fetch('/api/admin/special-results', { headers }),
-      ])
+      const resultsResponse = await fetch('/api/admin/results', { headers })
 
       const resultsPayload = await resultsResponse.json()
       if (!resultsResponse.ok) {
         setResultsMessage(resultsPayload.error ?? 'Kunde inte hämta adminresultat.')
       } else {
         setResults(Array.isArray(resultsPayload.results) ? (resultsPayload.results as MatchResult[]) : [])
-      }
-
-      const specialPayload = await specialResponse.json()
-      if (!specialResponse.ok) {
-        setResultsMessage(specialPayload.error ?? 'Kunde inte hämta specialresultat.')
-      } else {
-        setSpecialResults({
-          winner: typeof specialPayload.winner === 'string' ? specialPayload.winner : '',
-          topScorer: typeof specialPayload.topScorer === 'string' ? specialPayload.topScorer : '',
-          updatedAt: typeof specialPayload.updatedAt === 'string' ? specialPayload.updatedAt : null,
-        })
       }
     } catch {
       setResultsMessage('Kunde inte hämta adminresultat.')
@@ -400,45 +382,6 @@ export function AdminPage({
     }
   }
 
-  const saveSpecialResults = async () => {
-    const headers = getAdminHeaders()
-    if (!headers) {
-      setResultsMessage('Admin-inloggning krävs.')
-      return
-    }
-
-    setIsResultSaving(true)
-    setResultsMessage('Sparar specialresultat...')
-
-    try {
-      const response = await fetch('/api/admin/special-results', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          winner: specialResults.winner,
-          topScorer: specialResults.topScorer,
-        }),
-      })
-
-      const payload = await response.json()
-      if (!response.ok) {
-        setResultsMessage(payload.error ?? 'Kunde inte spara specialresultat.')
-        return
-      }
-
-      setSpecialResults({
-        winner: typeof payload.winner === 'string' ? payload.winner : '',
-        topScorer: typeof payload.topScorer === 'string' ? payload.topScorer : '',
-        updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : null,
-      })
-      setResultsMessage('Specialresultat sparade.')
-    } catch {
-      setResultsMessage('Kunde inte spara specialresultat.')
-    } finally {
-      setIsResultSaving(false)
-    }
-  }
-
   const publishedCount = questions.filter((question) => question.status === 'published').length
   const savedResultsCount = results.filter((entry) => entry.resultStatus === 'completed').length
 
@@ -446,7 +389,6 @@ export function AdminPage({
     onAdminSessionChange(null)
     setQuestions([])
     setResults([])
-    setSpecialResults({ winner: '', topScorer: '' })
     setEditingId(null)
     setQuestionMessage('Admin utloggad.')
     setResultsMessage('')
@@ -475,7 +417,7 @@ export function AdminPage({
             <h1>Adminpanel</h1>
           </div>
           <p className="lead-text">
-            Admin kan hantera både extrafrågor och de officiella resultat som driver poängräkningen.
+            Admin kan hantera både extrafrågor och de officiella matchresultat som driver poängräkningen.
           </p>
           <p className="status-note">Inloggad som admin: {adminSession.adminName}</p>
           <div className="tab-row">
@@ -491,7 +433,7 @@ export function AdminPage({
               type="button"
               onClick={() => setActiveAdminTab('results')}
             >
-              Resultat och special
+              Resultat
             </button>
           </div>
           <button
@@ -506,7 +448,7 @@ export function AdminPage({
         <article className="mini-card emphasis">
           <span className="mini-label">Status</span>
           <strong>{publishedCount} publicerade frågor, {savedResultsCount} slutresultat</strong>
-          <p>Frågor, matchresultat och specialutfall hanteras från samma adminsession.</p>
+          <p>Frågor och matchresultat hanteras från samma adminsession.</p>
         </article>
       </section>
 
@@ -542,9 +484,6 @@ export function AdminPage({
           setResultDraft={setResultDraft}
           saveMatchResult={saveMatchResult}
           resetResultDraft={resetResultDraft}
-          specialResults={specialResults}
-          setSpecialResults={setSpecialResults}
-          saveSpecialResults={saveSpecialResults}
           filteredSavedResults={filteredSavedResults}
           setActiveAdminTab={setActiveAdminTab}
         />

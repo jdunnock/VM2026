@@ -5,12 +5,12 @@ import type {
   FixtureTip,
   GroupPlacement,
   KnockoutPredictionRound,
-  SpecialPredictions,
   TipsSectionTab,
 } from '../types'
 import { tipsSectionTabs } from '../types'
 import { GroupsFixturesCard } from './tips/GroupsFixturesCard'
 import { KnockoutRoundsCard } from './tips/KnockoutRoundsCard'
+import { SearchableCombobox } from '../components/SearchableCombobox'
 
 export function TipsPage({
   fixtureTips,
@@ -18,14 +18,12 @@ export function TipsPage({
   hasUnsavedChanges,
   groupPlacements,
   knockoutPredictions,
-  specialPredictions,
   extraAnswers,
   publishedQuestions,
   onChangeTip,
   onSetScorePreset,
   onChangeGroupPlacement,
   onChangeKnockoutPrediction,
-  onChangeSpecialPrediction,
   onChangeExtraAnswer,
   onSave,
   onClear,
@@ -40,7 +38,6 @@ export function TipsPage({
   hasUnsavedChanges: boolean
   groupPlacements: GroupPlacement[]
   knockoutPredictions: KnockoutPredictionRound[]
-  specialPredictions: SpecialPredictions
   extraAnswers: ExtraAnswers
   publishedQuestions: AdminQuestion[]
   onChangeTip: (
@@ -52,7 +49,6 @@ export function TipsPage({
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
   onChangeGroupPlacement: (group: string, index: number, value: string) => void
   onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
-  onChangeSpecialPrediction: (key: keyof SpecialPredictions, value: string) => void
   onChangeExtraAnswer: (questionId: number, answer: string) => void
   onSave: () => void
   onClear: () => void
@@ -139,8 +135,7 @@ export function TipsPage({
         <>
           {(['Gruppspelsfrågor', 'Slutspelsfrågor', '33-33-33 frågor'] as const).map((category) => {
             const categoryQuestions = publishedQuestions.filter((q) => q.category === category)
-            const isSlutspel = category === 'Slutspelsfrågor'
-            if (!isSlutspel && categoryQuestions.length === 0) return null
+            if (categoryQuestions.length === 0) return null
             return (
               <section className="panel" key={category}>
                 <div className="section-heading compact">
@@ -148,30 +143,6 @@ export function TipsPage({
                   <h2>{category}</h2>
                 </div>
                 <div className="stacked-cards">
-                  {isSlutspel && (
-                    <>
-                      <article className="mini-card">
-                        <span className="mini-label">Slutsegrare</span>
-                        <input
-                          className="special-input"
-                          type="text"
-                          value={specialPredictions.winner}
-                          disabled={isSaving || isGlobalLockActive}
-                          onChange={(e) => onChangeSpecialPrediction('winner', e.target.value)}
-                        />
-                      </article>
-                      <article className="mini-card">
-                        <span className="mini-label">Skytteligavinnare</span>
-                        <input
-                          className="special-input"
-                          type="text"
-                          value={specialPredictions.topScorer}
-                          disabled={isSaving || isGlobalLockActive}
-                          onChange={(e) => onChangeSpecialPrediction('topScorer', e.target.value)}
-                        />
-                      </article>
-                    </>
-                  )}
                   {categoryQuestions.map((question) => {
                     const isLocked = isGlobalLockActive
                     const selectedAnswer = extraAnswers[String(question.id)] ?? ''
@@ -179,19 +150,29 @@ export function TipsPage({
                       <article className="mini-card" key={question.id}>
                         <span className="mini-label">{question.questionText}</span>
                         <span className="status-note">Låstid: {globalDeadlineLabel}</span>
-                        <select
-                          className="special-input"
-                          value={selectedAnswer}
-                          disabled={isSaving || isLocked}
-                          onChange={(e) => onChangeExtraAnswer(question.id, e.target.value)}
-                        >
-                          <option value="">Välj svar</option>
-                          {question.options.map((option) => (
-                            <option key={`${question.id}-${option}`} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
+                        {question.options.length > 10 ? (
+                          <SearchableCombobox
+                            options={question.options}
+                            value={selectedAnswer}
+                            onChange={(val) => onChangeExtraAnswer(question.id, val)}
+                            placeholder="Sök spelare…"
+                            disabled={isSaving || isLocked}
+                          />
+                        ) : (
+                          <select
+                            className="special-input"
+                            value={selectedAnswer}
+                            disabled={isSaving || isLocked}
+                            onChange={(e) => onChangeExtraAnswer(question.id, e.target.value)}
+                          >
+                            <option value="">Välj svar</option>
+                            {question.options.map((option) => (
+                              <option key={`${question.id}-${option}`} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                         <span className={isLocked ? 'status-badge locked' : 'status-badge'}>{isLocked ? 'Låst' : 'Öppen'}</span>
                       </article>
                     )

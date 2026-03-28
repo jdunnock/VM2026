@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { defaultSpecialPredictions, groupPlacementTemplates, knockoutPredictionTemplates } from '../constants'
+import { groupPlacementTemplates, knockoutPredictionTemplates } from '../constants'
 import type {
   ExtraAnswers,
   FixtureTip,
   GroupPlacement,
   KnockoutPredictionRound,
   ParticipantSession,
-  SpecialPredictions,
 } from '../types'
 import { createDefaultFixtureTips, deriveSignFromScore, normalizePersistedTipsState } from '../utils'
 
@@ -19,7 +18,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
   const [fixtureTips, setFixtureTips] = useState<FixtureTip[]>(createDefaultFixtureTips())
   const [groupPlacements, setGroupPlacements] = useState<GroupPlacement[]>(groupPlacementTemplates)
   const [knockoutPredictions, setKnockoutPredictions] = useState<KnockoutPredictionRound[]>(knockoutPredictionTemplates)
-  const [specialPredictions, setSpecialPredictions] = useState<SpecialPredictions>(defaultSpecialPredictions)
   const [extraAnswers, setExtraAnswers] = useState<ExtraAnswers>({})
   const [isTipsSaving, setIsTipsSaving] = useState(false)
   const [tipsSaveMessage, setTipsSaveMessage] = useState('Inte sparad ännu')
@@ -33,7 +31,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setFixtureTips(createDefaultFixtureTips())
       setGroupPlacements(groupPlacementTemplates)
       setKnockoutPredictions(knockoutPredictionTemplates)
-      setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
       setLastSavedFixtureTips([])
       setHasUnsavedChanges(false)
@@ -59,7 +56,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
         setFixtureTips(normalizedState.fixtureTips)
         setGroupPlacements(normalizedState.groupPlacements)
         setKnockoutPredictions(normalizedState.knockoutPredictions)
-        setSpecialPredictions(normalizedState.specialPredictions)
         setExtraAnswers(normalizedState.extraAnswers)
 
         setHasUnsavedChanges(false)
@@ -213,18 +209,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     )
   }
 
-  const onChangeSpecialPrediction = (key: keyof SpecialPredictions, value: string) => {
-    if (isGlobalLockActive) {
-      return
-    }
-
-    setHasUnsavedChanges(true)
-    setSpecialPredictions((current) => ({
-      ...current,
-      [key]: value,
-    }))
-  }
-
   const onChangeExtraAnswer = (questionId: number, answer: string) => {
     if (isGlobalLockActive) {
       return
@@ -267,7 +251,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
             fixtureTips,
             groupPlacements,
             knockoutPredictions,
-            specialPredictions,
             extraAnswers,
           },
         }),
@@ -284,7 +267,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setLastSavedFixtureTips(normalizedState.fixtureTips)
       setGroupPlacements(normalizedState.groupPlacements)
       setKnockoutPredictions(normalizedState.knockoutPredictions)
-      setSpecialPredictions(normalizedState.specialPredictions)
       setExtraAnswers(normalizedState.extraAnswers)
       const formatted = payload.updatedAt ? new Date(payload.updatedAt).toLocaleString('sv-SE') : new Date().toLocaleString('sv-SE')
       setHasUnsavedChanges(false)
@@ -330,7 +312,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
       setFixtureTips(createDefaultFixtureTips())
       setGroupPlacements(groupPlacementTemplates)
       setKnockoutPredictions(knockoutPredictionTemplates)
-      setSpecialPredictions(defaultSpecialPredictions)
       setExtraAnswers({})
       setLastSavedFixtureTips([])
       setHasUnsavedChanges(false)
@@ -357,7 +338,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     hasUnsavedChanges,
     groupPlacements,
     knockoutPredictions,
-    specialPredictions,
     extraAnswers,
     isTipsSaving,
     tipsSaveMessage,
@@ -366,7 +346,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     onSetScorePreset,
     onChangeGroupPlacement,
     onChangeKnockoutPrediction,
-    onChangeSpecialPrediction,
     onChangeExtraAnswer,
     onSaveTips,
     onClearTips,

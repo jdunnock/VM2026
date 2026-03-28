@@ -10,7 +10,6 @@ import type {
     MyTipsSectionTab,
     ParticipantScoreDetail,
     ParticipantSession,
-    SpecialPredictions,
 } from '../types'
 import { myTipsSectionTabs } from '../types'
 import {
@@ -18,7 +17,6 @@ import {
     formatGroupReason,
     formatPositionsMeta,
     formatRoundReason,
-    formatSpecialReason,
     formatTeamsMeta,
     getReasonTone,
 } from '../utils'
@@ -27,7 +25,6 @@ export function MyTipsPage({
     fixtureTips,
     groupPlacements,
     knockoutPredictions,
-    specialPredictions,
     extraAnswers,
     publishedQuestions,
     participantScoreDetail,
@@ -40,7 +37,6 @@ export function MyTipsPage({
     fixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
     knockoutPredictions: KnockoutPredictionRound[]
-    specialPredictions: SpecialPredictions
     extraAnswers: ExtraAnswers
     publishedQuestions: AdminQuestion[]
     participantScoreDetail: ParticipantScoreDetail | null
@@ -57,7 +53,6 @@ export function MyTipsPage({
 
     const settledGroupEntries = psd?.groupPlacementBreakdown.filter((e) => e.reason !== 'unsettled-group') ?? []
     const settledKnockoutEntries = psd?.knockoutBreakdown.filter((e) => e.reason !== 'unsettled-round') ?? []
-    const settledSpecialEntries = psd?.specialBreakdown.filter((e) => e.settled) ?? []
     const settledExtraEntries = psd?.extraBreakdown.filter((e) => e.settled) ?? []
 
     const extraQuestionItems = publishedQuestions
@@ -123,8 +118,8 @@ export function MyTipsPage({
                     </article>
                     <article className="mini-card">
                         <span className="mini-label">Extrafrågor</span>
-                        <strong>{psd.specialPoints + psd.extraQuestionPoints} p</strong>
-                        <span className="status-note">Avgjorda: {psd.settledSpecialPredictions + psd.settledQuestions}</span>
+                        <strong>{psd.extraQuestionPoints} p</strong>
+                        <span className="status-note">Avgjorda: {psd.settledQuestions}</span>
                     </article>
                 </section>
             )}
@@ -265,10 +260,6 @@ export function MyTipsPage({
 
             {activeSection === 'Extrafrågor' && (
                 <section className="panel">
-                    <ul>
-                        <li>Slutsegrare: {specialPredictions.winner || '—'}</li>
-                        <li>Skytteligavinnare: {specialPredictions.topScorer || '—'}</li>
-                    </ul>
                     {extraQuestionItems.length > 0 ? (
                         <ul>
                             {extraQuestionItems.map((item) => (
@@ -278,19 +269,8 @@ export function MyTipsPage({
                     ) : (
                         <p>Inga extrafrågor besvarade ännu.</p>
                     )}
-                    {phase === 'C' && (settledSpecialEntries.length > 0 || settledExtraEntries.length > 0) && (
+                    {phase === 'C' && settledExtraEntries.length > 0 && (
                         <ul className="score-breakdown-list" style={{ marginTop: '1rem' }}>
-                            {settledSpecialEntries.map((entry) => (
-                                <li className="score-breakdown-item" key={entry.key}>
-                                    <div className="score-breakdown-main">
-                                        <strong>{entry.label}</strong>
-                                        <div className="score-breakdown-badges">
-                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatSpecialReason(entry.reason)}</span>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
                             {settledExtraEntries.map((entry) => (
                                 <li className="score-breakdown-item" key={`${entry.questionId ?? 'unknown'}-${entry.points}`}>
                                     <div className="score-breakdown-main">
