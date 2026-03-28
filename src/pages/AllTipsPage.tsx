@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import type { AllTipsParticipant, FixtureTip, GroupPlacement, MatchResult, ParticipantSession } from '../types'
+import type { AllTipsParticipant, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
 import { allGroupCodes, groupStageFixtureTemplates } from '../fixtures'
+import { knockoutPredictionTemplates } from '../constants'
 import { deriveSignFromScore } from '../utils'
 
-type AllTipsSectionTab = 'Gruppspel' | 'Grupplaceringar'
+type AllTipsSectionTab = 'Gruppspel' | 'Grupplaceringar' | 'Slutspel'
 
-const sectionTabs: AllTipsSectionTab[] = ['Gruppspel', 'Grupplaceringar']
+const sectionTabs: AllTipsSectionTab[] = ['Gruppspel', 'Grupplaceringar', 'Slutspel']
 
 function getSign(homeScore: number | '', awayScore: number | ''): '' | '1' | 'X' | '2' {
     return deriveSignFromScore(homeScore, awayScore)
@@ -23,6 +24,12 @@ function findResult(results: MatchResult[], fixtureId: string): MatchResult | un
 function findGroupPlacements(placements: GroupPlacement[] | undefined, groupName: string): string[] {
     if (!placements) return []
     const entry = placements.find((g) => g.group === groupName)
+    return entry?.picks ?? []
+}
+
+function findKnockoutPicks(predictions: KnockoutPredictionRound[] | undefined, roundTitle: string): string[] {
+    if (!predictions) return []
+    const entry = predictions.find((r) => r.title === roundTitle)
     return entry?.picks ?? []
 }
 
@@ -127,6 +134,74 @@ export function AllTipsPage({
                                                 return (
                                                     <td key={p.participantId} className={cellClass}>
                                                         {tipLabel}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+            {!isLoading && activeSection === 'Slutspel' && (
+                <section className="panel alltips-table-wrap">
+                    <div className="alltips-scroll">
+                        <table className="alltips-table alltips-group-table">
+                            <thead>
+                                <tr>
+                                    <th className="alltips-col-match">Omgång</th>
+                                    <th className="alltips-col-result alltips-own-col">Mitt tips</th>
+                                    {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => (
+                                        <th
+                                            key={p.participantId}
+                                            className="alltips-col-participant"
+                                        >
+                                            {p.name}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {knockoutPredictionTemplates.map((round) => {
+                                    const ownParticipant = participant
+                                        ? allTipsParticipants.find((p) => p.participantId === participant.participantId)
+                                        : undefined
+                                    const ownPicks = findKnockoutPicks(
+                                        ownParticipant?.tips?.knockoutPredictions as KnockoutPredictionRound[] | undefined,
+                                        round.title,
+                                    )
+                                    const hasOwnPicks = ownPicks.length > 0 && ownPicks.some((t) => t !== '')
+
+                                    return (
+                                        <tr key={round.title}>
+                                            <td className="alltips-col-match">{round.title}</td>
+                                            <td className="alltips-col-result alltips-own-col">
+                                                {hasOwnPicks ? (
+                                                    <div className="alltips-group-picks">
+                                                        {ownPicks.filter((t) => t !== '').map((team, i) => (
+                                                            <span key={i}>{team}</span>
+                                                        ))}
+                                                    </div>
+                                                ) : '—'}
+                                            </td>
+                                            {allTipsParticipants.filter((p) => p.participantId !== participant?.participantId).map((p) => {
+                                                const picks = findKnockoutPicks(
+                                                    p.tips?.knockoutPredictions as KnockoutPredictionRound[] | undefined,
+                                                    round.title,
+                                                )
+                                                const hasPicks = picks.length > 0 && picks.some((t) => t !== '')
+
+                                                return (
+                                                    <td key={p.participantId} className="alltips-col-participant">
+                                                        {hasPicks ? (
+                                                            <div className="alltips-group-picks">
+                                                                {picks.filter((t) => t !== '').map((team, i) => (
+                                                                    <span key={i}>{team}</span>
+                                                                ))}
+                                                            </div>
+                                                        ) : '—'}
                                                     </td>
                                                 )
                                             })}

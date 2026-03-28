@@ -884,6 +884,17 @@ Confirmed intentional data flows (not bugs):
 - No cell coloring in this version (actual group standings not yet available on frontend).
 - No API or backend changes; data already present in `allTipsParticipants[].tips.groupPlacements`.
 
+### 7.40 Alla tips — Slutspel tab (2026-03-28)
+
+- Adds "Slutspel" as third tab on the Alla tips page.
+- Table structure mirrors the Grupplaceringar tab pattern: horizontal scrollable table with sticky left columns.
+	- Rows: one per knockout round (Sextondelsfinal, Åttondelsfinal, Kvartsfinal, Semifinal, Final — 5 rows).
+	- Columns: "Omgång" (sticky), "Mitt tips" (sticky, logged-in participant's picks), then one column per other participant (alphabetical, scrollable).
+	- Cell content: left-aligned list of predicted advancing team names or "—" if no prediction. Team count per round: 32, 16, 8, 4, 2.
+- Knockout round definitions from `knockoutPredictionTemplates` in `constants.ts`.
+- No cell coloring in this version (actual knockout results comparison not implemented).
+- No API or backend changes; data already present in `allTipsParticipants[].tips.knockoutPredictions`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
