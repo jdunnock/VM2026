@@ -1003,8 +1003,8 @@ Confirmed intentional data flows (not bugs):
 - **Solution:** Redesign all four tabs into a cohesive, card-based experience optimized for Phase C (tournament viewing). Phase B stays minimalistic.
 - **Grupplaceringar tab:**
   - Each group = one visual card in a responsive 2-column grid (1 column on mobile ≤720px).
-  - Card header: group name + points badge + reason badge (e.g., "4/4 korrekt").
-  - 4 position rows showing: position number, predicted team, actual team (Phase C), per-position hit/miss indicator (green ✓ / red ✗).
+  - Card header: group name + points badge.
+  - 4 position rows showing: position number, predicted team, actual team (Phase C), per-position hit/miss indicator (green ✓ / red ✗). The reason-badge text (e.g., "Rätt placeringar: 1, 2, 3") is omitted because the per-row indicators already convey the same information.
   - Unsettled groups: picks only, no facit column.
   - Phase B: same card structure, positions + team names, no results column.
 - **Slutspel tab:**
