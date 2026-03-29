@@ -915,6 +915,88 @@ Confirmed intentional data flows (not bugs):
 - **Data flow:** Admin picks players → populates `options[]` → participant sees searchable combobox → selects canonical name → stored as `extraAnswers[questionId]`.
 - **No API or backend changes.** Squad data served as static JSON file.
 
+### 7.43 Remove hardcoded special predictions — use admin questions (2026-03-28)
+- **Motivation**: all prediction questions should be fully configurable through admin UI (text, options, points, category, lock). Hardcoded Slutsegrare/Skytteligavinnare prevented this.
+- Removed the `SpecialPredictions`, `SpecialResultsState`, `SpecialScoreBreakdown` types and all related code.
+- Removed `specialPredictions` state from `useParticipantTips` hook; tips payload no longer includes `specialPredictions`.
+- Removed `specialResults` state, `/api/special-results`, and `/api/admin/special-results` endpoints.
+- Removed `scoreSpecialPrediction()` from scoring engine; `specialPoints`, `specialBreakdown`, `settledSpecialPredictions` removed from score response.
+- Removed hardcoded Slutsegrare/Skytteligavinnare inputs from TipsPage Extrafrågor tab.
+- Removed special breakdown display from MyTipsPage; only `extraBreakdown` is shown.
+- Removed Special progress row from StartPage tips-progress panel.
+- Removed special results section from AdminResultsTab (admin tab renamed to "Resultat").
+- Admin creates these questions through the existing admin questions UI with appropriate options (from squads data) and category (Turneringsfrågor).
+- Answers stored and scored via the existing `extraAnswers` / `scoreExtraAnswer()` system.
+- TipsPage Extrafrågor tab uses `SearchableCombobox` when a question has >10 options.
+- Deleted `db-special.js`, removed `special_results` and `participant_special_predictions` table schemas, removed dead validator functions (`isValidSpecialPredictions`, `normalizeSpecialResultsPayload`), cleaned test payloads.
+- `seed-simulation.js` updated: removed `generateSpecialPredictions`, `upsertSpecialResults` import/usage; added Slutsegrare and Skytteligavinnare as admin questions in `ADMIN_QUESTIONS` (category: Turneringsfrågor); settling now uses `settleQuestion()` in phaseC7.
+
+### 7.44 Alla tips — Correctness Highlighting for Grupplaceringar, Slutspel, Extrafrågor (2026-03-28)
+
+- **Problem:** Gruppspel tab on AllTipsPage already shows green/red hit/miss coloring per participant. The remaining three tabs (Grupplaceringar, Slutspel, Extrafrågor) displayed predictions with no indication of correctness.
+- **Solution:**
+	- New read-only API endpoint `GET /api/results/correctness` returns answer-key data:
+		- `groupStandings`: per group code — `{ settled: boolean, actualPicks: string[] | null }` derived from completed group matches using `deriveSettledGroupStanding()`.
+		- `knockoutRounds`: per round title — `{ settled: boolean, actualTeams: string[] }` derived from completed knockout matches.
+		- `extraAnswers`: per question id — `{ correctAnswer: string | null, settled: boolean }` from admin questions table.
+	- Correctness data loaded in `App.tsx` when navigating to the Alla tips page.
+	- **Grupplaceringar tab**: "Facit" column shows actual group standings when settled. Each team in a participant's prediction is highlighted per-position: green (`alltips-hit-exact`) if correct position, red (`alltips-miss`) if wrong.
+	- **Slutspel tab**: "Facit" column shows actual teams per round when settled. Each team in a participant's prediction is highlighted: green if team participated in the round, red if not.
+	- **Extrafrågor tab**: "Rätt svar" column shows correct answer when settled. Each participant's answer cell is highlighted: green if matches correct answer (case-insensitive), red if wrong.
+	- All three tabs now show all participants in a unified column layout (consistent with Gruppspel tab), with the logged-in user's column highlighted via `alltips-own-col`.
+	- Unsettled items show no highlighting (neutral display).
+	- Reuses existing CSS classes (`alltips-hit-exact`, `alltips-miss`, `alltips-own-col`).
+- **Backend changes:**
+	- Exported `buildGroupStandingsLookups()`, `buildKnockoutRoundLookups()`, `buildPublishedQuestionLookups()` from `db-scoring.js`.
+	- Added `GET /api/results/correctness` route in `public-routes.js`.
+- **Frontend changes:**
+	- New `CorrectnessData` type in `types.ts`.
+	- `App.tsx`: new state `correctnessData`, fetched from `/api/results/correctness` when `activePage === 'alltips'`.
+	- `AllTipsPage.tsx`: `correctnessData` prop added; highlighting logic in Grupplaceringar, Slutspel, and Extrafrågor tabs.
+	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.
+
+### 7.45 Refactor: Centralized API layer + custom hooks extraction (2026-03-28)
+
+- **Problem:** App.tsx had grown to ~600 lines with 9 independent state slices, 7 inline fetch functions, and 5 useEffect hooks. API calls were scattered across App.tsx, hooks, and page components with inconsistent error handling (some silently reset state, no standardized error pattern). The `useParticipantTips` hook accepted callback functions (`onLoadLeaderboard`, `onLoadScore`) creating tight coupling between hooks.
+- **Solution:**
+	- **New centralized API layer** (`src/api/`):
+		- `client.ts`: typed fetch wrapper (`apiGet`, `apiPost`, `apiPut`, `apiDelete`) with `ApiError` class for standardized error handling. All API calls go through this single point.
+		- `endpoints.ts`: typed endpoint functions (`fetchLeaderboard`, `fetchParticipantScore`, `fetchPublicResults`, `fetchCorrectnessData`, `fetchPublishedQuestions`, `fetchTips`, `saveTips`, `deleteTips`, `fetchAllTips`, `fetchConfig`, `signIn`). Each function handles response normalization (e.g., extracting arrays from wrapper objects).
+		- `index.ts`: barrel export for clean imports.
+	- **New custom hooks** extracted from App.tsx:
+		- `useLeaderboard(participant)` — leaderboard state + auto-load on participant change.
+		- `useParticipantScoreDetail(participant, activePage)` — score detail state + auto-load when on 'mine' page.
+		- `usePublicData(activePage)` — match results + published questions, loaded on relevant page changes.
+		- `useAllTipsData(activePage)` — all participants' tips + correctness data, loaded only on 'alltips' page.
+	- **Updated existing hooks:**
+		- `useParticipantTips`: replaced raw `fetch()` calls with `fetchTips`, `saveTips`, `deleteTips` from API layer. Simplified callback pattern from `(onLoadLeaderboard, onLoadScore)` to single `onAfterSave`/`onAfterClear` callback.
+		- `usePhaseRouting`: replaced raw `fetch('/api/config')` with `fetchConfig()` from API layer.
+	- **App.tsx reduced from ~600 to ~350 lines**: removed 9 useState declarations, 5 useEffect hooks, and 7 inline async functions. Replaced with 4 hook calls.
+	- **LoginPage**: replaced raw `fetch('/api/auth/sign-in')` with `signIn()` from API layer, using `ApiError` for error messages.
+- **Files changed:** `src/api/client.ts` (new), `src/api/endpoints.ts` (new), `src/api/index.ts` (new), `src/hooks/useLeaderboard.ts` (new), `src/hooks/useParticipantScoreDetail.ts` (new), `src/hooks/usePublicData.ts` (new), `src/hooks/useAllTipsData.ts` (new), `src/hooks/useParticipantTips.ts`, `src/hooks/usePhaseRouting.ts`, `src/hooks/index.ts`, `src/App.tsx`.
+- **No behavioral changes**: API calls, timing, and error fallback behavior remain identical. This is a pure structural refactoring.
+
+### 7.46 Refactor: db-scoring.js split into focused modules (2026-03-28)
+
+- **Problem:** `server/db-scoring.js` had grown to 878 lines with 25 functions (5 exported, 20 private) mixing three distinct concerns: pure text normalization utilities, database lookup builders, and scoring calculation/ranking logic.
+- **Solution:** Split into three focused modules behind the existing barrel re-export:
+	- **`server/scoring-helpers.js`** — 8 pure functions with no DB dependencies: `normalizeText`, `normalizeComparableText`, `normalizeGroupCode`, `normalizeMatchLabel`, `extractGroupCode`, `uniqueNormalizedTexts`, `buildGroupMatchDateKey`, `buildGroupMatchKey`. All functions have JSDoc annotations.
+	- **`server/db-scoring-lookups.js`** — 7 database lookup builders + 1 pure helper (`deriveSettledGroupStanding`): `buildScoringLookups`, `listParticipantsWithTips`, `getParticipantWithTipsById`, `buildCompletedResultLookups`, `buildPublishedQuestionLookups`, `buildGroupStandingsLookups`, `buildKnockoutRoundLookups`. All functions have JSDoc annotations.
+	- **`server/db-scoring-calc.js`** — 9 scoring/ranking functions: `listParticipantScores`, `getParticipantScoreByParticipantId`, `calculateParticipantScore`, `rankParticipantScoreSummaries`, `scoreFixtureTip`, `scoreExtraAnswer`, `resolveResultForTip`, `derivePredictedSign`, `deriveOutcomeSign`. All functions have JSDoc annotations.
+	- **`server/db-scoring.js`** — converted to barrel re-export of the 5 previously exported functions from the new modules. All downstream consumers (`db.js`, `public-routes.js`, `tips-routes.js`) remain unchanged.
+- **Files changed:** `server/scoring-helpers.js` (new), `server/db-scoring-lookups.js` (new), `server/db-scoring-calc.js` (new), `server/db-scoring.js` (replaced with barrel re-export).
+- **No behavioral changes**: all exports, function signatures, and computation logic remain identical. This is a pure structural refactoring with added JSDoc documentation.
+### 7.47 App.tsx cleanup: renderPage prop grouping (2026-03-29)
+
+- **Problem:** `renderPage` accepts a flat object with 30+ properties, making the call site in `App()` noisy and hard to scan.
+- **Solution:** Group `renderPage` props into three semantic sub-objects: `tips` (tip data + mutations), `scores` (leaderboard, score detail, results, correctness), `ui` (session, phase, lock, touch, admin).
+  - Define `RenderPageTipsProps`, `RenderPageScoresProps`, `RenderPageUIProps` interfaces.
+  - `renderPage(activePage, { tips, scores, ui })` replaces the flat signature.
+  - Inside `renderPage`, unpack groups to pass individual props to page components — **page component interfaces remain unchanged**.
+  - Extract `LoginPage` to `src/pages/LoginPage.tsx`.
+- **Files changed:** `src/App.tsx`, `src/pages/LoginPage.tsx` (new).
+- **No behavioral changes**: all page rendering, prop passing, and user flows remain identical. This is a pure structural cleanup.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
@@ -1493,11 +1575,9 @@ const scoreFixtureTip = (tip, result) => {
 
 ## 13. Phase 2 Done Checklist
 
-## 10. Phase 2 Done Checklist
-
 Checklist run date: 2026-03-25
 
-### 10.1 Automated checks
+### 13.1 Automated checks
 
 | Item | Verification method | Expected result | Status | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1509,7 +1589,7 @@ Checklist run date: 2026-03-25
 | Tips persistence with `extraAnswers` | `PUT/GET/DELETE /api/tips/:participantId` with `extraAnswers` map | Save/read/delete succeed and readback contains saved question answer | PASS | Session smoke commands verified save/readback (`READBACK_EXTRA=ok`) and cleanup delete (`DEL_TIPS=204`, exit code `0`). |
 | Build | `npm run build` | Build finishes without errors | PASS | Fresh clean run completed successfully (`vite build`, exit code `0`, `✓ built in 345ms`). |
 
-### 10.2 Manual checks
+### 13.2 Manual checks
 
 | Item | Verification method | Expected result | Status | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1517,306 +1597,10 @@ Checklist run date: 2026-03-25
 | Admin UI gating and CRUD visibility | Browser flow: open Admin page signed out, then sign in as admin and verify CRUD UI | Admin login form shown when signed out; CRUD table/form shown when signed in | PASS | User-confirmed manual review result: `Admin gating + CRUD näkyvyys: ok`. |
 | Mobile layout sanity | Browser responsive pass on tips/admin pages | No blocking overlaps in key interaction areas | PASS | User-confirmed manual review result: `Mobile layout sanity: ok`. |
 
-### 10.3 Result summary
+### 13.3 Result summary
 
 - Automated coverage: 7 PASS, 0 BLOCKED.
 - Manual coverage: 3 PASS, 0 BLOCKED.
 - Phase 2 backend/API MVP flow is validated.
 - Remaining closure actions: none for Phase 2 checklist closure in this pass.
 
-## 14. Changelog
-
-- 2026-03-24
-	- Added phase-1 content definition for prediction targets and lock rules.
-	- Added tournament data baseline with FIFA reference sources.
-	- Added admin-managed question model and Swedish terminology baseline.
-	- Added static frontend prototype scope for the phase-1 information architecture.
-	- Normalized visible Swedish terminology to `Sextondelsfinal`, `Åttondelsfinal`, and question labels with diacritics.
-	- Clarified that the prototype should stay visually close to the Figma layout pack structure.
-	- Updated selected navigation/section button background to gray in the static prototype.
-	- Updated hero section CTA buttons to gray tones for consistent button styling.
-	- Added mobile readiness pass: all major data tables now transform into stacked card layouts on small screens, and tips actions keep sticky bottom accessibility for phone testing.
-- 2026-03-25
-	- Aligned `Grupplaceringar` options with canonical group fixture teams by deriving placement candidates from the same grouped fixture source used by the match cards.
-	- Trialed stronger `Placeringar` emphasis: upgraded to a more assertive warm yellow palette and sticky section header inside each group card for better scroll discoverability.
-	- Changed `Placeringar` emphasis color to warm yellow and strengthened section framing so group placements are clearly visible in each group card.
-	- Fixed mobile score spinner behavior so selecting score values always auto-updates `1/X/2` immediately from the active score pair.
-	- Strengthened group-card `Placeringar` visibility in `Lämna tips` with explicit visual emphasis (highlighted framed block + clearer heading) to prevent it from being overlooked during scrolling.
-	- Reworked `Lämna tips` group-stage UX to a single group-based page section: each group card now includes both match tips and group placements, with responsive 3/2/1 column layout.
-	- Unified lock policy for participant tips: one common deadline (`2026-06-09 22:00`) for all categories and published extra questions; removed participant-facing per-match and per-question lock behavior.
-	- Synced all group-stage kickoff timestamps (72 matches) in the canonical fixture module to FIFA official 2026 schedule and switched visible group-stage country names to Swedish where explicit country names are known (placeholder slash labels remain unchanged).
-	- Sorted exported fixture collections chronologically by kickoff time so match lists render in time order.
-	- Corrected group-stage fixture team composition to match FIFA 2026 official group teams in the canonical fixture source.
-	- Clarified fixture baseline behavior: official FIFA group composition is used, while kickoff timestamps remain planned placeholders where final production timing sync is not yet implemented (currently knockout stage).
-	- Added Phase 3 Step 1 scoring contract to specification (inputs, per-match scoring rule, settlement timing), with explicit plan to continue Steps 2 and 3 on 2026-03-26.
-	- Added Phase 3 backend result foundation: `match_results` table and result API endpoints (`/api/results`, `/api/admin/results`) keyed by `matchId`, without scoring or leaderboard side-effects.
-	- Added fixture source-of-truth prework scope for Phase 3 start: 134 total modeled fixtures (72 group + 62 knockout) with placeholder pairings/times where needed.
-	- Corrected group-stage match count target to 72 and documented canonical fixture-module strategy.
-	- Updated Phase 2 checklist manual validation statuses to PASS based on user-confirmed browser review (`Extrafrågor`, admin gating/CRUD visibility, mobile layout sanity).
-	- Added `Phase 2 Done Checklist` section with explicit PASS/BLOCKED status and evidence links to this session's smoke validation.
-	- Added workflow rule: restart active API dev process after backend/API changes before running smoke tests.
-	- Added Phase 2 MVP backend scope for admin question CRUD and `Extrafrågor` tips payload extension.
-	- Implemented Phase 2 MVP frontend wiring: dynamic `Extrafrågor` in Lämna tips + Mina tips, and API-backed Admin question CRUD UI.
-	- Added lightweight admin endpoint protection (`x-admin-code` / bearer token) and Admin UI support for sending admin code on CRUD calls.
-	- Added separate admin sign-in (name + code) before Admin CRUD UI is visible.
-	- Updated admin question behavior: `Rätt svar` is no longer mandatory before the real answer is known.
-	- Added Sign-in / access code page: users enter Namn and Åtkomstkod before accessing main tips interface. Error messaging for incorrect codes included.
-	- Chosen backend stack for MVP: Node.js (Express) + SQLite.
-	- Added backend MVP scope for participant persistence and `POST /api/auth/sign-in` sign-in/create flow.
-	- Added session persistence for signed-in participant via localStorage.
-	- Added participantId-based tips CRUD backend scope and frontend integration for loading/saving tips.
-	- Added tips input UX trial scope with Variant A/B model for desktop+mobile comparison.
-	- Refined tips Variant B UX: grouped quick-pick score buttons into 6 home-win + 6 draw/away options with manual fallback, and added mobile spinner controls for tap-first score adjustment.
-	- Refined mobile Variant B score input to wheel-style vertical number spinners (scroll up/down) for faster thumb interaction.
-	- Simplified mobile Variant B further: removed score quick-picks on mobile so score entry is spinner-only for cleaner thumb flow.
-	- Updated tips behavior on both desktop and mobile: 1/X/2 is now auto-derived from selected score (for example 1-2 => 2), while manual override remains possible.
-	- Locked the tips input UX model as default and removed temporary A/B trial instrumentation.
-	- Extended tips persistence end-to-end to include Grupplaceringar and Special predictions, and updated Mina tips to show these from saved data.
-	- Replaced Grupplaceringar free-text entry with group-specific team selectors that work better on mobile and prevent duplicate country picks inside the same group.
-	- Fixed Grupplaceringar selector behavior so teams can be cleared and swapped between positions without breaking the one-team-per-group rule.
-	- Extended tips persistence to include Slutspel predictions and updated both Lämna tips and Mina tips to edit/show saved knockout picks.
-	- Added Slutspel type-ahead suggestions with round-aware team filtering so users can type to narrow choices instead of scrolling long lists.
-	- Fixed mobile overlap issue where the floating action bar could cover active tips input fields. Initial fix used max-width: 720px breakpoint; extended to also apply @media (hover: none) and (pointer: coarse) to cover landscape iPhones and tablets whose CSS viewport width exceeds 720px.
-	- Fixed touch-device Slutspel input overlap where native datalist suggestion popups could cover the next text field; desktop keeps datalist type-ahead and touch devices now show inline suggestion chips directly under the active field.
-	- Expanded Grupplaceringar source-of-truth data from sample Groups A-C to full Groups A-L (48 team slots) with placeholder entries where qualifiers are still pending.
-	- Expanded Slutspel prediction templates to all five rounds with full participant slot counts (32/16/8/4/2) for each knockout round.
-	- Fixed desktop Slutspel layout so knockout round cards no longer stretch to the height of the largest card in the same grid row.
-	- Updated tips page section flow so all Slutspel rounds (including Semifinal and Final) stay in the same knockout panel, while `Special och dynamiska frågor` is rendered in a separate panel below.
-	- Updated Lämna tips UX to tab-driven section cards so only the selected section is shown at a time, and split `Special` + `Extrafrågor` into separate panels matching their buttons.
-	- Updated Lämna tips tab copy for `Grupplaceringar` and added clearer heading-to-content spacing in compact section panels.
-	- Simplified start page UI: removed the separate green hero block, reduced repeated `VM2026 Tipset` branding on page-level headings, and removed redundant start-page CTA buttons.
-	- Simplified mobile topbar layout with horizontally scrollable navigation and compact utility cards so the header uses less vertical space on small screens.
-	- Tightened mobile main navigation pill spacing and padding so the horizontally scrollable tab row reads lighter on small screens.
-- 2026-03-26
-	- Updated phase navigation decision: `Lämna tips` is hidden in Phase C and normalizes to `Mina tips`, so participants can review saved entries instead of seeing the editable tips workspace during tracking.
-	- Updated phase navigation decision: `Mina tips` is visible in both Phase B and Phase C (no longer hidden in C); only `Resultat & poäng` stays hidden in Phase B.
-	- Hardened participant phase coherence for state transitions: active page is normalized by lifecycle phase rules so users are redirected away from phase-incompatible pages (`Fas B`: `Resultat & poäng` -> `Lämna tips`).
-	- Updated participant top navigation visibility to follow effective lifecycle phase (including local `Fas B`/`Fas C` preview mode for Jarmo), so `Resultat & poäng` appears in Phase C preview and remains hidden only in Phase B.
-	- Fixed Phase B navigation regression where persisted admin session could bypass participant phase tab filtering; lifecycle-based tab visibility (`hide results in B`, `hide mina tips in C`) now applies regardless of admin session presence.
-	- Updated phase navigation coherence: `Resultat & poäng` is hidden from participant main navigation during Phase B (before global deadline) and shown in Phase C tracking mode.
-	- Added participant logout control in topbar utility panel (`Logga ut`) to explicitly end participant session from the main app UI; logout clears local participant and admin session state and returns to sign-in.
-	- Fixed participant login-to-empty-screen regression: moved the `Mina tips` Phase C redirect `useEffect` to run before conditional login return so React hook order stays stable between signed-out and signed-in renders.
-	- Added lifecycle-based roadmap and strict phase-separation model (`Administrointi/alustus` -> `Osallistujien veikkausvaihe` -> `Turnauksen aikainen seuranta` -> `Lopetus`) to reduce mixed-context UX and prevent feature creep.
-	- Implemented first phase-coherence UI cleanup on Start page: prediction-prep blocks are now shown before deadline, while post-deadline Start switches to tournament-tracking-only leaderboard and rank context.
-	- Added Start page local-only phase preview controls for `Jarmo` (`Auto`, `Phase B`, `Phase C`) so phase-dependent UI can be validated without real-time deadline transitions.
-	- Fixed Start page phase preview control usability by replacing button toggle with explicit phase selector (`Auto`/`Fas B`/`Fas C`) and visible active-phase indicator.
-	- Implemented `Mina tips` phase-scoped score visibility: before deadline the score panel is hidden with explanatory copy, after deadline the existing participant score breakdown is shown.
-	- Connected Start phase preview selector to `Mina tips` so forced `Fas B`/`Fas C` mode now affects both pages during local validation.
-	- Added visible lifecycle preview badge row in `Mina tips` so active phase and preview source (`Auto` or forced mode) can be validated without returning to Start page.
-	- Added `Regler` phase-specific guidance callouts for `Fas B` and `Fas C`, tied to the same shared local lifecycle preview mode used by Start and Mina tips.
-	- Added `Resultat & poäng` context clarification copy to explain intentional shared score source with `Mina tips` while preserving different page purpose.
-	- Added explicit Admin role-clarity banner in `Resultat och special` tab: Admin edits outcomes there, participants view same outcomes read-only in `Resultat & poäng`.
-	- Removed visible Admin login entry from participant topbar utilities and kept admin entry via hidden shortcut (`Alt+Shift+A`) to reduce participant confusion.
-	- Fixed hidden admin shortcut detection to work across keyboard layouts by matching physical key code (`KeyA`) in addition to character key.
-	- Created current-state page-to-lifecycle mapping (section 7.16) showing all 7 pages across 4 phases with identified mixed-context issues (Start page, Mina tips, Rules page) and coherence action priorities.
-	- Expanded local-only `Resultat & poäng` mock preview (Jarmo profile) to include participant score detail/rank summary in addition to in-progress match and special result states, without affecting backend data.
-	- Added participant-facing `Resultat & poäng` scope: public match/special outcomes plus signed-in participant score breakdowns using existing score/result APIs.
-	- Extended the Admin frontend with a dedicated `Resultat och special` workspace for maintaining official match outcomes and special scoring results via the already existing admin APIs.
-	- Updated `Mina tips` score breakdown accordions to keep backend order for all settled rows and show misses (`0 p`) alongside hits instead of hiding them.
-	- Added a safe local-only mock score preview mode for participant profile `Jarmo` in `Mina tips`, explicitly isolated from backend score logic and persistence.
-	- Refined `Mina tips` score breakdown UI into compact card rows with dedicated points badges and color-coded reason badges for faster scanning.
-	- Updated `Mina tips` score breakdown copy so score reasons are shown as user-friendly Swedish labels instead of backend reason codes.
-	- Completed `Mina tips` participant score integration by wiring `GET /api/scores/:participantId` into the page and showing category totals plus score-contributing breakdown sections.
-	- Started Phase 3 Step 2 implementation scope by splitting it into `Step 2A` (stable fixture identity) and `Step 2B` (backend scoring engine plus score read API).
-	- Added backward-compatible `fixtureId` support to persisted fixture tips so newly saved tips can be joined to `match_results.match_id` without relying primarily on display-text matching.
-	- Added Phase 3 Step 3 leaderboard scope: read-only ranking via `GET /api/scores`, shared ranks for equal `totalPoints`, and Start-page leaderboard integration without introducing a tie-break policy.
-	- Finalized and implemented the current scoring model across all prediction categories: group placements, knockout rounds, special predictions, and participant-facing score breakdowns in `Mina tips`.
-	- Added interim deterministic group-standings resolution from completed group match results until official standings ingest exists.
-	- Added admin-managed special outcomes persistence for `Slutsegrare` and `Skytteligavinnare` scoring.
-	- Documented redundant data flows and identified component variant requirements (section 7.17): `ParticipantScorePanel`, `ScoreSummaryCard`, `LeaderboardPanel`, `TipsInputPanel`, `MatchResultCard`, `RulesPage`, and `AdminResultsWorkspace` all need phase-aware conditional rendering. No implementation changes; documentation-only planning for Phase 3 coherence cleanup.
-	- Defined recompute-on-read score API scope for this phase: `GET /api/scores` and `GET /api/scores/:participantId`, without leaderboard ranking or score persistence.
-	- Added automated scoring API integration tests (`node --test`) with isolated API process and temporary DB to verify exact/sign/wrong/missing/unsettled scoring paths plus legacy fallback matching.
-	- Extended recompute-on-read scoring to include published `Extrafrågor` answers and exposed additional score fields: `fixturePoints`, `extraQuestionPoints`, `settledQuestions`, and participant `extraBreakdown`.
-	- Refactored lifecycle phase state machine: `effectiveLifecyclePhase` is now computed once in App root and passed as a single `phase: 'B' | 'C'` prop to `StartPage`, `MyTipsPage`, and `RulesPage`; duplicate `effectivePhase` derivations in sub-components removed.
-	- Decoupled admin session from participant lifecycle: participant logout (`Logga ut`) no longer clears the admin session, so admin identity survives participant session changes independently.
-	- Implemented real-time tips completion in the Start page "Framsteg" section: overall percentage and per-category progress bars are now computed from live tips state (fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers, publishedQuestions) instead of hardcoded mock values. A tip is counted filled when: fixture has a sign set, group has all 4 picks non-empty, knockout pick is non-empty, special field is non-empty, extra answer is selected.
-	- Fixed knockoutPredictions persistence validation: now accepts partial picks arrays from API (stores what user entered, pads with template empty values) instead of rejecting entire round if array length mismatches. Fixes regression where selected knockout teams would not appear in dropdown on subsequent page load.
-	- Fixed knockout team suggestions filtering: correctly bounds array access when picks array is shorter than expected, preventing undefined values from causing missing suggestions in later knockout rounds (e.g., Semifinal would show only teams from Quarterfinal instead of from all previous rounds).
-- 2026-03-26 (continued)
-	- Added section 8: Normalized Database Schema with full relational design, migration strategy, and backward-compatibility approach.
-	- Documented five normalized tables: `participant_fixture_tips`, `participant_group_placements`, `participant_knockout_predictions`, `participant_special_predictions`, `participant_extra_answers`.
-	- Added dual-write strategy: new tips mutations write to both JSON (for API contract stability) and normalized tables simultaneously; reads prioritize normalized tables with JSON fallback.
-	- Added idempotent backfill plan: one-time script migrates historical JSON tips to normalized tables using `synced_from_json` flag for safety.
-	- Added section 9: Test Automation Requirements with comprehensive "pomminvarma pistelaskenta" (bulletproof scoring) philosophy.
-	- Documented 7 test matrices covering: fixture tips (2-1-0 points rules), group placements (1 point per correct position), knockout predictions (1-3 points per team by round), special predictions (4 points exact/0 wrong), extra questions (variable points), admin result corrections (rescore idempotence), and edge cases (partial results, missing predictions, legacy fallback).
-	- Added section 10: Maintenance and Evolution Guidelines with procedures for spec-to-code traceability, when to add tests, handling scoring rule changes, and managing known fragilities.
-	- Documented fragilities: legacy fixture text matching (fix: normalized schema), admin special outcomes (fix: external validation layer), unsettled result ambiguity (mitigation: recompute-read design).
-	- All sections 8-10 are ready for implementation; section numbering updated (Workflow now 11, Open Questions now 12, Checklist now 13, Changelog now 14).
-	- Implemented knockout scoring backend behavior for settled rounds: knockout lookups now consider only completed knockout matches with both scores present, preventing incomplete/planned rounds from being scored prematurely.
-	- Implemented settled match tracking validation in automated tests: partial-result scenarios now assert exact settled match count and explicit `unsettled` breakdown reason for unresolved tips.
-	- Implemented concrete knockout and partial-result edge-case tests in `server/scores.api.test.js` (replacing temporary TODO placeholders), keeping `npm run test:api` fully green.
-	- Updated knockout tips validation in API layer so allowed pick counts follow round definition (`Sextondelsfinal` 32, `Åttondelsfinal` 16, `Kvartsfinal` 8, `Semifinal` 4, `Final` 2).
-	- Fixed `Slutspel` first-round team suggestions to always include the canonical 48 tournament teams from fixture templates (instead of shrinking to participant-specific group picks), so dropdown options remain complete even if saved group picks contain duplicates or partial data.
-	- Removed the touch-device `Slutspel` inline suggestion cap (`8` items), so users can browse the full candidate pool (including all 48 first-round teams) without typing filters first.
-	- Removed all round-based and input-based `Slutspel` suggestion filtering (`Sextondelsfinal` → `Final`): every knockout round now uses the same full canonical candidate pool so no round dropdown list is truncated by previous-round picks or typed query filtering.
-	- Added regression API test coverage for knockout round lengths to ensure save/read persistence keeps full pick counts per round (`32/16/8/4/2`) and prevents accidental truncation in future changes.
-	- Started MVP-cleanup backlog execution (P0-1): CI workflow modernized to Node 20 + current GitHub Action versions; test command aligned to `npm run test:api`; artifact output path corrected to `./dist`.
-	- Added production fail-fast guard for critical secrets (`ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`) so server startup aborts when these are missing in production environment.
-	- Added `.env.example` template to document required runtime variables for local setup and production deployment hardening.
-	- Added P0-2 security hardening: CORS origin whitelist (via `CORS_ORIGINS` env var), `express.json` body size capped at 1 MB, auth rate limiting (20 requests / 15 min) on `/api/auth/sign-in` and `/api/auth/admin-sign-in`.
-	- Added P0-3 data integrity: wrapped `upsertTipsByParticipantId` and `deleteTipsByParticipantId` in SQLite transactions (BEGIN/COMMIT/ROLLBACK) so JSON column and all normalized table writes are atomic.
-	- Added P0-4 resilience: all `JSON.parse` calls in `db.js` wrapped in try-catch with safe defaults (`null` for tips, `[]` for options arrays) to prevent server errors from corrupt stored data.
-	- Added P0-5 database hardening: SQLite `PRAGMA foreign_keys = ON` and `PRAGMA journal_mode = WAL` applied at startup in `initDatabase()`; added `closeDatabase()` export and SIGTERM/SIGINT graceful shutdown handlers in `server/index.js` so the process drains active connections before exiting.
-	- Implemented P1-2 security improvement: admin session moved from `localStorage` to `sessionStorage` so credentials are cleared when the browser tab is closed.
-	- Added P1-4 `/api/config` endpoint (server) and `GLOBAL_DEADLINE` env var so the tip submission deadline can be configured per deployment without a code change.
-	- Implemented B4a backend modularization (2026-03-26): split `server/index.js` (859 lines) into domain-specific route modules and a validators module to improve maintainability and enable independent feature work.
-		- Created `server/validators.js` (15 functions, 338 lines): centralized all request payload validators and normalizers (`parseParticipantId`, `parseEntityId`, `parseMatchId`, `isValidFixtureTips`, `isValidGroupPlacements`, `isValidKnockoutPredictions`, `isValidSpecialPredictions`, `isValidExtraAnswers`, `normalizeNullableScore`, `normalizeAdminQuestionPayload`, `normalizeMatchResultPayload`, `normalizeSpecialResultsPayload`, `normalizeTipsPayload`).
-		- Created `server/middleware.js` (6 functions, ~95 lines): centralized middleware setup (CORS, JSON parser, auth rate limiter) and auth helpers (`hashAccessCode`, `normalizeName`, `extractAdminCode`, `requireAdminAccess`, `setupMiddleware`).
-		- Created `server/auth-routes.js` (2 routes, ~70 lines): authentication endpoints (`POST /api/auth/admin-sign-in`, `POST /api/auth/sign-in`) with sign-in logic for both admin and participant flows.
-		- Created `server/admin-routes.js` (8 routes, ~180 lines): admin-protected endpoints for question and result management (`GET /api/admin/questions`, `GET /api/admin/results`, `GET /api/admin/special-results`, `PUT /api/admin/special-results`, `PUT /api/admin/results/:matchId`, `POST /api/admin/questions`, `PUT /api/admin/questions/:id`, `DELETE /api/admin/questions/:id`).
-		- Created `server/tips-routes.js` (3 routes, ~90 lines): participant tips CRUD (`GET /api/tips/:participantId`, `PUT /api/tips/:participantId`, `DELETE /api/tips/:participantId`).
-		- Created `server/public-routes.js` (8 routes, ~150 lines): public endpoints for health, config, results, leaderboard, and published questions (`GET /api/health`, `GET /api/config`, `GET /api/results`, `GET /api/results/:matchId`, `GET /api/scores`, `GET /api/scores/:participantId`, `GET /api/special-results`, `GET /api/questions/published`).
-		- Reduced `server/index.js` from 859 to 65 lines: now contains only app initialization, middleware setup, route registration, and database lifecycle; all business logic moved to separate modules.
-		- Validation results: `npm run build` ✓, all 9 API tests pass (`npm run test:api` ✓), no API contract changes.
-		- Backward-compatible refactor: all existing API endpoints, parameters, and response contracts remain unchanged; refactor is internal code organization only.
-	- Implemented P1-1: frontend fetches `globalDeadline` from `/api/config` on mount and uses it for the live lock check; hardcoded fallback `2026-06-09T22:00:00` applies if the API is unreachable.
-	- Implemented B4b frontend orchestrator refactoring (2026-03-26): split `src/App.tsx` monolithic orchestrator (921 lines, 26 useState hooks, 7+ useEffect blocks) into 3 composable custom hooks to improve state management clarity and enable independent development of features.
-		- Created `src/hooks/useSession.ts` (80 lines): manages participant + admin session state with localStorage/sessionStorage persistence. Exported values: `{ participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn }`. Consolidates 4 useEffect blocks from App.tsx (initialize from storage, persist participant, persist admin session).
-		- Created `src/hooks/useParticipantTips.ts` (330 lines): manages all tips state (fixtureTips, groupPlacements, knockoutPredictions, specialPredictions, extraAnswers) and provides 8 mutation handlers (`onChangeTip`, `onSetScorePreset`, `onChangeGroupPlacement`, `onChangeKnockoutPrediction`, `onChangeSpecialPrediction`, `onChangeExtraAnswer`, `onSaveTips`, `onClearTips`). All mutations respect `isGlobalLockActive` flag. Exported values: tips state + handlers + UI feedback (isSavingTips, tipsSaveMessage, myTipsSavedLabel). Consolidates tips loading and save/clear logic from App.tsx.
-		- Created `src/hooks/usePhaseRouting.ts` (77 lines): manages global deadline, phase visibility rules, page routing normalization, and admin shortcut listener (Alt+Shift+A). Fetches `/api/config` for `globalDeadlineStr` on mount (fallback to `GLOBAL_DEADLINE_FALLBACK`). Exported values: `{ globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase }`. Consolidates deadline fetching, phase computation, and page normalization from App.tsx.
-		- Created `src/hooks/index.ts` (3 lines): barrel export for hooks module (useSession, useParticipantTips, usePhaseRouting).
-		- Refactored `src/App.tsx` from 921 to ~450 lines (50% reduction): replaced 26 useState declarations with 3 hook calls; removed 7+ useEffect blocks (now inside hooks); kept imperative handlers (loadLeaderboard, loadParticipantScore, loadPublicResults, onParticipantLogout) as standalone functions; preserved renderPage() interface and page prop contracts unchanged.
-		- Validation results: `npm run build` ✓ (0 errors, 225.13 kB JS / 65.50 kB gzip, 362ms), all 9 API tests pass (`npm run test:api` ✓, 5494.9ms), no frontend regression.
-		- Zero API contract changes; all page components receive unchanged props; backward-compatible refactor focused on internal App.tsx state orchestration only.
-	- Implemented B4c scoring optimization (2026-03-26): eliminated double-read anti-pattern in `getParticipantScoreByParticipantId` that called `listParticipantScores()` (recalculating all participant scores) just to get one participant's rank.
-		- Extracted `buildScoringLookups()` helper (builds match results, questions, group standings, knockout rounds, special results lookups once).
-		- Refactored `listParticipantScores()` to accept optional pre-built lookups parameter; if omitted, builds them internally (maintains backward compatibility).
-		- Refactored `getParticipantScoreByParticipantId()` to build lookups once and share them across participant score calculation and leaderboard summary generation.
-		- Eliminated redundant call to `listParticipantScores()` by computing score summaries directly with shared lookups, then ranking them.
-		- Performance impact: detail requests now skip redundant leaderboard recalculation, reducing database load and latency (~20% improvement on detail requests).
-		- Validation: all 9 API tests pass, no API contract changes, backward-compatible refactor (internal optimization only).
-	- Implemented B5a admin container simplification (2026-03-26): reduced `src/pages/AdminPage.tsx` orchestration complexity by extracting sign-in UI and results filtering logic into dedicated modules.
-		- Created `src/pages/admin/AdminSigninPanel.tsx`: reusable admin sign-in panel component for unauthenticated state; `AdminPage` now delegates sign-in view rendering to this component while preserving sign-in behavior and messages.
-		- Created `src/hooks/useFixtureFilter.ts`: shared filter hook for admin result workflows; centralizes stage filter (`group/knockout/all`), text search, selected match synchronization, filtered fixtures, filtered saved results, and selected fixture lookup.
-		- Refactored `src/pages/AdminPage.tsx` to use `useFixtureFilter`, removing duplicated fixture/result filtering blocks and selection synchronization effect from the page container.
-		- Extracted explicit `onAdminLogout` handler in `src/pages/AdminPage.tsx` to keep session reset behavior in one place and reduce inline action complexity.
-		- No API or payload contract changes; this is an internal frontend container refactor to improve maintainability and reduce duplicate logic.
-	- Implemented B5b TipsPage section extraction (2026-03-26): split `src/pages/TipsPage.tsx` into dedicated section components to reduce prop and render complexity in the main page container.
-		- Created `src/pages/tips/GroupsFixturesCard.tsx`: extracted full Gruppspel section (match tips, quick presets, mobile spinner, manual +More editor, group placements) with behavior preserved.
-		- Created `src/pages/tips/KnockoutRoundsCard.tsx`: extracted Slutspel section (round picks, datalist typeahead, mobile inline suggestions, active field handling).
-		- Created `src/pages/tips/SpecialPredictionsCard.tsx`: extracted Special section (winner + top scorer inputs).
-		- Created `src/pages/tips/ExtraQuestionsCard.tsx`: extracted Extrafrågor section (published questions selector state and lock rendering).
-		- Refactored `src/pages/TipsPage.tsx` into section orchestrator only (tab switching, shared save/clear controls, per-section component composition).
-		- Removed unused `inputValue` parameter from inline knockout suggestions logic during extraction; no behavior change.
-		- Internal UI refactor only: no API, payload, scoring, or lock-rule changes.
-	- Implemented B6 JSON parse consolidation (2026-03-27): replaced repeated inline `JSON.parse` try/catch patterns with shared parsing helpers to reduce duplication and keep fallback behavior explicit.
-		- Created `server/json-utils.js` with `parseJsonOrNull` and `parseJsonOrArray` for backend JSON column parsing.
-		- Updated `server/db-questions.js` to replace three duplicated options parsing wrappers with `parseJsonOrArray`.
-		- Updated `server/db-tips.js` and `server/db-scoring.js` to replace inline tips JSON wrappers with `parseJsonOrNull`.
-		- Created `src/utils/parseJSON.ts` with `safeParseJSON` and `tryParseJSON` for frontend/session parsing.
-		- Updated `src/hooks/useSession.ts` to use `tryParseJSON` for participant/admin session restoration while preserving invalid-storage cleanup behavior.
-		- Consolidation only: no API contract, scoring rules, or persistence schema changes.
-	- Implemented B7 dynamic countdown label (2026-03-27): replaced hardcoded topbar countdown text in `src/App.tsx` with computed remaining days based on `globalDeadlineStr` from `/api/config`.
-		- Topbar `Nedräkning` value is now computed as `Math.ceil((deadline - now) / 86400000)` with floor behavior at `0 dagar kvar` after deadline passes.
-		- Added invalid-deadline fallback label `Okänd deadline` when deadline timestamp cannot be parsed.
-	- Fixed stale session after simulation reset (2026-03-28): when `reset` deletes participants from the database, browser localStorage retains the old `participantId`. On next page load, `useParticipantTips` fetches `/api/tips/{old-id}` which returns 404, but the hook silently fell back to empty defaults (showing ~9% progress). Fix: `useParticipantTips` now accepts an optional `onSessionInvalid` callback; when the tips API returns 404, the hook calls this callback which clears the participant session (same as logout). The user is returned to the sign-in page and can re-authenticate to receive the new participant ID.
-		- Updated `src/hooks/useParticipantTips.ts`: added `onSessionInvalid?: () => void` parameter; `loadTips()` now detects 404 specifically and calls `onSessionInvalid()` instead of showing a generic error message.
-		- Updated `src/App.tsx`: passes `onSessionInvalid` callback to `useParticipantTips` that calls `setParticipant(null)` + `setIsLoggedIn(false)` to clear the stale session.
-	- Fixed case-sensitive participant name lookup (2026-03-27): `findParticipantByName` used exact case-sensitive matching (`WHERE name = ?`), causing duplicate participants when names differed only in casing (e.g., "anders" id=118 vs "Anders" id=135). Sign-in with "anders" matched the older empty participant instead of the sim-created one with full tips. Fix: added `COLLATE NOCASE` to the name lookup query and `ORDER BY id DESC` to prefer the most recently created participant when duplicates exist.
-		- Updated `server/db-participants.js`: `findParticipantByName` query changed from `WHERE name = ?` to `WHERE name = ? COLLATE NOCASE ORDER BY id DESC`.
-		- Impact: sign-in, reset, and setup all now treat "anders"/"Anders"/"ANDERS" as the same participant. Prevents future case-variant duplicates since the sign-in flow checks for existing participants before creating new ones.
-	- Fixed simulation setup incomplete extra answers (2026-03-27): `generateExtraAnswers` in `server/seed-simulation.js` only answered sim-created questions, ignoring manually created published questions. When manual questions existed (e.g., "Vem gör mest mål i slutspelet"), sim participants showed <100% progress (e.g., 5/7 extra answers = 99%). Fix: `phaseSetup` now collects ALL published questions and passes them to `generateExtraAnswers`; the function picks random options for non-sim questions and applies expert/casual correct-answer rates for sim questions.
-		- Updated `server/seed-simulation.js`: `generateExtraAnswers` signature changed to `(participantIndex, simQuestions, allPublishedQuestions)`; iterates all published questions, using `QUESTION_ANSWERS` lookup for sim questions and random option selection for manual questions. `phaseSetup` now queries all published questions via `listAdminQuestions` and filters by status.
-	- Removed Match-ID display from participant-facing result cards (2026-03-27): `<span>Match-ID: {entry.matchId}</span>` removed from `src/pages/ResultsPage.tsx`. Match IDs are internally generated identifiers (e.g., `G-A-2`, `KO-R32-5`) not meaningful to participants. Admin pages retain full match-ID visibility.
-	- Added fixture tip hit/miss visualization (2026-03-27): in Phase C, participants can see at a glance whether their fixture predictions were correct.
-		- **Mina tips — Gruppspel table**: the Resultat and 1/X/2 cells are now color-coded for settled matches. Green background (`.tip-hit`) for correct predictions; red background (`.tip-miss`) for incorrect. Exact score → both cells green. Correct sign only → 1/X/2 green, Resultat red. Wrong result → both red. Unsettled matches remain uncolored.
-		- **Resultat & poäng — result cards**: each settled result card now shows a "Ditt tips" row (visible only when logged in) displaying the participant's predicted score and 1X2 sign as pill indicators with hit/miss coloring, plus a points badge. Not shown for unsettled matches or when not logged in.
-		- Extended `FixtureScoreBreakdown` type in `src/types.ts` with fields the API already returned: `predictedHomeScore`, `predictedAwayScore`, `predictedSign`, `actualSign`, `group`, `date`, `result`.
-		- Added `predictedHomeScore` and `predictedAwayScore` to the scoring breakdown in `server/db-scoring.js` so the frontend can display the participant's predicted score in result cards.
-	- Changed C1/C2 simulation phases to chronological match order (2026-03-28): instead of inserting all matches for groups A–D at once, C1 now inserts all group matches chronologically up to June 20 (~36 matches across all 12 groups). Groups A–F get 4 matches each (rounds 1+2), groups G–L get 2 matches each (round 1 only). C2 inserts the remaining ~36 group matches to complete all 72.
-		- Added `insertGroupMatchResultsBefore(cutoffUtc, excludeBeforeUtc)` function in `server/seed-simulation.js` that builds all group matches, sorts by kickoff timestamp, and inserts only those within the specified date range.
-		- Added `C1_CUTOFF = '2026-06-21T04:59:59Z'` constant (end of June 20 UTC).
-		- Updated `phaseC1()` to use `insertGroupMatchResultsBefore(C1_CUTOFF)`.
-		- Updated `phaseC2()` to use `insertGroupMatchResultsBefore('2026-06-28T23:59:59Z', C1_CUTOFF)` for remaining matches.
-		- Added CSS classes in `src/styles.css`: `.tip-hit` (green bg), `.tip-miss` (red bg) for table cells; `.result-card-tip` layout; `.tip-indicator.hit/.miss` pill styles for result cards.
-	- Removed Avspark and Senast uppdaterad from participant-facing result cards (2026-03-28): kickoff timestamp and last-updated timestamp removed from `src/pages/ResultsPage.tsx` match result cards to reduce clutter.
-	- Removed "Slut" status pill from result cards (2026-03-28): redundant since only completed matches are shown.
-	- Removed "Live just nu" summary card from ResultsPage (2026-03-28): reduces backend complexity.
-	- Changed "Planerade matcher" to "Återstående matcher" on ResultsPage (2026-03-28): now computed as `fixtureCounts.total - completedCount` (134 minus completed).
-	- Removed Status column from Mina tips Gruppspel table (2026-03-28): single deadline makes per-match lock status redundant.
-	- Added section tabs to Resultat & poäng page (2026-03-28): replaced "Alla/Gruppspel/Slutspel" stage filter + status dropdown with four section tabs matching Mina tips layout: Gruppspel, Grupplaceringar, Slutspel, Extrafrågor. Each tab shows its own content section. Removed "Om poängvyn" info panel. Special results and extrafrågor now shown under the Extrafrågor tab.
-	- Removed "Avgjorda specialutfall" heading and Slutsegrare/Skytteligavinnare mini-cards from ResultsPage Extrafrågor tab (2026-03-28): redundant display; breakdown list remains.
-	- Replaced Gruppspel result cards with aligned fixture breakdown table on ResultsPage (2026-03-28): removed the "Officiella resultat" card grid from the Gruppspel tab. Replaced with a columnar breakdown showing match name, actual result, predicted result (green/red hit indicator), predicted 1X2 sign (green/red), and points per match. Slutspel tab still uses result cards. CSS grid layout ensures columns align across rows.
-	- Added visual spacer between Resultat and Tips columns in fixture breakdown (2026-03-28): introduces a gap column in the CSS grid to visually separate the official result from the user's prediction.
-
-### 7.43 Remove hardcoded special predictions — use admin questions (2026-03-28)
-- **Motivation**: all prediction questions should be fully configurable through admin UI (text, options, points, category, lock). Hardcoded Slutsegrare/Skytteligavinnare prevented this.
-- Removed the `SpecialPredictions`, `SpecialResultsState`, `SpecialScoreBreakdown` types and all related code.
-- Removed `specialPredictions` state from `useParticipantTips` hook; tips payload no longer includes `specialPredictions`.
-- Removed `specialResults` state, `/api/special-results`, and `/api/admin/special-results` endpoints.
-- Removed `scoreSpecialPrediction()` from scoring engine; `specialPoints`, `specialBreakdown`, `settledSpecialPredictions` removed from score response.
-- Removed hardcoded Slutsegrare/Skytteligavinnare inputs from TipsPage Extrafrågor tab.
-- Removed special breakdown display from MyTipsPage; only `extraBreakdown` is shown.
-- Removed Special progress row from StartPage tips-progress panel.
-- Removed special results section from AdminResultsTab (admin tab renamed to "Resultat").
-- Admin creates these questions through the existing admin questions UI with appropriate options (from squads data) and category (Turneringsfrågor).
-- Answers stored and scored via the existing `extraAnswers` / `scoreExtraAnswer()` system.
-- TipsPage Extrafrågor tab uses `SearchableCombobox` when a question has >10 options.
-- Deleted `db-special.js`, removed `special_results` and `participant_special_predictions` table schemas, removed dead validator functions (`isValidSpecialPredictions`, `normalizeSpecialResultsPayload`), cleaned test payloads.
-- `seed-simulation.js` updated: removed `generateSpecialPredictions`, `upsertSpecialResults` import/usage; added Slutsegrare and Skytteligavinnare as admin questions in `ADMIN_QUESTIONS` (category: Turneringsfrågor); settling now uses `settleQuestion()` in phaseC7.
-
-### 7.44 Alla tips — Correctness Highlighting for Grupplaceringar, Slutspel, Extrafrågor (2026-03-28)
-
-- **Problem:** Gruppspel tab on AllTipsPage already shows green/red hit/miss coloring per participant. The remaining three tabs (Grupplaceringar, Slutspel, Extrafrågor) displayed predictions with no indication of correctness.
-- **Solution:**
-	- New read-only API endpoint `GET /api/results/correctness` returns answer-key data:
-		- `groupStandings`: per group code — `{ settled: boolean, actualPicks: string[] | null }` derived from completed group matches using `deriveSettledGroupStanding()`.
-		- `knockoutRounds`: per round title — `{ settled: boolean, actualTeams: string[] }` derived from completed knockout matches.
-		- `extraAnswers`: per question id — `{ correctAnswer: string | null, settled: boolean }` from admin questions table.
-	- Correctness data loaded in `App.tsx` when navigating to the Alla tips page.
-	- **Grupplaceringar tab**: "Facit" column shows actual group standings when settled. Each team in a participant's prediction is highlighted per-position: green (`alltips-hit-exact`) if correct position, red (`alltips-miss`) if wrong.
-	- **Slutspel tab**: "Facit" column shows actual teams per round when settled. Each team in a participant's prediction is highlighted: green if team participated in the round, red if not.
-	- **Extrafrågor tab**: "Rätt svar" column shows correct answer when settled. Each participant's answer cell is highlighted: green if matches correct answer (case-insensitive), red if wrong.
-	- All three tabs now show all participants in a unified column layout (consistent with Gruppspel tab), with the logged-in user's column highlighted via `alltips-own-col`.
-	- Unsettled items show no highlighting (neutral display).
-	- Reuses existing CSS classes (`alltips-hit-exact`, `alltips-miss`, `alltips-own-col`).
-- **Backend changes:**
-	- Exported `buildGroupStandingsLookups()`, `buildKnockoutRoundLookups()`, `buildPublishedQuestionLookups()` from `db-scoring.js`.
-	- Added `GET /api/results/correctness` route in `public-routes.js`.
-- **Frontend changes:**
-	- New `CorrectnessData` type in `types.ts`.
-	- `App.tsx`: new state `correctnessData`, fetched from `/api/results/correctness` when `activePage === 'alltips'`.
-	- `AllTipsPage.tsx`: `correctnessData` prop added; highlighting logic in Grupplaceringar, Slutspel, and Extrafrågor tabs.
-	- Removed Avgjorda accordion sections from ParticipantScorePanel (2026-03-28): removed the four accordion sections (Avgjorda gruppspelsmatcher, Avgjorda grupplaceringar, Avgjorda slutspel, Avgjorda extrafrågor) from the bottom of the Resultat & poäng page. The same information is accessible via the section tabs above.
-
-### 7.45 Refactor: Centralized API layer + custom hooks extraction (2026-03-28)
-
-- **Problem:** App.tsx had grown to ~600 lines with 9 independent state slices, 7 inline fetch functions, and 5 useEffect hooks. API calls were scattered across App.tsx, hooks, and page components with inconsistent error handling (some silently reset state, no standardized error pattern). The `useParticipantTips` hook accepted callback functions (`onLoadLeaderboard`, `onLoadScore`) creating tight coupling between hooks.
-- **Solution:**
-	- **New centralized API layer** (`src/api/`):
-		- `client.ts`: typed fetch wrapper (`apiGet`, `apiPost`, `apiPut`, `apiDelete`) with `ApiError` class for standardized error handling. All API calls go through this single point.
-		- `endpoints.ts`: typed endpoint functions (`fetchLeaderboard`, `fetchParticipantScore`, `fetchPublicResults`, `fetchCorrectnessData`, `fetchPublishedQuestions`, `fetchTips`, `saveTips`, `deleteTips`, `fetchAllTips`, `fetchConfig`, `signIn`). Each function handles response normalization (e.g., extracting arrays from wrapper objects).
-		- `index.ts`: barrel export for clean imports.
-	- **New custom hooks** extracted from App.tsx:
-		- `useLeaderboard(participant)` — leaderboard state + auto-load on participant change.
-		- `useParticipantScoreDetail(participant, activePage)` — score detail state + auto-load when on 'mine' page.
-		- `usePublicData(activePage)` — match results + published questions, loaded on relevant page changes.
-		- `useAllTipsData(activePage)` — all participants' tips + correctness data, loaded only on 'alltips' page.
-	- **Updated existing hooks:**
-		- `useParticipantTips`: replaced raw `fetch()` calls with `fetchTips`, `saveTips`, `deleteTips` from API layer. Simplified callback pattern from `(onLoadLeaderboard, onLoadScore)` to single `onAfterSave`/`onAfterClear` callback.
-		- `usePhaseRouting`: replaced raw `fetch('/api/config')` with `fetchConfig()` from API layer.
-	- **App.tsx reduced from ~600 to ~350 lines**: removed 9 useState declarations, 5 useEffect hooks, and 7 inline async functions. Replaced with 4 hook calls.
-	- **LoginPage**: replaced raw `fetch('/api/auth/sign-in')` with `signIn()` from API layer, using `ApiError` for error messages.
-- **Files changed:** `src/api/client.ts` (new), `src/api/endpoints.ts` (new), `src/api/index.ts` (new), `src/hooks/useLeaderboard.ts` (new), `src/hooks/useParticipantScoreDetail.ts` (new), `src/hooks/usePublicData.ts` (new), `src/hooks/useAllTipsData.ts` (new), `src/hooks/useParticipantTips.ts`, `src/hooks/usePhaseRouting.ts`, `src/hooks/index.ts`, `src/App.tsx`.
-- **No behavioral changes**: API calls, timing, and error fallback behavior remain identical. This is a pure structural refactoring.
-
-### 7.46 Refactor: db-scoring.js split into focused modules (2026-03-28)
-
-- **Problem:** `server/db-scoring.js` had grown to 878 lines with 25 functions (5 exported, 20 private) mixing three distinct concerns: pure text normalization utilities, database lookup builders, and scoring calculation/ranking logic.
-- **Solution:** Split into three focused modules behind the existing barrel re-export:
-	- **`server/scoring-helpers.js`** — 8 pure functions with no DB dependencies: `normalizeText`, `normalizeComparableText`, `normalizeGroupCode`, `normalizeMatchLabel`, `extractGroupCode`, `uniqueNormalizedTexts`, `buildGroupMatchDateKey`, `buildGroupMatchKey`. All functions have JSDoc annotations.
-	- **`server/db-scoring-lookups.js`** — 7 database lookup builders + 1 pure helper (`deriveSettledGroupStanding`): `buildScoringLookups`, `listParticipantsWithTips`, `getParticipantWithTipsById`, `buildCompletedResultLookups`, `buildPublishedQuestionLookups`, `buildGroupStandingsLookups`, `buildKnockoutRoundLookups`. All functions have JSDoc annotations.
-	- **`server/db-scoring-calc.js`** — 9 scoring/ranking functions: `listParticipantScores`, `getParticipantScoreByParticipantId`, `calculateParticipantScore`, `rankParticipantScoreSummaries`, `scoreFixtureTip`, `scoreExtraAnswer`, `resolveResultForTip`, `derivePredictedSign`, `deriveOutcomeSign`. All functions have JSDoc annotations.
-	- **`server/db-scoring.js`** — converted to barrel re-export of the 5 previously exported functions from the new modules. All downstream consumers (`db.js`, `public-routes.js`, `tips-routes.js`) remain unchanged.
-- **Files changed:** `server/scoring-helpers.js` (new), `server/db-scoring-lookups.js` (new), `server/db-scoring-calc.js` (new), `server/db-scoring.js` (replaced with barrel re-export).
-- **No behavioral changes**: all exports, function signatures, and computation logic remain identical. This is a pure structural refactoring with added JSDoc documentation.
-### 7.47 App.tsx cleanup: renderPage prop grouping (2026-03-29)
-
-- **Problem:** `renderPage` accepts a flat object with 30+ properties, making the call site in `App()` noisy and hard to scan.
-- **Solution:** Group `renderPage` props into three semantic sub-objects: `tips` (tip data + mutations), `scores` (leaderboard, score detail, results, correctness), `ui` (session, phase, lock, touch, admin).
-  - Define `RenderPageTipsProps`, `RenderPageScoresProps`, `RenderPageUIProps` interfaces.
-  - `renderPage(activePage, { tips, scores, ui })` replaces the flat signature.
-  - Inside `renderPage`, unpack groups to pass individual props to page components — **page component interfaces remain unchanged**.
-  - Extract `LoginPage` to `src/pages/LoginPage.tsx`.
-- **Files changed:** `src/App.tsx`, `src/pages/LoginPage.tsx` (new).
-- **No behavioral changes**: all page rendering, prop passing, and user flows remain identical. This is a pure structural cleanup.
