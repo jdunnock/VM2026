@@ -1061,6 +1061,12 @@ Confirmed intentional data flows (not bugs):
 - **No API or backend changes.**
 - **Rollback:** `git revert` this commit to restore separate tabs. Rollback point: `b4813a4`.
 
+### 7.53 Fix horizontal scroll on mobile pages (2026-03-29)
+
+- **Problem:** On mobile, pages (particularly Mina tips) could scroll horizontally, causing distracting side-to-side movement.
+- **Solution:** Add `overflow-x: hidden` to `.page-stack` to prevent any child content from causing horizontal page overflow.
+- **Files changed:** `src/styles.css`, `docs/specification.md`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

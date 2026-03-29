@@ -160,6 +160,7 @@ strong {
 .page-stack {
   display: grid;
   gap: 22px;
+  overflow-x: hidden;
 }
 
 .panel,
