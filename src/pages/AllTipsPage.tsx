@@ -58,7 +58,7 @@ export function AllTipsPage({
                 <div>
                     <p className="eyebrow">Alla tips</p>
                     <h1 className="section-title">Alla deltagares tips</h1>
-                    <p className="lead-text" style={{ margin: 0 }}>Jämför alla deltagares förutsägelser sida vid sida.</p>
+                    <p className="lead-text" style={{ margin: 0 }}>Jämför alla deltagares tips sida vid sida.</p>
                 </div>
             </section>
 
