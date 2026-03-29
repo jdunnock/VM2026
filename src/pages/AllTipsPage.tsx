@@ -249,7 +249,7 @@ export function AllTipsPage({
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Grupp</th>
-                                    <th className="alltips-col-result">Facit</th>
+                                    <th className="alltips-col-result">Slutställning</th>
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
