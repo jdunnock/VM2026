@@ -1181,6 +1181,7 @@ strong {
   display: grid;
   gap: 12px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .placement-card-header {
@@ -1950,13 +1951,28 @@ strong {
   .placement-card,
   .knockout-result-card,
   .question-card {
-    padding: 16px;
+    padding: 12px;
   }
 
   .placement-row {
-    grid-template-columns: 24px 1fr 1fr 28px;
-    padding: 6px 8px;
-    font-size: 0.86rem;
+    grid-template-columns: 20px 1fr 1fr 24px;
+    padding: 6px 4px;
+    font-size: 0.82rem;
+    gap: 4px;
+  }
+
+  .placement-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+
+  .placement-pos {
+    font-size: 0.78rem;
+  }
+
+  .placement-actual {
+    font-size: 0.78rem;
   }
 
   .question-answers {
@@ -1965,7 +1981,21 @@ strong {
 
   .placement-card-header {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+  }
+
+  .placement-card-header h3 {
+    font-size: 1rem;
+  }
+
+  .points-badge {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
+
+  .group-placement-section-label {
+    font-size: 0.72rem;
+    padding: 0 4px 0.25rem;
   }
 }
 
