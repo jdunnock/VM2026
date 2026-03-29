@@ -2585,7 +2585,9 @@ strong {
 
 .alltips-group-table td.alltips-col-match,
 .alltips-group-table td.alltips-col-participant,
-.alltips-group-table td.alltips-col-result {
+.alltips-group-table td.alltips-col-result,
+.alltips-group-table th.alltips-col-match,
+.alltips-group-table th.alltips-col-result {
   vertical-align: top;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
