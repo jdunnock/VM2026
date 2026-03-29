@@ -1659,7 +1659,17 @@ const scoreFixtureTip = (tip, result) => {
 
 ## 12. Open Questions
 
-- Decide production hosting model for backend and database.
+- ~~Decide production hosting model for backend and database.~~ → Railway (single service: Express serves API + Vite build). SQLite on Railway Volume (`/data`).
+
+### 12.1 Railway Deployment
+
+- **Service model:** Single Railway service. Express serves API routes (`/api/*`) and static frontend (`dist/`) with SPA fallback.
+- **Build:** `npm ci && npm run build` (Nixpacks builder).
+- **Start:** `npm start` → `NODE_ENV=production node server/index.js`.
+- **Port:** Railway sets `PORT` env var automatically; server reads it.
+- **Database:** SQLite at `./data/vm2026.db`. Attach a Railway Volume mounted at `./data` to persist across deploys.
+- **Required env vars:** `ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`, `ADMIN_ACCESS_NAME`, `GLOBAL_DEADLINE`.
+- **Optional env vars:** `CORS_ORIGINS` (not needed when frontend and API share same origin).
 
 ## 13. Phase 2 Done Checklist
 

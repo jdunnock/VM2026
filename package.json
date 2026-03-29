@@ -8,6 +8,7 @@
     "dev:api": "node server/index.js",
     "test:api": "node --test server/scores.api.test.js",
     "build": "vite build",
+    "start": "NODE_ENV=production node server/index.js",
     "preview": "vite preview",
     "seed:sim": "node server/seed-simulation.js"
   },
