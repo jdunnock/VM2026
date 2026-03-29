@@ -42,6 +42,7 @@ export async function buildScoringLookups() {
  * Name patterns for automated test participants — hidden from public views.
  */
 const TEST_USER_PATTERNS = [
+    'Admin',
     'CrudUser%',
     'FullPack%',
     'KnockoutSmoke%',
