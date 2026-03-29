@@ -7,6 +7,7 @@ import type {
     GroupPlacement,
     KnockoutPredictionRound,
     LeaderboardEntry,
+    MatchResult,
     MyTipsSectionTab,
     ParticipantScoreDetail,
     ParticipantSession,
@@ -25,6 +26,7 @@ export function MyTipsPage({
     phase,
     participant,
     leaderboard,
+    results,
 }: {
     fixtureTips: FixtureTip[]
     groupPlacements: GroupPlacement[]
@@ -37,6 +39,7 @@ export function MyTipsPage({
     phase: 'B' | 'C'
     participant: ParticipantSession | null
     leaderboard: LeaderboardEntry[]
+    results: MatchResult[]
 }) {
     const [activeSection, setActiveSection] = useState<MyTipsSectionTab>('Gruppspel')
 
@@ -51,7 +54,7 @@ export function MyTipsPage({
         : null
     const displayedPositionLabel = psd?.positionLabel ?? currentEntry?.positionLabel ?? '-'
     const displayedTotalPoints = psd?.totalPoints ?? currentEntry?.totalPoints ?? 0
-    const completedCount = settledFixtureEntries.length
+    const completedCount = results.filter((r) => r.resultStatus === 'completed').length
     const remainingCount = fixtureCounts.total - completedCount
 
     return (

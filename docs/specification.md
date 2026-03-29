@@ -838,7 +838,7 @@ Confirmed intentional data flows (not bugs):
 	- Bottom `ParticipantScorePanel` (separate section with "Poäng / Din poängöversikt")
 - Replaced with a single consolidated `.stats-grid` rendered directly after the page hero, containing mini-cards:
 	- Placering (with totalpoäng subtitle)
-	- Matcher (slutförda / total, with återstående subtitle)
+	- Matcher (slutförda / total, with återstående subtitle) — counts actual completed match results from the tournament, not the participant's tip count
 	- Gruppspel (points + settled count)
 	- Grupplaceringar (points + settled count)
 	- Slutspel (points + settled count)
@@ -1079,8 +1079,8 @@ Confirmed intentional data flows (not bugs):
 - **Solution:** Redesign Phase C Start page with three sections:
   1. **Personal highlight** (`lb-highlight`): 3-column card row showing placement (green), total points, and settled matches count.
   2. **Leader spotlight** (`lb-leader-spot`): gradient background card with 🥇 emoji, leader name, and points — adds visual hierarchy.
-  3. **Full ranking table** (`lb-table`): columns #, Namn, Poäng, Matcher. Top 3 get medal emojis (🥇🥈🥉). Current user's row highlighted green (`lb-row-me`) with "Du" pill badge. Point breakdown shows `{fixturePoints}m + {extraQuestionPoints}e`.
-- **Mobile (≤720px):** Highlight cards stack vertically (row layout within each card). Matcher detail column hidden.
+  3. **Full ranking table** (`lb-table`): columns #, Namn, Poäng. Top 3 get medal emojis (🥇🥈🥉). Current user's row highlighted green (`lb-row-me`) with "Du" pill badge.
+- **Mobile (≤720px):** Highlight cards stack vertically (row layout within each card).
 - Phase B Start page is unchanged.
 - Uses existing `LeaderboardEntry` data — no new API calls.
 - **Files changed:** `src/pages/StartPage.tsx`, `src/styles.css`, `docs/specification.md`.

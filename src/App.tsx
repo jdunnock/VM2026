@@ -130,6 +130,7 @@ function renderPage(
           phase={ui.phase}
           participant={ui.participant}
           leaderboard={scores.leaderboard}
+          results={scores.results}
         />
       )
     case 'rules':
