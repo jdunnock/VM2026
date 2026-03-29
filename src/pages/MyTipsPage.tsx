@@ -322,11 +322,11 @@ export function MyTipsPage({
                                         <div className="question-answers">
                                             <div className="question-answer-item">
                                                 <span className="question-answer-label">Ditt svar</span>
-                                                <span className={`question-answer-value ${isSettled ? (breakdown!.reason === 'correct' ? 'hit' : 'miss') : ''}`}>
+                                                <span className={`question-answer-value ${isSettled ? (breakdown!.reason === 'correct-answer' ? 'hit' : 'miss') : ''}`}>
                                                     {chosen ?? <em className="muted-text">Ej besvarad</em>}
                                                 </span>
                                             </div>
-                                            {isSettled && breakdown && breakdown.reason !== 'correct' && (
+                                            {isSettled && breakdown && breakdown.reason !== 'correct-answer' && (
                                                 <div className="question-answer-item">
                                                     <span className="question-answer-label">Rätt svar</span>
                                                     <span className="question-answer-value facit">{breakdown.correctAnswer ?? '—'}</span>
