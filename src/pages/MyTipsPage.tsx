@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fixtureCounts } from '../fixtures'
+import { allGroupCodes, fixtureCounts } from '../fixtures'
 import type {
     AdminQuestion,
     ExtraAnswers,
@@ -147,39 +147,56 @@ export function MyTipsPage({
                     ) : settledFixtureEntries.length === 0 ? (
                         <p className="status-note">Inga avgjorda gruppspelsmatcher ännu.</p>
                     ) : (
-                        <>
-                            <div className="fixture-breakdown-header">
-                                <span className="fixture-col-match">Match</span>
-                                <span className="fixture-col-cell">Resultat</span>
-                                <span className="fixture-col-spacer" />
-                                <span className="fixture-col-cell">Tips</span>
-                                <span className="fixture-col-cell">1X2</span>
-                                <span className="fixture-col-cell">Poäng</span>
-                            </div>
-                            <ul className="fixture-breakdown-list">
-                                {settledFixtureEntries.map((entry) => {
-                                    const actualResult = entry.result
-                                        ? `${entry.result.homeScore}-${entry.result.awayScore}`
-                                        : '—'
-                                    const predictedResult = entry.predictedHomeScore !== null && entry.predictedAwayScore !== null
-                                        ? `${entry.predictedHomeScore}-${entry.predictedAwayScore}`
-                                        : '—'
-                                    const scoreHit = entry.reason === 'exact-score'
-                                    const signHit = entry.reason === 'exact-score' || entry.reason === 'correct-sign'
-
-                                    return (
-                                        <li className="fixture-breakdown-row" key={entry.matchId ?? entry.match}>
-                                            <span className="fixture-col-match">{entry.match}</span>
-                                            <span className="fixture-col-cell">{actualResult}</span>
+                        <div className="stacked-cards">
+                            {allGroupCodes.map((code) => {
+                                const groupEntries = settledFixtureEntries
+                                    .filter((e) => e.group === code)
+                                    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+                                if (groupEntries.length === 0) return null
+                                const groupPoints = groupEntries.reduce((sum, e) => sum + e.points, 0)
+                                return (
+                                    <article className="placement-card" key={code}>
+                                        <div className="placement-card-header">
+                                            <h3>Grupp {code}</h3>
+                                            <div className="score-breakdown-badges">
+                                                <span className={groupPoints > 0 ? 'points-badge' : 'points-badge zero'}>{groupPoints} p</span>
+                                            </div>
+                                        </div>
+                                        <div className="fixture-breakdown-header">
+                                            <span className="fixture-col-match">Match</span>
+                                            <span className="fixture-col-cell">Resultat</span>
                                             <span className="fixture-col-spacer" />
-                                            <span className={`fixture-col-cell tip-indicator ${scoreHit ? 'hit' : 'miss'}`}>{predictedResult}</span>
-                                            <span className={`fixture-col-cell tip-indicator ${signHit ? 'hit' : 'miss'}`}>{entry.predictedSign ?? '—'}</span>
-                                            <span className={`fixture-col-cell ${entry.points > 0 ? 'points-badge' : 'points-badge zero'}`}>{entry.points} p</span>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </>
+                                            <span className="fixture-col-cell">Tips</span>
+                                            <span className="fixture-col-cell">1X2</span>
+                                            <span className="fixture-col-cell">Poäng</span>
+                                        </div>
+                                        <ul className="fixture-breakdown-list">
+                                            {groupEntries.map((entry) => {
+                                                const actualResult = entry.result
+                                                    ? `${entry.result.homeScore}-${entry.result.awayScore}`
+                                                    : '—'
+                                                const predictedResult = entry.predictedHomeScore !== null && entry.predictedAwayScore !== null
+                                                    ? `${entry.predictedHomeScore}-${entry.predictedAwayScore}`
+                                                    : '—'
+                                                const scoreHit = entry.reason === 'exact-score'
+                                                const signHit = entry.reason === 'exact-score' || entry.reason === 'correct-sign'
+
+                                                return (
+                                                    <li className="fixture-breakdown-row" key={entry.matchId ?? entry.match}>
+                                                        <span className="fixture-col-match">{entry.match}</span>
+                                                        <span className="fixture-col-cell">{actualResult}</span>
+                                                        <span className="fixture-col-spacer" />
+                                                        <span className={`fixture-col-cell tip-indicator ${scoreHit ? 'hit' : 'miss'}`}>{predictedResult}</span>
+                                                        <span className={`fixture-col-cell tip-indicator ${signHit ? 'hit' : 'miss'}`}>{entry.predictedSign ?? '—'}</span>
+                                                        <span className={`fixture-col-cell ${entry.points > 0 ? 'points-badge' : 'points-badge zero'}`}>{entry.points} p</span>
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </article>
+                                )
+                            })}
+                        </div>
                     )}
                 </section>
             )}

@@ -1017,7 +1017,7 @@ Confirmed intentional data flows (not bugs):
   - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).
   - Phase C: question title, "Ditt svar" shown as green (correct) or red (wrong). "Rätt svar" in amber shown only when the answer is wrong — hidden when correct to avoid redundancy. Points badge in card header.
   - Phase B: card per question, question text + selected answer.
-- **Gruppspel tab:** Minor polish — subtle even/odd row alternation for readability.
+- **Gruppspel tab:** Phase C fixtures grouped by group (Grupp A–L), each group as a card with header (group name + total points badge). Matches within each group sorted chronologically by kickoff date. Groups with no settled matches are hidden.
 - **Cross-cutting improvements:**
   - Tab switch animation: CSS `fadeIn` keyframe (opacity 0→1, 180ms ease-out) on `.tab-content` wrapper.
   - Consistent empty states: centered muted text pattern across all tabs.
