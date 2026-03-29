@@ -1009,8 +1009,8 @@ Confirmed intentional data flows (not bugs):
   - Phase B: same card structure, positions + team names, no results column.
 - **Slutspel tab:**
   - Each knockout round = one card, stacked vertically.
-  - Card header: round name + points badge + reason badge (e.g., "3/4 lag korrekt").
-  - Teams displayed as flex-wrap chips/tags, each color-coded: green if team appeared in actual round, red if not.
+  - Card header: round name + points badge.
+  - Teams displayed as flex-wrap chips/tags, each color-coded: green if team appeared in actual round, red if not. The reason-badge and meta text are omitted because the chip colors already convey the same information.
   - Phase B: same card layout, teams as neutral chips.
 - **Extrafrågor tab:**
   - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).

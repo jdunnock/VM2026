@@ -14,8 +14,6 @@ import type {
 import { myTipsSectionTabs } from '../types'
 import {
     formatExtraReason,
-    formatRoundReason,
-    formatTeamsMeta,
     getReasonTone,
 } from '../utils'
 
@@ -258,7 +256,6 @@ export function MyTipsPage({
                                             {isSettled && (
                                                 <div className="score-breakdown-badges">
                                                     <span className={breakdown.points > 0 ? 'points-badge' : 'points-badge zero'}>{breakdown.points} p</span>
-                                                    <span className={`reason-badge ${getReasonTone(breakdown.reason)}`}>{formatRoundReason(breakdown.reason, breakdown.matchedTeams)}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -276,9 +273,6 @@ export function MyTipsPage({
                                                 )
                                             })}
                                         </div>
-                                        {isSettled && formatTeamsMeta(breakdown.matchedTeams) && (
-                                            <span className="score-breakdown-meta">{formatTeamsMeta(breakdown.matchedTeams)}</span>
-                                        )}
                                     </article>
                                 )
                             })}
