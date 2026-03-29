@@ -259,20 +259,38 @@ export function MyTipsPage({
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="team-chips">
-                                            {round.picks.map((team) => {
-                                                const isHit = isSettled && breakdown.matchedTeams.includes(team)
-                                                const isMiss = isSettled && !breakdown.matchedTeams.includes(team)
-                                                return (
-                                                    <span
-                                                        key={team}
-                                                        className={`team-chip ${isHit ? 'hit' : isMiss ? 'miss' : ''}`}
-                                                    >
-                                                        {team}
-                                                    </span>
-                                                )
-                                            })}
+                                        <div className="knockout-section">
+                                            <span className="knockout-section-label">Ditt tips</span>
+                                            <div className="team-chips">
+                                                {round.picks.map((team) => {
+                                                    const isHit = isSettled && breakdown.matchedTeams.includes(team)
+                                                    const isMiss = isSettled && !breakdown.matchedTeams.includes(team)
+                                                    return (
+                                                        <span
+                                                            key={team}
+                                                            className={`team-chip ${isHit ? 'hit' : isMiss ? 'miss' : ''}`}
+                                                        >
+                                                            {team}
+                                                        </span>
+                                                    )
+                                                })}
+                                            </div>
                                         </div>
+                                        {isSettled && breakdown.actualTeams && (
+                                            <div className="knockout-section">
+                                                <span className="knockout-section-label">Facit</span>
+                                                <div className="team-chips">
+                                                    {breakdown.actualTeams.map((team) => (
+                                                        <span
+                                                            key={team}
+                                                            className={`team-chip facit ${breakdown.matchedTeams.includes(team) ? 'hit' : 'missed'}`}
+                                                        >
+                                                            {team}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </article>
                                 )
                             })}
