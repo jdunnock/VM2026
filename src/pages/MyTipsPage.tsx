@@ -105,7 +105,9 @@ export function MyTipsPage({
             )}
 
             <section className="tab-row" aria-label="Sektioner">
-                {myTipsSectionTabs.map((tab) => (
+                {myTipsSectionTabs
+                    .filter((tab) => !(phase === 'C' && tab === 'Grupplaceringar'))
+                    .map((tab) => (
                     <button
                         className={activeSection === tab ? 'tab-button active' : 'tab-button'}
                         key={tab}
@@ -171,12 +173,20 @@ export function MyTipsPage({
                                     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
                                 if (groupEntries.length === 0) return null
                                 const groupPoints = groupEntries.reduce((sum, e) => sum + e.points, 0)
+
+                                const groupName = `Grupp ${code}`
+                                const placement = groupPlacements.find((g) => g.group === groupName)
+                                const placementBreakdown = psd?.groupPlacementBreakdown.find((e) => e.group === groupName) ?? null
+                                const isPlacementSettled = placementBreakdown && placementBreakdown.reason !== 'unsettled-group'
+                                const placementPoints = isPlacementSettled ? placementBreakdown.points : 0
+                                const totalGroupPoints = groupPoints + placementPoints
+
                                 return (
                                     <article className="placement-card" key={code}>
                                         <div className="placement-card-header">
                                             <h3>Grupp {code}</h3>
                                             <div className="score-breakdown-badges">
-                                                <span className={groupPoints > 0 ? 'points-badge' : 'points-badge zero'}>{groupPoints} p</span>
+                                                <span className={totalGroupPoints > 0 ? 'points-badge' : 'points-badge zero'}>{totalGroupPoints} p</span>
                                             </div>
                                         </div>
                                         <div className="fixture-breakdown-header">
@@ -217,6 +227,34 @@ export function MyTipsPage({
                                                 )
                                             })}
                                         </ul>
+                                        {placement && (
+                                            <div className="group-placement-section">
+                                                <div className="group-placement-section-label">
+                                                    Grupplacering
+                                                    {isPlacementSettled && (
+                                                        <span className={placementPoints > 0 ? 'points-badge small' : 'points-badge small zero'}>{placementPoints} p</span>
+                                                    )}
+                                                </div>
+                                                <div className="placement-rows">
+                                                    {placement.picks.map((team, idx) => {
+                                                        const actualTeam = isPlacementSettled && placementBreakdown.actualPicks ? placementBreakdown.actualPicks[idx] ?? null : null
+                                                        const isHit = isPlacementSettled && placementBreakdown.matchedPositions.includes(idx + 1)
+                                                        return (
+                                                            <div className="placement-row" key={idx}>
+                                                                <span className="placement-pos">{idx + 1}.</span>
+                                                                <span className={`placement-pick ${isPlacementSettled ? (isHit ? 'hit' : 'miss') : ''}`}>{team}</span>
+                                                                {isPlacementSettled && (
+                                                                    <span className="placement-actual">{actualTeam ?? '—'}</span>
+                                                                )}
+                                                                {isPlacementSettled && (
+                                                                    <span className={`placement-icon ${isHit ? 'hit' : 'miss'}`}>{isHit ? '✓' : '✗'}</span>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </article>
                                 )
                             })}

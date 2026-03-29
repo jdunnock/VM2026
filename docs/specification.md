@@ -1051,6 +1051,16 @@ Confirmed intentional data flows (not bugs):
 - **Files changed:** `src/pages/MyTipsPage.tsx`, `docs/specification.md`.
 - **No API or backend changes.**
 
+### 7.52 Mina tips Phase C — merge Grupplaceringar into Gruppspel (2026-03-29)
+
+- **Problem:** In Phase C, Gruppspel and Grupplaceringar were separate tabs, but they naturally belong together per group — seeing fixtures and placements side by side gives better context.
+- **Solution:** In Phase C, each Gruppspel group card now includes a "Grupplacering" section below the fixture list, showing the 4 position rows with hit/miss indicators (same layout as the old Grupplaceringar tab). The card's points badge shows combined points (fixture + placement). The "Grupplaceringar" tab is hidden from the tab row in Phase C.
+- Phase B retains the Grupplaceringar tab unchanged (no scoring data in Phase B).
+- New CSS: `.group-placement-section` (border-top separator), `.group-placement-section-label` (uppercase muted label with optional small points badge), `.points-badge.small`.
+- **Files changed:** `src/pages/MyTipsPage.tsx`, `src/styles.css`, `docs/specification.md`.
+- **No API or backend changes.**
+- **Rollback:** `git revert` this commit to restore separate tabs. Rollback point: `b4813a4`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
