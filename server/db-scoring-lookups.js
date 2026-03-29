@@ -39,6 +39,20 @@ export async function buildScoringLookups() {
 }
 
 /**
+ * Name patterns for automated test participants — hidden from public views.
+ */
+const TEST_USER_PATTERNS = [
+    'CrudUser%',
+    'FullPack%',
+    'KnockoutSmoke%',
+    'TestUser%',
+    'Smoke Tester%',
+    'Regression Tester%',
+]
+
+const TEST_USER_WHERE = TEST_USER_PATTERNS.map(() => `p.name NOT LIKE ?`).join(' AND ')
+
+/**
  * List all participants with their parsed tips JSON.
  * @returns {Promise<Array<{participantId: number, name: string, tips: object|null, updatedAt: string|null}>>}
  */
@@ -52,8 +66,10 @@ export async function listParticipantsWithTips() {
         pt.updated_at
       FROM participants p
       LEFT JOIN participant_tips pt ON pt.participant_id = p.id
+      WHERE ${TEST_USER_WHERE}
       ORDER BY p.name COLLATE NOCASE ASC, p.id ASC
     `,
+        TEST_USER_PATTERNS,
     )
 
     return rows.map((row) => ({
