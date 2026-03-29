@@ -15,7 +15,6 @@ import { myTipsSectionTabs } from '../types'
 import {
     formatExtraReason,
     formatGroupReason,
-    formatPositionsMeta,
     formatRoundReason,
     formatTeamsMeta,
     getReasonTone,
@@ -53,18 +52,6 @@ export function MyTipsPage({
 
     const settledGroupEntries = psd?.groupPlacementBreakdown.filter((e) => e.reason !== 'unsettled-group') ?? []
     const settledKnockoutEntries = psd?.knockoutBreakdown.filter((e) => e.reason !== 'unsettled-round') ?? []
-    const settledExtraEntries = psd?.extraBreakdown.filter((e) => e.settled) ?? []
-
-    const extraQuestionItems = publishedQuestions
-        .map((question) => {
-            const chosen = extraAnswers[String(question.id)]
-            if (!chosen) {
-                return null
-            }
-            return `${question.questionText}: ${chosen}`
-        })
-        .filter((item): item is string => item !== null)
-
     // Phase C stats
     const currentEntry = participant
         ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
@@ -138,7 +125,7 @@ export function MyTipsPage({
             </section>
 
             {activeSection === 'Gruppspel' && (
-                <section className="panel">
+                <section className="panel tab-content">
                     {phase === 'B' ? (
                         <div className="table-wrap">
                             <table className="data-table">
@@ -205,84 +192,149 @@ export function MyTipsPage({
             )}
 
             {activeSection === 'Grupplaceringar' && (
-                <section className="panel">
-                    <ul>
-                        {groupPlacements.map((group) => (
-                            <li key={group.group}>{group.group}: {group.picks.join(', ')}</li>
-                        ))}
-                    </ul>
-                    {phase === 'C' && settledGroupEntries.length > 0 && (
-                        <ul className="score-breakdown-list" style={{ marginTop: '1rem' }}>
-                            {settledGroupEntries.map((entry) => (
-                                <li className="score-breakdown-item" key={`${entry.group}-${entry.points}`}>
-                                    <div className="score-breakdown-main">
-                                        <strong>{entry.group}</strong>
-                                        <div className="score-breakdown-badges">
-                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatGroupReason(entry.reason, entry.matchedPositions)}</span>
+                <section className="tab-content">
+                    {phase === 'C' && isParticipantScoreLoading ? (
+                        <p className="empty-state">Laddar poängdetaljer...</p>
+                    ) : (
+                        <div className="placement-grid">
+                            {groupPlacements.map((group) => {
+                                const breakdown = phase === 'C'
+                                    ? psd?.groupPlacementBreakdown.find((e) => e.group === group.group) ?? null
+                                    : null
+                                const isSettled = breakdown && breakdown.reason !== 'unsettled-group'
+                                return (
+                                    <article className="placement-card" key={group.group}>
+                                        <div className="placement-card-header">
+                                            <h3>{group.group}</h3>
+                                            {isSettled && (
+                                                <div className="score-breakdown-badges">
+                                                    <span className={breakdown.points > 0 ? 'points-badge' : 'points-badge zero'}>{breakdown.points} p</span>
+                                                    <span className={`reason-badge ${getReasonTone(breakdown.reason)}`}>{formatGroupReason(breakdown.reason, breakdown.matchedPositions)}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                    {formatPositionsMeta(entry.matchedPositions) ? (
-                                        <span className="score-breakdown-meta">{formatPositionsMeta(entry.matchedPositions)}</span>
-                                    ) : null}
-                                </li>
-                            ))}
-                        </ul>
+                                        <div className="placement-rows">
+                                            {group.picks.map((team, idx) => {
+                                                const actualTeam = isSettled && breakdown.actualPicks ? breakdown.actualPicks[idx] ?? null : null
+                                                const isHit = isSettled && breakdown.matchedPositions.includes(idx)
+                                                return (
+                                                    <div className="placement-row" key={idx}>
+                                                        <span className="placement-pos">{idx + 1}.</span>
+                                                        <span className={`placement-pick ${isSettled ? (isHit ? 'hit' : 'miss') : ''}`}>{team}</span>
+                                                        {isSettled && (
+                                                            <span className="placement-actual">{actualTeam ?? '—'}</span>
+                                                        )}
+                                                        {isSettled && (
+                                                            <span className={`placement-icon ${isHit ? 'hit' : 'miss'}`}>{isHit ? '✓' : '✗'}</span>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    )}
+                    {phase === 'C' && !isParticipantScoreLoading && groupPlacements.length > 0 && settledGroupEntries.length === 0 && (
+                        <p className="empty-state">Inga avgjorda grupplaceringar ännu.</p>
                     )}
                 </section>
             )}
 
             {activeSection === 'Slutspel' && (
-                <section className="panel">
-                    <ul>
-                        {knockoutPredictions.map((round) => (
-                            <li key={round.title}>{round.title}: {round.picks.join(', ')}</li>
-                        ))}
-                    </ul>
-                    {phase === 'C' && settledKnockoutEntries.length > 0 && (
-                        <ul className="score-breakdown-list" style={{ marginTop: '1rem' }}>
-                            {settledKnockoutEntries.map((entry) => (
-                                <li className="score-breakdown-item" key={`${entry.round}-${entry.points}`}>
-                                    <div className="score-breakdown-main">
-                                        <strong>{entry.round}</strong>
-                                        <div className="score-breakdown-badges">
-                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatRoundReason(entry.reason, entry.matchedTeams)}</span>
+                <section className="tab-content">
+                    {phase === 'C' && isParticipantScoreLoading ? (
+                        <p className="empty-state">Laddar poängdetaljer...</p>
+                    ) : (
+                        <div className="stacked-cards">
+                            {knockoutPredictions.map((round) => {
+                                const breakdown = phase === 'C'
+                                    ? psd?.knockoutBreakdown.find((e) => e.round === round.title) ?? null
+                                    : null
+                                const isSettled = breakdown && breakdown.reason !== 'unsettled-round'
+                                return (
+                                    <article className="knockout-result-card" key={round.title}>
+                                        <div className="placement-card-header">
+                                            <h3>{round.title}</h3>
+                                            {isSettled && (
+                                                <div className="score-breakdown-badges">
+                                                    <span className={breakdown.points > 0 ? 'points-badge' : 'points-badge zero'}>{breakdown.points} p</span>
+                                                    <span className={`reason-badge ${getReasonTone(breakdown.reason)}`}>{formatRoundReason(breakdown.reason, breakdown.matchedTeams)}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                    {formatTeamsMeta(entry.matchedTeams) ? <span className="score-breakdown-meta">{formatTeamsMeta(entry.matchedTeams)}</span> : null}
-                                </li>
-                            ))}
-                        </ul>
+                                        <div className="team-chips">
+                                            {round.picks.map((team) => {
+                                                const isHit = isSettled && breakdown.matchedTeams.includes(team)
+                                                const isMiss = isSettled && !breakdown.matchedTeams.includes(team)
+                                                return (
+                                                    <span
+                                                        key={team}
+                                                        className={`team-chip ${isHit ? 'hit' : isMiss ? 'miss' : ''}`}
+                                                    >
+                                                        {team}
+                                                    </span>
+                                                )
+                                            })}
+                                        </div>
+                                        {isSettled && formatTeamsMeta(breakdown.matchedTeams) && (
+                                            <span className="score-breakdown-meta">{formatTeamsMeta(breakdown.matchedTeams)}</span>
+                                        )}
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    )}
+                    {phase === 'C' && !isParticipantScoreLoading && knockoutPredictions.length > 0 && settledKnockoutEntries.length === 0 && (
+                        <p className="empty-state">Inga avgjorda slutspelsomgångar ännu.</p>
                     )}
                 </section>
             )}
 
             {activeSection === 'Extrafrågor' && (
-                <section className="panel">
-                    {extraQuestionItems.length > 0 ? (
-                        <ul>
-                            {extraQuestionItems.map((item) => (
-                                <li key={item}>{item}</li>
-                            ))}
-                        </ul>
+                <section className="tab-content">
+                    {phase === 'C' && isParticipantScoreLoading ? (
+                        <p className="empty-state">Laddar poängdetaljer...</p>
+                    ) : publishedQuestions.length === 0 ? (
+                        <p className="empty-state">Inga extrafrågor publicerade ännu.</p>
                     ) : (
-                        <p>Inga extrafrågor besvarade ännu.</p>
-                    )}
-                    {phase === 'C' && settledExtraEntries.length > 0 && (
-                        <ul className="score-breakdown-list" style={{ marginTop: '1rem' }}>
-                            {settledExtraEntries.map((entry) => (
-                                <li className="score-breakdown-item" key={`${entry.questionId ?? 'unknown'}-${entry.points}`}>
-                                    <div className="score-breakdown-main">
-                                        <strong>{entry.questionText ?? 'Fråga'}</strong>
-                                        <div className="score-breakdown-badges">
-                                            <span className={entry.points > 0 ? 'points-badge' : 'points-badge zero'}>{entry.points} p</span>
-                                            <span className={`reason-badge ${getReasonTone(entry.reason)}`}>{formatExtraReason(entry.reason)}</span>
+                        <div className="stacked-cards">
+                            {publishedQuestions.map((question) => {
+                                const chosen = extraAnswers[String(question.id)] ?? null
+                                const breakdown = phase === 'C'
+                                    ? psd?.extraBreakdown.find((e) => e.questionId === question.id) ?? null
+                                    : null
+                                const isSettled = breakdown?.settled ?? false
+                                return (
+                                    <article className="question-card" key={question.id}>
+                                        <div className="placement-card-header">
+                                            <h3>{question.questionText}</h3>
+                                            {isSettled && breakdown && (
+                                                <div className="score-breakdown-badges">
+                                                    <span className={breakdown.points > 0 ? 'points-badge' : 'points-badge zero'}>{breakdown.points} p</span>
+                                                    <span className={`reason-badge ${getReasonTone(breakdown.reason)}`}>{formatExtraReason(breakdown.reason)}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                                        <div className="question-answers">
+                                            <div className="question-answer-item">
+                                                <span className="question-answer-label">Ditt svar</span>
+                                                <span className={`question-answer-value ${isSettled ? (breakdown!.reason === 'correct' ? 'hit' : 'miss') : ''}`}>
+                                                    {chosen ?? <em className="muted-text">Ej besvarad</em>}
+                                                </span>
+                                            </div>
+                                            {isSettled && breakdown && (
+                                                <div className="question-answer-item">
+                                                    <span className="question-answer-label">Rätt svar</span>
+                                                    <span className="question-answer-value facit">{breakdown.correctAnswer ?? '—'}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </article>
+                                )
+                            })}
+                        </div>
                     )}
                 </section>
             )}

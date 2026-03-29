@@ -997,6 +997,34 @@ Confirmed intentional data flows (not bugs):
 - **Files changed:** `src/App.tsx`, `src/pages/LoginPage.tsx` (new).
 - **No behavioral changes**: all page rendering, prop passing, and user flows remain identical. This is a pure structural cleanup.
 
+### 7.48 Mina tips UX redesign — card-based tabs with Phase C scoring (2026-03-29)
+
+- **Problem:** Grupplaceringar, Slutspel, and Extrafrågor tabs on MyTipsPage used plain `<ul>` lists with no visual hierarchy. Phase C duplicated information (tips list + separate score-breakdown-list below). No per-position or per-team comparison. No delight.
+- **Solution:** Redesign all four tabs into a cohesive, card-based experience optimized for Phase C (tournament viewing). Phase B stays minimalistic.
+- **Grupplaceringar tab:**
+  - Each group = one visual card in a responsive 2-column grid (1 column on mobile ≤720px).
+  - Card header: group name + points badge + reason badge (e.g., "4/4 korrekt").
+  - 4 position rows showing: position number, predicted team, actual team (Phase C), per-position hit/miss indicator (green ✓ / red ✗).
+  - Unsettled groups: picks only, no facit column.
+  - Phase B: same card structure, positions + team names, no results column.
+- **Slutspel tab:**
+  - Each knockout round = one card, stacked vertically.
+  - Card header: round name + points badge + reason badge (e.g., "3/4 lag korrekt").
+  - Teams displayed as flex-wrap chips/tags, each color-coded: green if team appeared in actual round, red if not.
+  - Phase B: same card layout, teams as neutral chips.
+- **Extrafrågor tab:**
+  - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).
+  - Phase C: question title, "Ditt svar" and "Rätt svar" side by side, hit/miss indicator + points badge.
+  - Phase B: card per question, question text + selected answer.
+- **Gruppspel tab:** Minor polish — subtle even/odd row alternation for readability.
+- **Cross-cutting improvements:**
+  - Tab switch animation: CSS `fadeIn` keyframe (opacity 0→1, 180ms ease-out) on `.tab-content` wrapper.
+  - Consistent empty states: centered muted text pattern across all tabs.
+  - All new card layouts responsive: verified at 720px, 600px, 560px breakpoints.
+  - Color consistency: reuses existing `.tip-indicator.hit/.miss`, `.points-badge`, `.reason-badge` classes.
+- **Files changed:** `src/pages/MyTipsPage.tsx`, `src/styles.css`.
+- **No API or backend changes.** All data already available in `ParticipantScoreDetail` breakdown types (`groupPlacementBreakdown.actualPicks`, `knockoutBreakdown.matchedTeams`, `extraBreakdown.selectedAnswer/correctAnswer`).
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

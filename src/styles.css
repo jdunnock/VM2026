@@ -1156,6 +1156,212 @@ strong {
   font-size: 0.92rem;
 }
 
+/* ── Tab content fade-in animation ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tab-content {
+  animation: fadeIn 180ms ease-out;
+}
+
+/* ── Empty state pattern ── */
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 32px 16px;
+}
+
+/* ── Gruppspel row alternation ── */
+.fixture-breakdown-row:nth-child(even) {
+  background: rgba(247, 249, 251, 0.7);
+}
+
+/* ── Grupplaceringar card grid ── */
+.placement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.placement-card,
+.knockout-result-card,
+.question-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.placement-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.placement-card-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.placement-rows {
+  display: grid;
+  gap: 0;
+}
+
+.placement-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 1fr 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.placement-row:last-child {
+  border-bottom: none;
+}
+
+.placement-pos {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.placement-pick {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.placement-pick.hit {
+  color: var(--brand-strong);
+}
+
+.placement-pick.miss {
+  color: #991b1b;
+}
+
+.placement-actual {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.placement-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.placement-icon.hit {
+  background: rgba(16, 163, 127, 0.14);
+  color: var(--brand-strong);
+}
+
+.placement-icon.miss {
+  background: rgba(185, 28, 28, 0.1);
+  color: #991b1b;
+}
+
+/* ── Slutspel team chips ── */
+.team-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.team-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: #f7f9fb;
+  color: var(--ink);
+  transition: background 150ms, border-color 150ms;
+}
+
+.team-chip.hit {
+  background: rgba(16, 163, 127, 0.14);
+  color: var(--brand-strong);
+  border-color: rgba(16, 163, 127, 0.25);
+}
+
+.team-chip.miss {
+  background: rgba(185, 28, 28, 0.08);
+  color: #991b1b;
+  border-color: rgba(185, 28, 28, 0.16);
+}
+
+/* ── Extrafrågor question cards ── */
+.question-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.question-answer-item {
+  display: grid;
+  gap: 4px;
+}
+
+.question-answer-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.question-answer-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  background: #f7f9fb;
+  border: 1px solid var(--line);
+}
+
+.question-answer-value.hit {
+  background: rgba(16, 163, 127, 0.1);
+  border-color: rgba(16, 163, 127, 0.2);
+  color: var(--brand-strong);
+}
+
+.question-answer-value.miss {
+  background: rgba(185, 28, 28, 0.06);
+  border-color: rgba(185, 28, 28, 0.14);
+  color: #991b1b;
+}
+
+.question-answer-value.facit {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.16);
+  color: #1d4ed8;
+}
+
+.muted-text {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .inline-stats {
   display: flex;
   gap: 12px;
@@ -1700,6 +1906,31 @@ strong {
 
   .grouped-match-row {
     padding: 12px;
+  }
+
+  .placement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .placement-card,
+  .knockout-result-card,
+  .question-card {
+    padding: 16px;
+  }
+
+  .placement-row {
+    grid-template-columns: 24px 1fr 1fr 28px;
+    padding: 6px 8px;
+    font-size: 0.86rem;
+  }
+
+  .question-answers {
+    grid-template-columns: 1fr;
+  }
+
+  .placement-card-header {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 
