@@ -941,7 +941,7 @@ Confirmed intentional data flows (not bugs):
 		- `extraAnswers`: per question id — `{ correctAnswer: string | null, settled: boolean }` from admin questions table.
 	- Correctness data loaded in `App.tsx` when navigating to the Alla tips page.
 	- **Grupplaceringar tab**: "Slutställning" column shows actual group standings when settled. Each team in a participant's prediction is highlighted per-position: green (`alltips-hit-exact`) if correct position, red (`alltips-miss`) if wrong.
-	- **Slutspel tab**: "Facit" column shows actual teams per round when settled. Each team in a participant's prediction is highlighted: green if team participated in the round, red if not.
+	- **Slutspel tab**: "Kvalificerade lag" column shows actual teams per round when settled. Each team in a participant's prediction is highlighted: green if team participated in the round, red if not.
 	- **Extrafrågor tab**: "Rätt svar" column shows correct answer when settled. Each participant's answer cell is highlighted: green if matches correct answer (case-insensitive), red if wrong.
 	- All three tabs now show all participants in a unified column layout (consistent with Gruppspel tab), with the logged-in user's column highlighted via `alltips-own-col`.
 	- Unsettled items show no highlighting (neutral display).

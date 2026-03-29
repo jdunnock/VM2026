@@ -173,7 +173,7 @@ export function AllTipsPage({
                             <thead>
                                 <tr>
                                     <th className="alltips-col-match">Omgång</th>
-                                    <th className="alltips-col-result">Facit</th>
+                                    <th className="alltips-col-result">Kvalificerade lag</th>
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
