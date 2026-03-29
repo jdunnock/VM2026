@@ -131,7 +131,6 @@ export function StartPage({
                                                 <th className="lb-th-rank">#</th>
                                                 <th className="lb-th-name">Namn</th>
                                                 <th className="lb-th-pts">Poäng</th>
-                                                <th className="lb-th-detail">Matcher</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -151,7 +150,6 @@ export function StartPage({
                                                             {isMe && <span className="lb-you-badge">Du</span>}
                                                         </td>
                                                         <td className="lb-pts">{entry.totalPoints}</td>
-                                                        <td className="lb-detail">{entry.fixturePoints}m + {entry.extraQuestionPoints}e</td>
                                                     </tr>
                                                 )
                                             })}

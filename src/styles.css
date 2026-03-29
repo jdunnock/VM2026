@@ -730,11 +730,6 @@ strong {
   text-align: right !important;
 }
 
-.lb-th-detail {
-  width: 80px;
-  text-align: right !important;
-}
-
 .lb-row td {
   padding: 10px 10px;
   border-bottom: 1px solid var(--line);
@@ -785,12 +780,6 @@ strong {
   font-weight: 700;
   font-size: 1rem;
   color: var(--ink);
-}
-
-.lb-detail {
-  text-align: right !important;
-  font-size: 0.78rem;
-  color: var(--muted);
 }
 
 .summary-grid,
@@ -2181,11 +2170,6 @@ strong {
   .lb-highlight-pos,
   .lb-highlight-value {
     font-size: 1.3rem;
-  }
-
-  .lb-th-detail,
-  .lb-detail {
-    display: none;
   }
 
   .lb-leader-spot {
