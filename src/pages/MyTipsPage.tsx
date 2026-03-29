@@ -181,9 +181,16 @@ export function MyTipsPage({
                                                 const scoreHit = entry.reason === 'exact-score'
                                                 const signHit = entry.reason === 'exact-score' || entry.reason === 'correct-sign'
 
+                                                const dateLabel = entry.date
+                                                    ? new Date(entry.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                    : null
+
                                                 return (
                                                     <li className="fixture-breakdown-row" key={entry.matchId ?? entry.match}>
-                                                        <span className="fixture-col-match">{entry.match}</span>
+                                                        <span className="fixture-col-match">
+                                                            {dateLabel && <span className="fixture-date-label">{dateLabel}</span>}
+                                                            {entry.match}
+                                                        </span>
                                                         <span className="fixture-col-cell">{actualResult}</span>
                                                         <span className="fixture-col-spacer" />
                                                         <span className={`fixture-col-cell tip-indicator ${scoreHit ? 'hit' : 'miss'}`}>{predictedResult}</span>

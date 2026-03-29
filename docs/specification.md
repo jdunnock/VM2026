@@ -1017,7 +1017,7 @@ Confirmed intentional data flows (not bugs):
   - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).
   - Phase C: question title, "Ditt svar" shown as green (correct) or red (wrong). "Rätt svar" in amber shown only when the answer is wrong — hidden when correct to avoid redundancy. Points badge in card header.
   - Phase B: card per question, question text + selected answer.
-- **Gruppspel tab:** Phase C fixtures grouped by group (Grupp A–L), each group as a card with header (group name + total points badge). Matches within each group sorted chronologically by kickoff date. Groups with no settled matches are hidden.
+- **Gruppspel tab:** Phase C fixtures grouped by group (Grupp A–L), each group as a card with header (group name + total points badge). Matches within each group sorted chronologically by kickoff date. Each match row shows a small date+time label above the match name. Groups with no settled matches are hidden.
 - **Cross-cutting improvements:**
   - Tab switch animation: CSS `fadeIn` keyframe (opacity 0→1, 180ms ease-out) on `.tab-content` wrapper.
   - Consistent empty states: centered muted text pattern across all tabs.
@@ -1033,6 +1033,14 @@ Confirmed intentional data flows (not bugs):
 - CSS class `alltips-group-header-row` styles the header row with subtle background, bold text, and sticky left position.
 - The table structure (sticky Match/Resultat columns, participant columns, hit/miss coloring) is unchanged.
 - **Files changed:** `src/pages/AllTipsPage.tsx`, `src/styles.css`, `docs/specification.md`.
+- **No API or backend changes.**
+
+### 7.50 Mina tips Gruppspel — show match datetime (2026-03-29)
+
+- **Problem:** Phase C Gruppspel tab in MyTipsPage showed only match names without kickoff times, making it hard to orient in time.
+- **Solution:** Display a small date+time label above the match name in each fixture row (e.g. "12 juni 18:00"). Uses `entry.date` (ISO datetime from breakdown), formatted with `sv-SE` locale (`day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'`).
+- New CSS class `.fixture-date-label`: small muted text (`0.7rem`, `--ink-muted`), displayed as block above match name.
+- **Files changed:** `src/pages/MyTipsPage.tsx`, `src/styles.css`, `docs/specification.md`.
 - **No API or backend changes.**
 
 ## 8. Normalized Database Schema
