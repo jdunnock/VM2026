@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -37,6 +38,26 @@ createTipsRoutes(app)
 // Admin routes require authentication
 app.use('/api/admin', requireAdminAccess)
 createAdminRoutes(app)
+
+// Database transfer endpoints (admin-protected, under /api/admin prefix)
+const dbPath = path.resolve(process.cwd(), 'data', 'vm2026.db')
+
+app.post('/api/admin/db-upload',
+  express.raw({ type: 'application/octet-stream', limit: '50mb' }),
+  (req, res) => {
+    try {
+      fs.writeFileSync(dbPath, req.body)
+      res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded. Restart the service to apply.' })
+    } catch (error) {
+      console.error('DB upload error:', error)
+      res.status(500).json({ error: 'Failed to write database file.' })
+    }
+  }
+)
+
+app.get('/api/admin/db-download', (_req, res) => {
+  res.download(dbPath, 'vm2026.db')
+})
 
 // In production, serve the Vite build output
 if (isProduction) {
