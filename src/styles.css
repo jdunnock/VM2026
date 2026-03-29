@@ -623,6 +623,176 @@ strong {
   color: var(--ink);
 }
 
+/* ── Phase C Leaderboard ── */
+
+.lb-highlight {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.lb-highlight-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 16px;
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+}
+
+.lb-highlight-pos {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--brand);
+  line-height: 1;
+}
+
+.lb-highlight-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.lb-highlight-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.lb-leader-spot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(16, 163, 127, 0.08), rgba(67, 97, 238, 0.06));
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+
+.lb-leader-medal {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.lb-leader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lb-leader-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.lb-leader-pts {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.lb-panel {
+  padding-bottom: 8px;
+}
+
+.lb-table-wrap {
+  overflow-x: auto;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.lb-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+}
+
+.lb-th-rank {
+  width: 44px;
+  text-align: center !important;
+}
+
+.lb-th-pts {
+  width: 64px;
+  text-align: right !important;
+}
+
+.lb-th-detail {
+  width: 80px;
+  text-align: right !important;
+}
+
+.lb-row td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.lb-row-me {
+  background: rgba(16, 163, 127, 0.06);
+}
+
+.lb-row-me td {
+  font-weight: 600;
+}
+
+.lb-medal,
+.lb-rank {
+  text-align: center !important;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.lb-rank {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.lb-name {
+  font-weight: 500;
+}
+
+.lb-you-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(16, 163, 127, 0.12);
+  color: var(--brand-strong);
+  border-radius: 999px;
+}
+
+.lb-pts {
+  text-align: right !important;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.lb-detail {
+  text-align: right !important;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .summary-grid,
 .category-grid,
 .group-grid,
@@ -1996,6 +2166,34 @@ strong {
   .group-placement-section-label {
     font-size: 0.72rem;
     padding: 0 4px 0.25rem;
+  }
+
+  .lb-highlight {
+    grid-template-columns: 1fr;
+  }
+
+  .lb-highlight-cell {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 14px 16px;
+  }
+
+  .lb-highlight-pos,
+  .lb-highlight-value {
+    font-size: 1.3rem;
+  }
+
+  .lb-th-detail,
+  .lb-detail {
+    display: none;
+  }
+
+  .lb-leader-spot {
+    padding: 14px 16px;
+  }
+
+  .lb-leader-medal {
+    font-size: 1.6rem;
   }
 }
 

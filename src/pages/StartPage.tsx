@@ -21,6 +21,13 @@ type StartPageProps = {
     publishedQuestions: AdminQuestion[]
 }
 
+function getMedalEmoji(rank: number): string {
+    if (rank === 1) return '🥇'
+    if (rank === 2) return '🥈'
+    if (rank === 3) return '🥉'
+    return ''
+}
+
 export function StartPage({
     participant,
     leaderboard,
@@ -55,51 +62,110 @@ export function StartPage({
         { label: 'Extrafrågor', filled: filledExtra, total: totalExtra },
     ]
 
-    const renderLeaderboard = () => {
-        if (leaderboard.length === 0) {
-            return <p className="status-note">Ingen poängställning ännu.</p>
-        }
-
-        return (
-            <ul className="updates-list">
-                {leaderboard.map((entry) => (
-                    <li key={entry.participantId}>
-                        <strong>{entry.positionLabel}</strong> {entry.name} - {entry.totalPoints} p
-                    </li>
-                ))}
-            </ul>
-        )
-    }
+    const leader = leaderboard.length > 0 ? leaderboard[0] : null
 
     return (
         <div className="page-stack">
+            {/* Header */}
             <section className="panel panel-sticky-head page-hero">
                 <div>
                     <p className="eyebrow">Start</p>
-                    <h1 className="section-title">{isTrackingPhase ? 'Följ VM 2026' : 'Lägg dina tips för VM 2026'}</h1>
+                    <h1 className="section-title">{isTrackingPhase ? 'VM 2026' : 'Lägg dina tips för VM 2026'}</h1>
                     <p className="lead-text" style={{ margin: 0 }}>
                         {isTrackingPhase
-                            ? 'Turneringen är igång. Följ topplistan och din aktuella placering här.'
+                            ? 'Turneringen är igång — följ topplistan och se hur dina tips håller måttet.'
                             : 'Allt du behöver finns samlat här: lämna tips, följ dina framsteg och håll koll på vad som låser härnäst.'}
                     </p>
                 </div>
                 <span className="save-pill">{participant ? (isTrackingPhase ? 'Turnering pågår' : tipsSaveMessage) : 'Inte inloggad'}</span>
             </section>
 
+            {/* Phase C: Tournament dashboard */}
             {isTrackingPhase && (
-                <section className="start-stats-row">
-                    <div className="start-stat">
-                        <span>Din placering</span>
-                        <strong>{currentEntry ? currentEntry.positionLabel : '-'}</strong>
-                    </div>
-                    <div className="start-stat">
-                        <span>Dina poäng</span>
-                        <strong>{currentEntry ? `${currentEntry.totalPoints} p` : '0 p'}</strong>
-                    </div>
-                </section>
+                <>
+                    {/* Personal highlight card */}
+                    {currentEntry && (
+                        <section className="lb-highlight">
+                            <div className="lb-highlight-cell">
+                                <span className="lb-highlight-pos">{currentEntry.positionLabel}</span>
+                                <span className="lb-highlight-label">Din placering</span>
+                            </div>
+                            <div className="lb-highlight-cell">
+                                <span className="lb-highlight-value">{currentEntry.totalPoints}</span>
+                                <span className="lb-highlight-label">poäng</span>
+                            </div>
+                            <div className="lb-highlight-cell">
+                                <span className="lb-highlight-value">{currentEntry.settledMatches}</span>
+                                <span className="lb-highlight-label">avgjorda matcher</span>
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Leaderboard */}
+                    <section className="panel lb-panel">
+                        <div className="section-heading compact">
+                            <p className="eyebrow">Topplista</p>
+                            <h2>Aktuell ställning</h2>
+                        </div>
+
+                        {leaderboard.length === 0 ? (
+                            <p className="status-note">Ingen poängställning ännu.</p>
+                        ) : (
+                            <>
+                                {/* Leader spotlight */}
+                                {leader && (
+                                    <div className="lb-leader-spot">
+                                        <span className="lb-leader-medal">🥇</span>
+                                        <div className="lb-leader-info">
+                                            <span className="lb-leader-name">{leader.name}</span>
+                                            <span className="lb-leader-pts">{leader.totalPoints} poäng</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Full ranking table */}
+                                <div className="lb-table-wrap">
+                                    <table className="lb-table">
+                                        <thead>
+                                            <tr>
+                                                <th className="lb-th-rank">#</th>
+                                                <th className="lb-th-name">Namn</th>
+                                                <th className="lb-th-pts">Poäng</th>
+                                                <th className="lb-th-detail">Matcher</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {leaderboard.map((entry) => {
+                                                const isMe = entry.participantId === participant?.participantId
+                                                const medal = getMedalEmoji(entry.rank)
+                                                return (
+                                                    <tr
+                                                        key={entry.participantId}
+                                                        className={isMe ? 'lb-row lb-row-me' : 'lb-row'}
+                                                    >
+                                                        <td className={medal ? 'lb-medal' : 'lb-rank'}>
+                                                            {medal || entry.positionLabel}
+                                                        </td>
+                                                        <td className="lb-name">
+                                                            {entry.name}
+                                                            {isMe && <span className="lb-you-badge">Du</span>}
+                                                        </td>
+                                                        <td className="lb-pts">{entry.totalPoints}</td>
+                                                        <td className="lb-detail">{entry.fixturePoints}m + {entry.extraQuestionPoints}e</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </section>
+                </>
             )}
 
-            {!isTrackingPhase ? (
+            {/* Phase B: Prediction entry workflow (unchanged) */}
+            {!isTrackingPhase && (
                 <>
                     <section className="summary-grid">
                         {summaryCards.map((card) => (
@@ -151,15 +217,6 @@ export function StartPage({
                         </div>
                     </section>
                 </>
-            ) : (
-                <section className="panel">
-                    <div className="section-heading compact">
-                        <p className="eyebrow">Topplista</p>
-                        <h2>Aktuell ställning</h2>
-                        <p className="status-note">Prediktioner är låsta. Startsidan visar nu bara turneringsläge och poängstatus.</p>
-                    </div>
-                    {renderLeaderboard()}
-                </section>
             )}
         </div>
     )

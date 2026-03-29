@@ -1073,6 +1073,18 @@ Confirmed intentional data flows (not bugs):
 - **Solution:** Add `top: 29px; z-index: 2` to `.alltips-group-header-row td` so headers stick below the thead when scrolling vertically, keeping the current group always visible.
 - **Files changed:** `src/styles.css`, `docs/specification.md`.
 
+### 7.55 Phase C Start page — tournament dashboard redesign (2026-03-29)
+
+- **Problem:** Phase C Start page showed only two simple stat cards (placement, points) and a plain bullet-list leaderboard — not visually engaging for a tournament landing page.
+- **Solution:** Redesign Phase C Start page with three sections:
+  1. **Personal highlight** (`lb-highlight`): 3-column card row showing placement (green), total points, and settled matches count.
+  2. **Leader spotlight** (`lb-leader-spot`): gradient background card with 🥇 emoji, leader name, and points — adds visual hierarchy.
+  3. **Full ranking table** (`lb-table`): columns #, Namn, Poäng, Matcher. Top 3 get medal emojis (🥇🥈🥉). Current user's row highlighted green (`lb-row-me`) with "Du" pill badge. Point breakdown shows `{fixturePoints}m + {extraQuestionPoints}e`.
+- **Mobile (≤720px):** Highlight cards stack vertically (row layout within each card). Matcher detail column hidden.
+- Phase B Start page is unchanged.
+- Uses existing `LeaderboardEntry` data — no new API calls.
+- **Files changed:** `src/pages/StartPage.tsx`, `src/styles.css`, `docs/specification.md`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
