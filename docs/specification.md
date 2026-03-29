@@ -1043,6 +1043,14 @@ Confirmed intentional data flows (not bugs):
 - **Files changed:** `src/pages/MyTipsPage.tsx`, `src/styles.css`, `docs/specification.md`.
 - **No API or backend changes.**
 
+### 7.51 Mina tips Gruppspel Phase B — group by group (2026-03-29)
+
+- **Problem:** Phase B Gruppspel tab in MyTipsPage was a flat table listing all 48 fixtures, inconsistent with the Phase C card-based grouped layout.
+- **Solution:** Replace flat table with the same card-based group layout (Grupp A–L). Each group card shows fixtures sorted chronologically with Match, Resultat, and 1X2 columns. Date+time label shown above each match name (reuses `.fixture-date-label`). Groups with no fixtures are hidden.
+- Reuses `.placement-card`, `.fixture-breakdown-header/list/row` CSS from Phase C.
+- **Files changed:** `src/pages/MyTipsPage.tsx`, `docs/specification.md`.
+- **No API or backend changes.**
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

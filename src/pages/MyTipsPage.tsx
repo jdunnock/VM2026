@@ -120,27 +120,44 @@ export function MyTipsPage({
             {activeSection === 'Gruppspel' && (
                 <section className="panel tab-content">
                     {phase === 'B' ? (
-                        <div className="table-wrap">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Match</th>
-                                        <th>Datum/tid</th>
-                                        <th>Resultat</th>
-                                        <th>1/X/2</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {fixtureTips.map((row) => (
-                                        <tr key={row.match}>
-                                            <td data-label="Match">{row.match}</td>
-                                            <td data-label="Datum/tid">{row.date}</td>
-                                            <td data-label="Resultat">{row.homeScore === '' || row.awayScore === '' ? '—' : `${row.homeScore}-${row.awayScore}`}</td>
-                                            <td data-label="1/X/2">{row.sign || '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="stacked-cards">
+                            {allGroupCodes.map((code) => {
+                                const groupTips = fixtureTips
+                                    .filter((row) => row.group === code)
+                                    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+                                if (groupTips.length === 0) return null
+                                return (
+                                    <article className="placement-card" key={code}>
+                                        <div className="placement-card-header">
+                                            <h3>Grupp {code}</h3>
+                                        </div>
+                                        <div className="fixture-breakdown-header">
+                                            <span className="fixture-col-match">Match</span>
+                                            <span className="fixture-col-cell">Resultat</span>
+                                            <span className="fixture-col-spacer" />
+                                            <span className="fixture-col-cell">1X2</span>
+                                        </div>
+                                        <ul className="fixture-breakdown-list">
+                                            {groupTips.map((row) => {
+                                                const dateLabel = row.date
+                                                    ? new Date(row.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                    : null
+                                                return (
+                                                    <li className="fixture-breakdown-row" key={row.match}>
+                                                        <span className="fixture-col-match">
+                                                            {dateLabel && <span className="fixture-date-label">{dateLabel}</span>}
+                                                            {row.match}
+                                                        </span>
+                                                        <span className="fixture-col-cell">{row.homeScore === '' || row.awayScore === '' ? '—' : `${row.homeScore}-${row.awayScore}`}</span>
+                                                        <span className="fixture-col-spacer" />
+                                                        <span className="fixture-col-cell">{row.sign || '—'}</span>
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </article>
+                                )
+                            })}
                         </div>
                     ) : isParticipantScoreLoading ? (
                         <p className="status-note">Laddar poängdetaljer...</p>
