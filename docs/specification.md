@@ -1067,6 +1067,12 @@ Confirmed intentional data flows (not bugs):
 - **Solution:** Add `overflow-x: hidden` to `.page-stack` to prevent any child content from causing horizontal page overflow.
 - **Files changed:** `src/styles.css`, `docs/specification.md`.
 
+### 7.54 Alla tips — sticky group headers on vertical scroll (2026-03-29)
+
+- **Problem:** Group header rows (e.g., "Grupp A") in the AllTipsPage Gruppspel table only appeared when scrolling horizontally — they scrolled out of view when scrolling vertically through matches.
+- **Solution:** Add `top: 29px; z-index: 2` to `.alltips-group-header-row td` so headers stick below the thead when scrolling vertically, keeping the current group always visible.
+- **Files changed:** `src/styles.css`, `docs/specification.md`.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational

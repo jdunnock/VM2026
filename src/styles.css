@@ -2376,6 +2376,8 @@ strong {
   border-bottom: 2px solid var(--border);
   position: sticky;
   left: 0;
+  top: 29px;
+  z-index: 2;
 }
 
 .alltips-extra-table .alltips-col-match {
