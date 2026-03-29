@@ -838,7 +838,7 @@ Confirmed intentional data flows (not bugs):
 	- Bottom `ParticipantScorePanel` (separate section with "Poäng / Din poängöversikt")
 - Replaced with a single consolidated `.stats-grid` rendered directly after the page hero, containing mini-cards:
 	- Placering (with totalpoäng subtitle)
-	- Matcher (slutförda / total, with återstående subtitle) — counts actual completed match results from the tournament, not the participant's tip count
+	- Gruppspelsmatcher (completed group-stage results / 72 total group matches, with återstående subtitle) — counts actual completed group-stage match results from the tournament; knockout matches excluded since they are not individually tippable
 	- Gruppspel (points + settled count)
 	- Grupplaceringar (points + settled count)
 	- Slutspel (points + settled count)

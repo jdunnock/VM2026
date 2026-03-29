@@ -54,8 +54,8 @@ export function MyTipsPage({
         : null
     const displayedPositionLabel = psd?.positionLabel ?? currentEntry?.positionLabel ?? '-'
     const displayedTotalPoints = psd?.totalPoints ?? currentEntry?.totalPoints ?? 0
-    const completedCount = results.filter((r) => r.resultStatus === 'completed').length
-    const remainingCount = fixtureCounts.total - completedCount
+    const completedGroupCount = results.filter((r) => r.stage === 'group' && r.resultStatus === 'completed').length
+    const remainingGroupCount = fixtureCounts.groupStage - completedGroupCount
 
     return (
         <div className="page-stack">
@@ -80,9 +80,9 @@ export function MyTipsPage({
                         <span className="status-note">Totalpoäng: {displayedTotalPoints} p</span>
                     </article>
                     <article className="mini-card">
-                        <span className="mini-label">Matcher</span>
-                        <strong>{completedCount} / {fixtureCounts.total}</strong>
-                        <span className="status-note">Återstående: {remainingCount}</span>
+                        <span className="mini-label">Gruppspelsmatcher</span>
+                        <strong>{completedGroupCount} / {fixtureCounts.groupStage}</strong>
+                        <span className="status-note">Återstående: {remainingGroupCount}</span>
                     </article>
                     <article className="mini-card">
                         <span className="mini-label">Gruppspel</span>
