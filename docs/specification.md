@@ -822,7 +822,7 @@ Confirmed intentional data flows (not bugs):
 - New `GET /api/tips/all` endpoint returns all participants with their persisted tips, sorted alphabetically by name.
 - New `AllTipsPage` with hero panel and section tabs (Gruppspel tab first; other tabs placeholder for later expansion).
 - Gruppspel tab renders a horizontal scrollable table:
-	- Rows: all 72 group-stage fixtures ordered by date.
+	- Rows: all 48 group-stage fixtures grouped by group code (A–L), each group preceded by a header row. Fixtures within each group sorted chronologically by kickoff date.
 	- Columns: "Match", "Resultat", then one column per participant (alphabetical).
 	- Cell content: predicted score (e.g. "1-0") or "—" if no tip.
 	- Cell coloring: green (correct 1X2 sign) / red (wrong sign) based on match result; neutral if match not yet settled.
@@ -1025,6 +1025,15 @@ Confirmed intentional data flows (not bugs):
   - Color consistency: reuses existing `.tip-indicator.hit/.miss`, `.points-badge`, `.reason-badge` classes.
 - **Files changed:** `src/pages/MyTipsPage.tsx`, `src/styles.css`.
 - **No API or backend changes.** All data already available in `ParticipantScoreDetail` breakdown types (`groupPlacementBreakdown.actualPicks`, `knockoutBreakdown.matchedTeams`, `extraBreakdown.selectedAnswer/correctAnswer`).
+
+### 7.49 Alla tips — Gruppspel grouped by group (2026-03-30)
+
+- **Problem:** The Gruppspel tab on AllTipsPage listed all 48 group-stage fixtures in a single flat table, making it hard to locate matches for a specific group.
+- **Solution:** Group fixtures by group code (A–L) within the same scrollable table. Each group is preceded by a full-width header row (`Grupp A`, `Grupp B`, …). Fixtures within each group are sorted chronologically by kickoff date.
+- CSS class `alltips-group-header-row` styles the header row with subtle background, bold text, and sticky left position.
+- The table structure (sticky Match/Resultat columns, participant columns, hit/miss coloring) is unchanged.
+- **Files changed:** `src/pages/AllTipsPage.tsx`, `src/styles.css`, `docs/specification.md`.
+- **No API or backend changes.**
 
 ## 8. Normalized Database Schema
 

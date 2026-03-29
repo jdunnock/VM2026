@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import type { AdminQuestion, AllTipsParticipant, CorrectnessData, ExtraAnswers, FixtureTip, GroupPlacement, KnockoutPredictionRound, MatchResult, ParticipantSession } from '../types'
 import { allGroupCodes, groupStageFixtureTemplates } from '../fixtures'
 import { knockoutPredictionTemplates } from '../constants'
@@ -104,44 +104,57 @@ export function AllTipsPage({
                                 </tr>
                             </thead>
                             <tbody>
-                                {fixtures.map((fixture) => {
-                                    const result = findResult(results, fixture.id)
-                                    const isSettled = result?.resultStatus === 'completed'
-                                    const actualSign = isSettled && result
-                                        ? getSign(result.homeScore ?? '', result.awayScore ?? '')
-                                        : ''
-                                    const resultLabel = isSettled && result
-                                        ? `${result.homeScore}-${result.awayScore}`
-                                        : '—'
-
+                                {allGroupCodes.map((code) => {
+                                    const groupFixtures = fixtures
+                                        .filter((f) => f.group === code)
+                                        .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+                                    if (groupFixtures.length === 0) return null
                                     return (
-                                        <tr key={fixture.id}>
-                                            <td className="alltips-col-match">{fixture.match}</td>
-                                            <td className="alltips-col-result">{resultLabel}</td>
-                                            {allTipsParticipants.map((p) => {
-                                                const fixtureTips = p.tips?.fixtureTips
-                                                const tip = findTipForFixture(fixtureTips as FixtureTip[] | undefined, fixture.id)
-                                                const hasTip = tip && tip.homeScore !== '' && tip.awayScore !== ''
-                                                const tipLabel = hasTip ? `${tip.homeScore}-${tip.awayScore}` : '—'
-                                                const tipSign = hasTip ? getSign(tip.homeScore, tip.awayScore) : ''
-
-                                                let cellClass = 'alltips-col-participant'
-                                                if (p.participantId === participant?.participantId) {
-                                                    cellClass += ' alltips-own-col'
-                                                }
-                                                if (isSettled && hasTip) {
-                                                    const scoreHit = tip.homeScore === result!.homeScore && tip.awayScore === result!.awayScore
-                                                    const signHit = tipSign === actualSign
-                                                    cellClass += scoreHit ? ' alltips-hit-exact' : signHit ? ' alltips-hit-sign' : ' alltips-miss'
-                                                }
+                                        <Fragment key={code}>
+                                            <tr className="alltips-group-header-row">
+                                                <td colSpan={2 + allTipsParticipants.length}>Grupp {code}</td>
+                                            </tr>
+                                            {groupFixtures.map((fixture) => {
+                                                const result = findResult(results, fixture.id)
+                                                const isSettled = result?.resultStatus === 'completed'
+                                                const actualSign = isSettled && result
+                                                    ? getSign(result.homeScore ?? '', result.awayScore ?? '')
+                                                    : ''
+                                                const resultLabel = isSettled && result
+                                                    ? `${result.homeScore}-${result.awayScore}`
+                                                    : '—'
 
                                                 return (
-                                                    <td key={p.participantId} className={cellClass}>
-                                                        {tipLabel}
-                                                    </td>
+                                                    <tr key={fixture.id}>
+                                                        <td className="alltips-col-match">{fixture.match}</td>
+                                                        <td className="alltips-col-result">{resultLabel}</td>
+                                                        {allTipsParticipants.map((p) => {
+                                                            const fixtureTips = p.tips?.fixtureTips
+                                                            const tip = findTipForFixture(fixtureTips as FixtureTip[] | undefined, fixture.id)
+                                                            const hasTip = tip && tip.homeScore !== '' && tip.awayScore !== ''
+                                                            const tipLabel = hasTip ? `${tip.homeScore}-${tip.awayScore}` : '—'
+                                                            const tipSign = hasTip ? getSign(tip.homeScore, tip.awayScore) : ''
+
+                                                            let cellClass = 'alltips-col-participant'
+                                                            if (p.participantId === participant?.participantId) {
+                                                                cellClass += ' alltips-own-col'
+                                                            }
+                                                            if (isSettled && hasTip) {
+                                                                const scoreHit = tip.homeScore === result!.homeScore && tip.awayScore === result!.awayScore
+                                                                const signHit = tipSign === actualSign
+                                                                cellClass += scoreHit ? ' alltips-hit-exact' : signHit ? ' alltips-hit-sign' : ' alltips-miss'
+                                                            }
+
+                                                            return (
+                                                                <td key={p.participantId} className={cellClass}>
+                                                                    {tipLabel}
+                                                                </td>
+                                                            )
+                                                        })}
+                                                    </tr>
                                                 )
                                             })}
-                                        </tr>
+                                        </Fragment>
                                     )
                                 })}
                             </tbody>
