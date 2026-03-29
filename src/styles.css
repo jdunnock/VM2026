@@ -1379,9 +1379,9 @@ strong {
 }
 
 .question-answer-value.facit {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.16);
-  color: #1d4ed8;
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
 }
 
 .muted-text {

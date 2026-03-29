@@ -1015,7 +1015,7 @@ Confirmed intentional data flows (not bugs):
   - Phase B: same card layout, teams as neutral chips.
 - **Extrafrågor tab:**
   - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).
-  - Phase C: question title, "Ditt svar" and "Rätt svar" side by side, hit/miss indicator + points badge.
+  - Phase C: question title, "Ditt svar" shown as green (correct) or red (wrong). "Rätt svar" in amber shown only when the answer is wrong — hidden when correct to avoid redundancy. Points badge in card header.
   - Phase B: card per question, question text + selected answer.
 - **Gruppspel tab:** Minor polish — subtle even/odd row alternation for readability.
 - **Cross-cutting improvements:**

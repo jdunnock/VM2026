@@ -12,10 +12,6 @@ import type {
     ParticipantSession,
 } from '../types'
 import { myTipsSectionTabs } from '../types'
-import {
-    formatExtraReason,
-    getReasonTone,
-} from '../utils'
 
 export function MyTipsPage({
     fixtureTips,
@@ -320,7 +316,6 @@ export function MyTipsPage({
                                             {isSettled && breakdown && (
                                                 <div className="score-breakdown-badges">
                                                     <span className={breakdown.points > 0 ? 'points-badge' : 'points-badge zero'}>{breakdown.points} p</span>
-                                                    <span className={`reason-badge ${getReasonTone(breakdown.reason)}`}>{formatExtraReason(breakdown.reason)}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -331,7 +326,7 @@ export function MyTipsPage({
                                                     {chosen ?? <em className="muted-text">Ej besvarad</em>}
                                                 </span>
                                             </div>
-                                            {isSettled && breakdown && (
+                                            {isSettled && breakdown && breakdown.reason !== 'correct' && (
                                                 <div className="question-answer-item">
                                                     <span className="question-answer-label">Rätt svar</span>
                                                     <span className="question-answer-value facit">{breakdown.correctAnswer ?? '—'}</span>
