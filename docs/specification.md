@@ -1010,7 +1010,8 @@ Confirmed intentional data flows (not bugs):
 - **Slutspel tab:**
   - Each knockout round = one card, stacked vertically.
   - Card header: round name + points badge.
-  - Two labeled sections per settled card: "Ditt tips" (predicted teams as chips, green hit / red miss) and "Facit" (actual teams as chips, green if user also picked them, amber if user missed them). The reason-badge and meta text are omitted because the chip colors already convey the same information.
+  - Predicted teams shown as chips: green if correct (hit), red if wrong (miss).
+  - Below the picks, a "Rätt lag du saknade" section appears only when there are actual teams the user did not predict — shown as amber chips. If all actual teams were predicted, the section is hidden. This avoids duplicate display of teams.
   - Phase B: same card layout, teams as neutral chips.
 - **Extrafrågor tab:**
   - Merged tips + score breakdown into one card per question (eliminates Phase C duplication).
