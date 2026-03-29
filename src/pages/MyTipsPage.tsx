@@ -216,7 +216,7 @@ export function MyTipsPage({
                                         <div className="placement-rows">
                                             {group.picks.map((team, idx) => {
                                                 const actualTeam = isSettled && breakdown.actualPicks ? breakdown.actualPicks[idx] ?? null : null
-                                                const isHit = isSettled && breakdown.matchedPositions.includes(idx)
+                                                const isHit = isSettled && breakdown.matchedPositions.includes(idx + 1)
                                                 return (
                                                     <div className="placement-row" key={idx}>
                                                         <span className="placement-pos">{idx + 1}.</span>
