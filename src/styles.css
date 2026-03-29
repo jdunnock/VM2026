@@ -2369,15 +2369,24 @@ strong {
 }
 
 .alltips-group-header-row td {
+  border-bottom: 2px solid var(--border);
+  top: 29px;
+  z-index: 2;
+}
+
+.alltips-group-header-row .alltips-col-match {
   background: var(--bg-subtle);
   font-weight: 700;
   font-size: 0.85rem;
   padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid var(--border);
-  position: sticky;
-  left: 0;
-  top: 29px;
-  z-index: 2;
+}
+
+.alltips-group-header-row .alltips-col-result {
+  background: var(--bg-subtle);
+}
+
+.alltips-group-header-empty {
+  background: var(--panel) !important;
 }
 
 .alltips-extra-table .alltips-col-match {

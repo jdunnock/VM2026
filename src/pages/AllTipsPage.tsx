@@ -112,7 +112,11 @@ export function AllTipsPage({
                                     return (
                                         <Fragment key={code}>
                                             <tr className="alltips-group-header-row">
-                                                <td colSpan={2 + allTipsParticipants.length}>Grupp {code}</td>
+                                                <td className="alltips-col-match">Grupp {code}</td>
+                                                <td className="alltips-col-result"></td>
+                                                {allTipsParticipants.map((p) => (
+                                                    <td key={p.participantId} className="alltips-group-header-empty"></td>
+                                                ))}
                                             </tr>
                                             {groupFixtures.map((fixture) => {
                                                 const result = findResult(results, fixture.id)
