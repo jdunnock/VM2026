@@ -52,7 +52,7 @@ app.post('/api/admin/db-upload',
       res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded and reloaded.' })
     } catch (error) {
       console.error('DB upload error:', error)
-      res.status(500).json({ error: 'Failed to write database file.' })
+      res.status(500).json({ error: `DB upload failed: ${error.message}` })
     }
   }
 )
