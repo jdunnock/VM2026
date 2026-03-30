@@ -1668,7 +1668,7 @@ const scoreFixtureTip = (tip, result) => {
 - **Start:** `npm start` → `NODE_ENV=production node server/index.js`.
 - **Port:** Railway sets `PORT` env var automatically; server reads it.
 - **Database:** SQLite at `./data/vm2026.db`. Attach a Railway Volume mounted at `./data` to persist across deploys.
-- **Database transfer:** Admin-protected endpoints for uploading/downloading the SQLite file: `POST /api/admin/db-upload` (raw binary body, `application/octet-stream`) and `GET /api/admin/db-download`. After upload, restart the service to apply the new database.
+- **Database transfer:** Admin-protected endpoints for uploading/downloading the SQLite file: `POST /api/admin/db-upload` (raw binary body, `application/octet-stream`) and `GET /api/admin/db-download`. After upload, the server automatically reloads the database connection — no restart required.
 - **Required env vars:** `ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`, `ADMIN_ACCESS_NAME`, `GLOBAL_DEADLINE`.
 - **Optional env vars:** `CORS_ORIGINS` (not needed when frontend and API share same origin).
 

@@ -28,16 +28,28 @@ const { authRateLimit } = setupMiddleware(app)
 // Database transfer endpoints (admin-protected, no DB dependency)
 const dbPath = path.resolve(process.cwd(), 'data', 'vm2026.db')
 
+// Set after start() imports modules
+let reloadDb = null
+let reinitDb = null
+
 app.use('/api/admin', requireAdminAccess)
 
 app.post('/api/admin/db-upload',
   express.raw({ type: 'application/octet-stream', limit: '50mb' }),
-  (req, res) => {
+  async (req, res) => {
     try {
       const dir = path.dirname(dbPath)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
       fs.writeFileSync(dbPath, req.body)
-      res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded. Restart the service to apply.' })
+
+      // Reload DB connection so the server uses the new file immediately
+      if (reloadDb) {
+        await reloadDb()
+        if (reinitDb) await reinitDb()
+        console.log('Database reloaded after upload.')
+      }
+
+      res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded and reloaded.' })
     } catch (error) {
       console.error('DB upload error:', error)
       res.status(500).json({ error: 'Failed to write database file.' })
@@ -74,6 +86,10 @@ async function start() {
       import('./public-routes.js'),
       import('./tips-routes.js'),
     ])
+
+    const { reloadDatabase } = await import('./db-core.js')
+    reloadDb = reloadDatabase
+    reinitDb = initDatabase
 
     // Register route handlers (BEFORE SPA fallback)
     createAuthRoutes(app, authRateLimit)

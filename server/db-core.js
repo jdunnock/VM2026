@@ -9,7 +9,19 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
-export const db = new sqlite3.Database(dbPath)
+export let db = new sqlite3.Database(dbPath)
+
+export function reloadDatabase() {
+  return new Promise((resolve, reject) => {
+    db.close((err) => {
+      if (err) console.warn('Warning closing old DB connection:', err.message)
+      db = new sqlite3.Database(dbPath, (openErr) => {
+        if (openErr) return reject(openErr)
+        resolve()
+      })
+    })
+  })
+}
 
 export const GROUP_MATCH_COUNT = 6
 export const GROUP_TEAM_COUNT = 4
