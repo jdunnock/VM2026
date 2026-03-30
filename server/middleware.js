@@ -16,6 +16,8 @@ const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
     : ['http://localhost:4173', 'http://localhost:5173', 'http://192.168.1.182:4173']
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 function hashAccessCode(code) {
     return crypto.scryptSync(code, salt, 64).toString('hex')
 }
@@ -57,6 +59,8 @@ function setupMiddleware(app) {
             origin: (origin, callback) => {
                 // Allow requests with no origin (e.g. server-to-server, curl)
                 if (!origin) return callback(null, true)
+                // In production, allow same-origin (frontend served from same host)
+                if (isProduction) return callback(null, true)
                 if (allowedOrigins.includes(origin)) return callback(null, true)
                 callback(new Error(`CORS: origin '${origin}' not allowed`))
             },
