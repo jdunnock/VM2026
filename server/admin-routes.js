@@ -159,7 +159,7 @@ function createAdminRoutes(app) {
         }
 
         const acceptedAnswers = Array.isArray(req.body.acceptedAnswers)
-            ? req.body.acceptedAnswers.filter((a) => typeof a === 'string' && a.trim().length > 0)
+            ? req.body.acceptedAnswers.filter((a) => typeof a === 'string' && a.trim().length > 0 && a.trim().length <= 200)
             : []
 
         const correctAnswer = typeof req.body.correctAnswer === 'string' ? req.body.correctAnswer.trim() : undefined

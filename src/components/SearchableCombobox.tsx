@@ -8,7 +8,6 @@ type SearchableComboboxProps = {
     placeholder?: string
     disabled?: boolean
     className?: string
-    fuzzyMatch?: boolean
     allowFreeText?: boolean
 }
 
@@ -21,7 +20,6 @@ export function SearchableCombobox({
     placeholder = 'Sök…',
     disabled = false,
     className = '',
-    fuzzyMatch = false,
     allowFreeText = false,
 }: SearchableComboboxProps) {
     const [query, setQuery] = useState('')
@@ -43,7 +41,7 @@ export function SearchableCombobox({
         }
 
         let fuzzyItems: Array<{ label: string; value: string }> = []
-        if (fuzzyMatch) {
+        if (allowFreeText) {
             fuzzyItems = options
                 .map((o) => ({ option: o, score: bigramSimilarity(q, o.toLowerCase()) }))
                 .filter((r) => r.score >= FUZZY_THRESHOLD)
@@ -59,7 +57,7 @@ export function SearchableCombobox({
         }
 
         return { items: result, hasFuzzy: fuzzyItems.length > 0, hasFreeText: showFreeText }
-    }, [query, options, fuzzyMatch, allowFreeText])
+    }, [query, options, allowFreeText])
 
     const displayItems = items.slice(0, 50)
 

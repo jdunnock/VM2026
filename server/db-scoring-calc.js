@@ -356,7 +356,8 @@ function scoreExtraAnswer(selectedAnswer, question) {
         }
     }
 
-    if (selectedAnswer === correctAnswer) {
+    const answerNorm = selectedAnswer.trim().toLowerCase()
+    if (answerNorm === correctAnswer.toLowerCase()) {
         return {
             points: Number.isInteger(question.points) ? question.points : 0,
             reason: 'correct-answer',
@@ -366,8 +367,7 @@ function scoreExtraAnswer(selectedAnswer, question) {
 
     const accepted = Array.isArray(question.acceptedAnswers) ? question.acceptedAnswers : []
     if (accepted.length > 0) {
-        const answerLower = selectedAnswer.toLowerCase()
-        const isAccepted = accepted.some((a) => a.toLowerCase() === answerLower)
+        const isAccepted = accepted.some((a) => a.trim().toLowerCase() === answerNorm)
         if (isAccepted) {
             return {
                 points: Number.isInteger(question.points) ? question.points : 0,
