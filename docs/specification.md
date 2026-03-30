@@ -1085,6 +1085,123 @@ Confirmed intentional data flows (not bugs):
 - Uses existing `LeaderboardEntry` data — no new API calls.
 - **Files changed:** `src/pages/StartPage.tsx`, `src/styles.css`, `docs/specification.md`.
 
+### 7.56 Admin settlement workflow and fixture identity redesign (planned, 2026-03-30)
+
+- **Status**: Plan documented. Implementation deferred to next session.
+- **Lifecycle phase**: Phase C (tournament tracking) — admin tooling for result entry and score settlement.
+
+#### Problem statement
+
+Current admin result workflow has structural issues:
+1. **No SQL foreign key** between `participant_fixture_tips.fixture_id` and `match_results.match_id`. Any string is accepted as `fixture_id`.
+2. **Fragile 3-tier fallback** in `resolveResultForTip()`: direct `fixture_id` match → group+match+date key → group+match key. Tier-3 can collide if same teams meet in both group and knockout stages.
+3. **No "match day" concept** — admin enters results one match at a time with no grouping or approval workflow.
+4. **No dedicated knockout advancement tracking** — knockout round teams are derived from `match_results` rows, but participants don't predict match scores for knockout stage (only which teams advance per round).
+5. **Scoring goes live immediately** when admin saves a result — no review/approval step.
+
+#### Design decisions
+
+1. **Score overrides**: Not needed. Correcting results/answers automatically recalculates scores (on-read scoring).
+2. **Audit log**: Not needed for personal use. SQLite backups suffice.
+3. **Knockout match results**: Not tracked. Only teams advancing per round are tracked. Participants predict advancing teams, not knockout match scores.
+4. **API data source**: Fas A implementation is manual-only. Fas B (future) adds football-data.org API as optional pre-fill source. Same UI, different input method.
+
+#### New table: `knockout_advancement`
+
+```sql
+CREATE TABLE IF NOT EXISTS knockout_advancement (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  round TEXT NOT NULL CHECK (round IN (
+    'Sextondelsfinal', 'Åttondelsfinal', 'Kvartsfinal', 'Semifinal', 'Final'
+  )),
+  team_name TEXT NOT NULL,
+  confirmed_at TEXT,            -- NULL = pending, timestamp = confirmed
+  source TEXT DEFAULT 'manual', -- 'manual' | 'api'
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(round, team_name)
+);
+```
+
+Replaces the current approach of deriving knockout teams from `match_results` rows with `stage = 'knockout'`.
+
+#### Fixture identity fix
+
+1. **Pre-populate `match_results`** with all 72 group-stage matches in `planned` status (teams, kickoff times, canonical `match_id`).
+2. **Ensure `fixture_id` in tips matches `match_id`** in results — single canonical identifier.
+3. **Add FK constraint**: `participant_fixture_tips.fixture_id REFERENCES match_results(match_id)`.
+4. **Remove Tier-2 and Tier-3 fallback** from `resolveResultForTip()` — only direct `match_id` lookup.
+5. **Migration**: verify all existing `fixture_id` values map to valid `match_id` before enabling FK.
+
+#### Admin UI redesign: 3 tabs
+
+**Tab 1: Matchdag** (replaces current "Resultat")
+- Matches grouped by `kickoff_at` date.
+- Day-by-day navigation: `← 11 juni 2026 →` with counter `3/4 avgjorda`.
+- Per match: score input fields + save button → sets `result_status = completed`.
+- Correction: click completed match → edit → save (upsert overwrites).
+- Visual feedback when all day's matches are completed.
+- When all 6 matches in a group are completed → group placement scoring activates automatically.
+- Phase behavior:
+  - Fas B: tab visible but empty state ("Inga matcher ännu — turneringen börjar 11 juni 2026").
+  - Fas C: active match entry interface.
+
+**Tab 2: Slutspel** (new)
+- One card per knockout round (Sextondelsfinal → Final).
+- Each card: multi-select of teams that advanced to this round.
+- Sextondelsfinal (32 teams): derived from group standings (12 winners + 12 runners-up + 8 best thirds) when all groups settled. Admin confirms or adjusts.
+- Later rounds: select from previous round's teams.
+- Rounds unlock sequentially — next round opens only after previous is confirmed.
+- Confirmed rounds: read-only with "Ändra" button to reopen.
+- Data stored in `knockout_advancement` table (not `match_results`).
+- Phase behavior:
+  - Fas B: tab visible but locked ("Gruppspelet har inte börjat ännu").
+  - Fas C: unlocks when first group stage results exist; Slutspel cards unlock progressively.
+
+**Tab 3: Frågor** (existing, minor improvements)
+- Category grouping: Gruppspelsfrågor, Slutspelsfrågor, Turneringsfrågor, 33-33-33 frågor.
+- Visual status per question: ✅ "rätt svar satt" / ⏳ "väntar".
+- Existing reconciliation workflow unchanged.
+
+#### Scoring pipeline changes
+
+- `buildKnockoutRoundLookups()` reads from `knockout_advancement` instead of `match_results`.
+- A round is settled when `knockout_advancement` has the expected number of confirmed teams for that round (32/16/8/4/2).
+- `buildCompletedResultLookups()` unchanged (still reads `match_results` for group-stage scoring).
+- `resolveResultForTip()` simplified to single `byId` lookup (no fallback tiers).
+
+#### Fas A vs Fas B comparison (admin UI)
+
+| Element | Fas A (manuell) | Fas B (API, future) |
+|---------|----------------|---------------------|
+| Matchdag scores | Admin types scores | `[Hämta resultat]` pre-fills from football-data.org |
+| Slutspel teams | Admin selects teams | `[Hämta slutspelsdata]` pre-fills selection |
+| Approval | Admin clicks Spara/Godkänn | Same — API only pre-fills, admin confirms |
+| Correction | Edit + save (upsert) | Same |
+| Layout/components | Identical | Identical + fetch button + source badge |
+
+Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators — no layout changes.
+
+#### Implementation order
+
+| Step | Scope | Dependencies |
+|------|-------|-------------|
+| 1 | `knockout_advancement` table schema + migration | None |
+| 2 | Pre-populate `match_results` with 72 group matches | Step 1 |
+| 3 | Fixture ID alignment + FK constraint | Step 2 |
+| 4 | Scoring refactor: knockout lookups from new table, remove fallback tiers | Steps 1, 3 |
+| 5 | Admin API: day-based result fetch, knockout advancement CRUD | Steps 1, 2 |
+| 6 | Admin UI: Matchdag tab | Step 5 |
+| 7 | Admin UI: Slutspel tab | Step 5 |
+| 8 | Admin UI: Frågor tab improvements | Independent |
+| 9 | Seed simulation update for new data model | Steps 1–4 |
+| 10 | Integration tests for new scoring pipeline | Steps 4, 5 |
+
+- Excluded from this plan:
+  - football-data.org API integration (deferred to Fas B).
+  - Audit log table.
+  - Score override mechanism.
+  - Phase D (closure) workflows.
+
 ## 8. Normalized Database Schema
 
 ### 8.1 Migration Strategy: JSON → Relational
