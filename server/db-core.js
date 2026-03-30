@@ -11,14 +11,20 @@ if (!fs.existsSync(dataDir)) {
 
 export let db = new sqlite3.Database(dbPath)
 
-export function reloadDatabase() {
+export function closeDatabaseConnection() {
   return new Promise((resolve, reject) => {
     db.close((err) => {
-      if (err) console.warn('Warning closing old DB connection:', err.message)
-      db = new sqlite3.Database(dbPath, (openErr) => {
-        if (openErr) return reject(openErr)
-        resolve()
-      })
+      if (err) console.warn('Warning closing DB connection:', err.message)
+      resolve()
+    })
+  })
+}
+
+export function openDatabaseConnection() {
+  return new Promise((resolve, reject) => {
+    db = new sqlite3.Database(dbPath, (openErr) => {
+      if (openErr) return reject(openErr)
+      resolve()
     })
   })
 }

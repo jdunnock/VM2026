@@ -29,7 +29,8 @@ const { authRateLimit } = setupMiddleware(app)
 const dbPath = path.resolve(process.cwd(), 'data', 'vm2026.db')
 
 // Set after start() imports modules
-let reloadDb = null
+let closeDb = null
+let openDb = null
 let reinitDb = null
 
 app.use('/api/admin', requireAdminAccess)
@@ -40,15 +41,21 @@ app.post('/api/admin/db-upload',
     try {
       const dir = path.dirname(dbPath)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+
+      // Close DB FIRST to flush WAL and release file lock
+      if (closeDb) await closeDb()
+
+      // Write the uploaded file (no WAL checkpoint can overwrite it now)
       fs.writeFileSync(dbPath, req.body)
+      // Remove leftover WAL/SHM files from the old connection
+      try { fs.unlinkSync(dbPath + '-wal') } catch (_) {}
+      try { fs.unlinkSync(dbPath + '-shm') } catch (_) {}
 
-      // Reload DB connection so the server uses the new file immediately
-      if (reloadDb) {
-        await reloadDb()
-        if (reinitDb) await reinitDb()
-        console.log('Database reloaded after upload.')
-      }
+      // Open new connection to the uploaded file
+      if (openDb) await openDb()
+      if (reinitDb) await reinitDb()
 
+      console.log('Database uploaded and reloaded:', req.body.length, 'bytes')
       res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded and reloaded.' })
     } catch (error) {
       console.error('DB upload error:', error)
@@ -87,8 +94,9 @@ async function start() {
       import('./tips-routes.js'),
     ])
 
-    const { reloadDatabase } = await import('./db-core.js')
-    reloadDb = reloadDatabase
+    const { closeDatabaseConnection, openDatabaseConnection } = await import('./db-core.js')
+    closeDb = closeDatabaseConnection
+    openDb = openDatabaseConnection
     reinitDb = initDatabase
 
     // Register route handlers (BEFORE SPA fallback)
