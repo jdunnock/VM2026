@@ -58,11 +58,11 @@ app.get('/api/startup-status', (_req, res) => {
   res.json({ dbReady, dbError: dbError ? String(dbError) : null })
 })
 
-// Dynamically import and register all DB-dependent routes
-async function registerRoutes() {
+// Dynamically import and register all DB-dependent routes, then start server
+async function start() {
   try {
     const [
-      { initDatabase, closeDatabase },
+      { initDatabase, closeDatabase: closeFn },
       { createAuthRoutes },
       { createAdminRoutes },
       { createPublicRoutes },
@@ -75,7 +75,7 @@ async function registerRoutes() {
       import('./tips-routes.js'),
     ])
 
-    // Register route handlers
+    // Register route handlers (BEFORE SPA fallback)
     createAuthRoutes(app, authRateLimit)
     createPublicRoutes(app, globalDeadline)
     createTipsRoutes(app)
@@ -83,46 +83,44 @@ async function registerRoutes() {
 
     await initDatabase()
     dbReady = true
+    closeDatabase = closeFn
     console.log('Database initialized and routes registered successfully.')
-
-    return closeDatabase
   } catch (error) {
     dbError = error
     console.error('Failed to initialize application:', error)
-    return null
   }
-}
 
-// In production, serve the Vite build output (AFTER API routes)
-if (isProduction) {
-  const distPath = path.resolve(__dirname, '..', 'dist')
-  app.use(express.static(distPath))
-  // SPA fallback: serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'))
+  // In production, serve the Vite build output (AFTER API routes)
+  if (isProduction) {
+    const distPath = path.resolve(__dirname, '..', 'dist')
+    app.use(express.static(distPath))
+    // SPA fallback: serve index.html for all non-API routes
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'))
+    })
+  }
+
+  // Start listening
+  const server = app.listen(port, () => {
+    console.log(`VM2026 API listening on http://localhost:${port}`)
   })
-}
 
-// Start listening immediately, then initialize DB+routes
-const server = app.listen(port, () => {
-  console.log(`VM2026 API listening on http://localhost:${port}`)
-})
+  async function shutdown(signal) {
+    console.log(`Received ${signal}, shutting down gracefully...`)
+    server.close(async () => {
+      try {
+        if (closeDatabase) await closeDatabase()
+        console.log('Database closed. Exiting.')
+      } catch (err) {
+        console.error('Error closing database:', err)
+      }
+      process.exit(0)
+    })
+  }
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
+}
 
 let closeDatabase = null
-registerRoutes().then((closeFn) => { closeDatabase = closeFn })
-
-async function shutdown(signal) {
-  console.log(`Received ${signal}, shutting down gracefully...`)
-  server.close(async () => {
-    try {
-      if (closeDatabase) await closeDatabase()
-      console.log('Database closed. Exiting.')
-    } catch (err) {
-      console.error('Error closing database:', err)
-    }
-    process.exit(0)
-  })
-}
-
-process.on('SIGTERM', () => shutdown('SIGTERM'))
-process.on('SIGINT', () => shutdown('SIGINT'))
+start()
