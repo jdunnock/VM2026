@@ -2,12 +2,7 @@ import fs from 'node:fs'
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { initDatabase, closeDatabase } from './db.js'
 import { setupMiddleware, requireAdminAccess } from './middleware.js'
-import { createAuthRoutes } from './auth-routes.js'
-import { createAdminRoutes } from './admin-routes.js'
-import { createPublicRoutes } from './public-routes.js'
-import { createTipsRoutes } from './tips-routes.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -23,29 +18,24 @@ if (isProduction) {
   ].filter(Boolean)
 
   if (missingEnvVars.length > 0) {
-    throw new Error(`Missing required production environment variables: ${missingEnvVars.join(', ')}`)
+    console.error(`Missing required production environment variables: ${missingEnvVars.join(', ')}`)
   }
 }
 
 // Setup middleware (CORS, JSON parser, auth rate limiter)
 const { authRateLimit } = setupMiddleware(app)
 
-// Register route handlers
-createAuthRoutes(app, authRateLimit)
-createPublicRoutes(app, globalDeadline)
-createTipsRoutes(app)
-
-// Admin routes require authentication
-app.use('/api/admin', requireAdminAccess)
-createAdminRoutes(app)
-
-// Database transfer endpoints (admin-protected, under /api/admin prefix)
+// Database transfer endpoints (admin-protected, no DB dependency)
 const dbPath = path.resolve(process.cwd(), 'data', 'vm2026.db')
+
+app.use('/api/admin', requireAdminAccess)
 
 app.post('/api/admin/db-upload',
   express.raw({ type: 'application/octet-stream', limit: '50mb' }),
   (req, res) => {
     try {
+      const dir = path.dirname(dbPath)
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
       fs.writeFileSync(dbPath, req.body)
       res.json({ ok: true, bytes: req.body.length, message: 'Database uploaded. Restart the service to apply.' })
     } catch (error) {
@@ -56,10 +46,54 @@ app.post('/api/admin/db-upload',
 )
 
 app.get('/api/admin/db-download', (_req, res) => {
+  if (!fs.existsSync(dbPath)) return res.status(404).json({ error: 'No database file found.' })
   res.download(dbPath, 'vm2026.db')
 })
 
-// In production, serve the Vite build output
+// Startup status for diagnostics
+let dbReady = false
+let dbError = null
+
+app.get('/api/startup-status', (_req, res) => {
+  res.json({ dbReady, dbError: dbError ? String(dbError) : null })
+})
+
+// Dynamically import and register all DB-dependent routes
+async function registerRoutes() {
+  try {
+    const [
+      { initDatabase, closeDatabase },
+      { createAuthRoutes },
+      { createAdminRoutes },
+      { createPublicRoutes },
+      { createTipsRoutes },
+    ] = await Promise.all([
+      import('./db.js'),
+      import('./auth-routes.js'),
+      import('./admin-routes.js'),
+      import('./public-routes.js'),
+      import('./tips-routes.js'),
+    ])
+
+    // Register route handlers
+    createAuthRoutes(app, authRateLimit)
+    createPublicRoutes(app, globalDeadline)
+    createTipsRoutes(app)
+    createAdminRoutes(app)
+
+    await initDatabase()
+    dbReady = true
+    console.log('Database initialized and routes registered successfully.')
+
+    return closeDatabase
+  } catch (error) {
+    dbError = error
+    console.error('Failed to initialize application:', error)
+    return null
+  }
+}
+
+// In production, serve the Vite build output (AFTER API routes)
 if (isProduction) {
   const distPath = path.resolve(__dirname, '..', 'dist')
   app.use(express.static(distPath))
@@ -69,36 +103,19 @@ if (isProduction) {
   })
 }
 
-
-// Database initialization and server lifecycle
-let dbReady = false
-let dbError = null
-
-initDatabase()
-  .then(() => {
-    dbReady = true
-    console.log('Database initialized successfully.')
-  })
-  .catch((error) => {
-    dbError = error
-    console.error('Failed to initialize database:', error)
-  })
-
-// Health endpoint reflects DB state
-app.get('/api/startup-status', (_req, res) => {
-  res.json({ dbReady, dbError: dbError ? String(dbError) : null })
-})
-
-// Start listening immediately (so healthcheck passes and we can diagnose)
+// Start listening immediately, then initialize DB+routes
 const server = app.listen(port, () => {
   console.log(`VM2026 API listening on http://localhost:${port}`)
 })
+
+let closeDatabase = null
+registerRoutes().then((closeFn) => { closeDatabase = closeFn })
 
 async function shutdown(signal) {
   console.log(`Received ${signal}, shutting down gracefully...`)
   server.close(async () => {
     try {
-      await closeDatabase()
+      if (closeDatabase) await closeDatabase()
       console.log('Database closed. Exiting.')
     } catch (err) {
       console.error('Error closing database:', err)
