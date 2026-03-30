@@ -71,29 +71,41 @@ if (isProduction) {
 
 
 // Database initialization and server lifecycle
+let dbReady = false
+let dbError = null
+
 initDatabase()
   .then(() => {
-    const server = app.listen(port, () => {
-      console.log(`VM2026 API listening on http://localhost:${port}`)
-    })
-
-    async function shutdown(signal) {
-      console.log(`Received ${signal}, shutting down gracefully...`)
-      server.close(async () => {
-        try {
-          await closeDatabase()
-          console.log('Database closed. Exiting.')
-        } catch (err) {
-          console.error('Error closing database:', err)
-        }
-        process.exit(0)
-      })
-    }
-
-    process.on('SIGTERM', () => shutdown('SIGTERM'))
-    process.on('SIGINT', () => shutdown('SIGINT'))
+    dbReady = true
+    console.log('Database initialized successfully.')
   })
   .catch((error) => {
+    dbError = error
     console.error('Failed to initialize database:', error)
-    process.exit(1)
   })
+
+// Health endpoint reflects DB state
+app.get('/api/startup-status', (_req, res) => {
+  res.json({ dbReady, dbError: dbError ? String(dbError) : null })
+})
+
+// Start listening immediately (so healthcheck passes and we can diagnose)
+const server = app.listen(port, () => {
+  console.log(`VM2026 API listening on http://localhost:${port}`)
+})
+
+async function shutdown(signal) {
+  console.log(`Received ${signal}, shutting down gracefully...`)
+  server.close(async () => {
+    try {
+      await closeDatabase()
+      console.log('Database closed. Exiting.')
+    } catch (err) {
+      console.error('Error closing database:', err)
+    }
+    process.exit(0)
+  })
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
