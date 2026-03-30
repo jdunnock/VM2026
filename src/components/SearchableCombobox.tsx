@@ -12,6 +12,8 @@ type SearchableComboboxProps = {
 }
 
 const FUZZY_THRESHOLD = 0.3
+const FUZZY_MAX_RESULTS = 20
+const MAX_DISPLAY_ITEMS = 50
 
 export function SearchableCombobox({
     options,
@@ -46,7 +48,7 @@ export function SearchableCombobox({
                 .map((o) => ({ option: o, score: bigramSimilarity(q, o.toLowerCase()) }))
                 .filter((r) => r.score >= FUZZY_THRESHOLD)
                 .sort((a, b) => b.score - a.score)
-                .slice(0, 20)
+                .slice(0, FUZZY_MAX_RESULTS)
                 .map((r) => ({ label: `${r.option}`, value: r.option }))
         }
 
@@ -59,7 +61,7 @@ export function SearchableCombobox({
         return { items: result, hasFuzzy: fuzzyItems.length > 0, hasFreeText: showFreeText }
     }, [query, options, allowFreeText])
 
-    const displayItems = items.slice(0, 50)
+    const displayItems = items.slice(0, MAX_DISPLAY_ITEMS)
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {

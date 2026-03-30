@@ -1,5 +1,6 @@
 import type { AdminQuestion, ExtraAnswers } from '../../types'
 import { SearchableCombobox } from '../../components/SearchableCombobox'
+import { COMBOBOX_OPTION_THRESHOLD } from '../../constants'
 
 type ExtraQuestionsCardProps = {
     publishedQuestions: AdminQuestion[]
@@ -41,7 +42,7 @@ export function ExtraQuestionsCard({
                                 <span className="mini-label">{question.category}</span>
                                 <strong>{question.questionText}</strong>
                                 <span className="status-note">Låstid: {globalDeadlineLabel}</span>
-                                {question.options.length > 10 ? (
+                                {question.options.length > COMBOBOX_OPTION_THRESHOLD ? (
                                     <SearchableCombobox
                                         options={question.options}
                                         value={selectedAnswer}

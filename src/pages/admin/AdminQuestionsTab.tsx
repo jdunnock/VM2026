@@ -16,6 +16,24 @@ type AnswerEntry = {
     participants: string[]
 }
 
+type ReviewPanelState = {
+    questionId: number | null
+    answers: AnswerEntry[]
+    accepted: string[]
+    correctAnswer: string
+    loading: boolean
+    message: string
+}
+
+const initialReviewState: ReviewPanelState = {
+    questionId: null,
+    answers: [],
+    accepted: [],
+    correctAnswer: '',
+    loading: false,
+    message: '',
+}
+
 type AdminQuestionsTabProps = {
     questionMessage: string
     isLoading: boolean
@@ -50,12 +68,7 @@ export function AdminQuestionsTab({
     const [showPlayerPicker, setShowPlayerPicker] = useState(false)
     const [playerSearch, setPlayerSearch] = useState('')
     const [selectedCountry, setSelectedCountry] = useState('')
-    const [reviewQuestionId, setReviewQuestionId] = useState<number | null>(null)
-    const [reviewAnswers, setReviewAnswers] = useState<AnswerEntry[]>([])
-    const [reviewAccepted, setReviewAccepted] = useState<string[]>([])
-    const [reviewCorrectAnswer, setReviewCorrectAnswer] = useState('')
-    const [reviewLoading, setReviewLoading] = useState(false)
-    const [reviewMessage, setReviewMessage] = useState('')
+    const [review, setReview] = useState<ReviewPanelState>(initialReviewState)
 
     const squads = squadsData as SquadData
 
@@ -88,49 +101,54 @@ export function AdminQuestionsTab({
     const openReviewPanel = useCallback(async (questionId: number) => {
         const headers = getAdminHeaders()
         if (!headers) return
-        setReviewQuestionId(questionId)
-        setReviewLoading(true)
-        setReviewMessage('')
+        setReview({ ...initialReviewState, questionId, loading: true })
         try {
             const res = await fetch(`/api/admin/questions/${questionId}/answers`, { headers })
             const data = await res.json()
-            setReviewAnswers(data.answers ?? [])
-            setReviewAccepted(data.acceptedAnswers ?? [])
-            setReviewCorrectAnswer(data.correctAnswer ?? '')
+            setReview((prev) => ({
+                ...prev,
+                answers: data.answers ?? [],
+                accepted: data.acceptedAnswers ?? [],
+                correctAnswer: data.correctAnswer ?? '',
+                loading: false,
+            }))
         } catch {
-            setReviewMessage('Kunde inte hämta svar.')
-        } finally {
-            setReviewLoading(false)
+            setReview((prev) => ({ ...prev, message: 'Kunde inte hämta svar.', loading: false }))
         }
     }, [getAdminHeaders])
 
     const toggleAccepted = (answer: string) => {
-        setReviewAccepted((prev) =>
-            prev.includes(answer) ? prev.filter((a) => a !== answer) : [...prev, answer]
-        )
+        setReview((prev) => ({
+            ...prev,
+            accepted: prev.accepted.includes(answer)
+                ? prev.accepted.filter((a) => a !== answer)
+                : [...prev.accepted, answer],
+        }))
     }
 
     const saveAcceptedAnswers = async () => {
-        if (reviewQuestionId === null) return
+        if (review.questionId === null) return
         const headers = getAdminHeaders()
         if (!headers) return
-        setReviewLoading(true)
+        setReview((prev) => ({ ...prev, loading: true }))
         try {
-            const res = await fetch(`/api/admin/questions/${reviewQuestionId}/accepted-answers`, {
+            const res = await fetch(`/api/admin/questions/${review.questionId}/accepted-answers`, {
                 method: 'PUT',
                 headers,
-                body: JSON.stringify({ acceptedAnswers: reviewAccepted, correctAnswer: reviewCorrectAnswer.trim() }),
+                body: JSON.stringify({ acceptedAnswers: review.accepted, correctAnswer: review.correctAnswer.trim() }),
             })
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Okänt fel' }))
-                setReviewMessage(err.error ?? 'Kunde inte spara.')
+                setReview((prev) => ({ ...prev, message: err.error ?? 'Kunde inte spara.', loading: false }))
                 return
             }
-            setReviewMessage(reviewCorrectAnswer.trim() ? 'Rätt svar och godkända varianter sparade — poäng uppdateras.' : 'Godkända svar sparade.')
+            setReview((prev) => ({
+                ...prev,
+                message: review.correctAnswer.trim() ? 'Rätt svar och godkända varianter sparade — poäng uppdateras.' : 'Godkända svar sparade.',
+                loading: false,
+            }))
         } catch {
-            setReviewMessage('Kunde inte spara godkända svar.')
-        } finally {
-            setReviewLoading(false)
+            setReview((prev) => ({ ...prev, message: 'Kunde inte spara godkända svar.', loading: false }))
         }
     }
 
@@ -341,13 +359,13 @@ export function AdminQuestionsTab({
                 </article>
             </section>
 
-            {reviewQuestionId !== null && (
+            {review.questionId !== null && (
                 <section className="panel">
-                    <h3>Granska svar — Fråga #{reviewQuestionId}</h3>
-                    {reviewMessage && <p className="save-pill">{reviewMessage}</p>}
-                    {reviewLoading ? (
+                    <h3>Granska svar — Fråga #{review.questionId}</h3>
+                    {review.message && <p className="save-pill">{review.message}</p>}
+                    {review.loading ? (
                         <p>Laddar svar...</p>
-                    ) : reviewAnswers.length === 0 ? (
+                    ) : review.answers.length === 0 ? (
                         <p>Inga svar inlämnade ännu.</p>
                     ) : (
                         <div className="table-wrap">
@@ -361,7 +379,7 @@ export function AdminQuestionsTab({
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {reviewAnswers.map((entry) => (
+                                    {review.answers.map((entry) => (
                                         <tr key={entry.answer}>
                                             <td data-label="Svar">{entry.answer}</td>
                                             <td data-label="Antal">{entry.count}</td>
@@ -370,7 +388,7 @@ export function AdminQuestionsTab({
                                                 <label className="checkbox-label">
                                                     <input
                                                         type="checkbox"
-                                                        checked={reviewAccepted.includes(entry.answer)}
+                                                        checked={review.accepted.includes(entry.answer)}
                                                         onChange={() => toggleAccepted(entry.answer)}
                                                     />
                                                 </label>
@@ -386,8 +404,8 @@ export function AdminQuestionsTab({
                         <input
                             className="special-input"
                             type="text"
-                            value={reviewCorrectAnswer}
-                            onChange={(e) => setReviewCorrectAnswer(e.target.value)}
+                            value={review.correctAnswer}
+                            onChange={(e) => setReview((prev) => ({ ...prev, correctAnswer: e.target.value }))}
                             placeholder="Ange det kanoniska rätta svaret…"
                         />
                     </label>
@@ -395,10 +413,10 @@ export function AdminQuestionsTab({
                         När rätt svar anges och sparas räknas poäng för alla deltagare vars svar matchar rätt svar eller en godkänd variant.
                     </p>
                     <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
-                        <button className="primary-button" type="button" disabled={reviewLoading} onClick={saveAcceptedAnswers}>
-                            {reviewCorrectAnswer.trim() ? 'Lås svar och spara' : 'Spara godkända svar'}
+                        <button className="primary-button" type="button" disabled={review.loading} onClick={saveAcceptedAnswers}>
+                            {review.correctAnswer.trim() ? 'Lås svar och spara' : 'Spara godkända svar'}
                         </button>
-                        <button className="ghost-button" type="button" onClick={() => setReviewQuestionId(null)}>
+                        <button className="ghost-button" type="button" onClick={() => setReview(initialReviewState)}>
                             Stäng
                         </button>
                     </div>

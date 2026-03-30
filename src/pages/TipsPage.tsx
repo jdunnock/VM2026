@@ -10,7 +10,7 @@ import type {
 import { tipsSectionTabs } from '../types'
 import { GroupsFixturesCard } from './tips/GroupsFixturesCard'
 import { KnockoutRoundsCard } from './tips/KnockoutRoundsCard'
-import { SearchableCombobox } from '../components/SearchableCombobox'
+import { ExtraQuestionsCard } from './tips/ExtraQuestionsCard'
 
 export function TipsPage({
   fixtureTips,
@@ -132,57 +132,14 @@ export function TipsPage({
       ) : null}
 
       {activeSection === 'Extrafrågor' ? (
-        <>
-          {(['Gruppspelsfrågor', 'Slutspelsfrågor', 'Turneringsfrågor', '33-33-33 frågor'] as const).map((category) => {
-            const categoryQuestions = publishedQuestions.filter((q) => q.category === category)
-            if (categoryQuestions.length === 0) return null
-            return (
-              <section className="panel" key={category}>
-                <div className="section-heading compact">
-                  <p className="eyebrow">Extrafrågor</p>
-                  <h2>{category}</h2>
-                </div>
-                <div className="stacked-cards">
-                  {categoryQuestions.map((question) => {
-                    const isLocked = isGlobalLockActive
-                    const selectedAnswer = extraAnswers[String(question.id)] ?? ''
-                    return (
-                      <article className="mini-card" key={question.id}>
-                        <span className="mini-label">{question.questionText}</span>
-                        <span className="status-note">Låstid: {globalDeadlineLabel}</span>
-                        {question.options.length > 10 ? (
-                          <SearchableCombobox
-                            options={question.options}
-                            value={selectedAnswer}
-                            onChange={(val) => onChangeExtraAnswer(question.id, val)}
-                            placeholder="Sök spelare…"
-                            disabled={isSaving || isLocked}
-                            allowFreeText={question.allowFreeText}
-                          />
-                        ) : (
-                          <select
-                            className="special-input"
-                            value={selectedAnswer}
-                            disabled={isSaving || isLocked}
-                            onChange={(e) => onChangeExtraAnswer(question.id, e.target.value)}
-                          >
-                            <option value="">Välj svar</option>
-                            {question.options.map((option) => (
-                              <option key={`${question.id}-${option}`} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        <span className={isLocked ? 'status-badge locked' : 'status-badge'}>{isLocked ? 'Låst' : 'Öppen'}</span>
-                      </article>
-                    )
-                  })}
-                </div>
-              </section>
-            )
-          })}
-        </>
+        <ExtraQuestionsCard
+          publishedQuestions={publishedQuestions}
+          extraAnswers={extraAnswers}
+          onChangeExtraAnswer={onChangeExtraAnswer}
+          isSaving={isSaving}
+          isGlobalLockActive={isGlobalLockActive}
+          globalDeadlineLabel={globalDeadlineLabel}
+        />
       ) : null}
 
       <section className="action-bar">

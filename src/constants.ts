@@ -88,6 +88,8 @@ export function getAvailableGroupTeams(placement: GroupPlacement, index: number)
 }
 
 
+export const COMBOBOX_OPTION_THRESHOLD = 10
+
 export const PARTICIPANT_STORAGE_KEY = 'vm2026.participant'
 export const ADMIN_SESSION_STORAGE_KEY = 'vm2026.adminSession'
 export const GLOBAL_DEADLINE_FALLBACK = '2026-06-09T22:00:00'
