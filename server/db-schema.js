@@ -43,8 +43,8 @@ export async function initDatabase() {
   `)
 
   // Migrations for existing databases
-  try { await run('ALTER TABLE admin_questions ADD COLUMN allow_free_text INTEGER NOT NULL DEFAULT 0') } catch (_) {}
-  try { await run("ALTER TABLE admin_questions ADD COLUMN accepted_answers_json TEXT NOT NULL DEFAULT '[]'") } catch (_) {}
+  try { await run('ALTER TABLE admin_questions ADD COLUMN allow_free_text INTEGER NOT NULL DEFAULT 0'); console.log('Migration: allow_free_text column added') } catch (_) {}
+  try { await run("ALTER TABLE admin_questions ADD COLUMN accepted_answers_json TEXT NOT NULL DEFAULT '[]'"); console.log('Migration: accepted_answers_json column added') } catch (_) {}
 
   await run(`
     CREATE TABLE IF NOT EXISTS match_results (

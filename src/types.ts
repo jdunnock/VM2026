@@ -173,6 +173,7 @@ export type PersistedTipsState = {
 export type CorrectnessData = {
     groupStandings: Record<string, { settled: boolean; actualPicks: string[] | null }>
     knockoutRounds: Record<string, { settled: boolean; actualTeams: string[] }>
+    /** Each extra answer includes correctAnswer, settled flag, and accepted variant answers (populated for allowFreeText questions). */
     extraAnswers: Record<string, { correctAnswer: string | null; settled: boolean; acceptedAnswers?: string[] }>
 }
 
