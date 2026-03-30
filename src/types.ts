@@ -61,6 +61,8 @@ export type AdminQuestion = {
     points: number
     lockTime: string
     status: AdminQuestionStatus
+    allowFreeText: boolean
+    acceptedAnswers: string[]
     createdAt?: string
     updatedAt?: string
 }
@@ -171,7 +173,7 @@ export type PersistedTipsState = {
 export type CorrectnessData = {
     groupStandings: Record<string, { settled: boolean; actualPicks: string[] | null }>
     knockoutRounds: Record<string, { settled: boolean; actualTeams: string[] }>
-    extraAnswers: Record<string, { correctAnswer: string | null; settled: boolean }>
+    extraAnswers: Record<string, { correctAnswer: string | null; settled: boolean; acceptedAnswers?: string[] }>
 }
 
 export type AllTipsParticipant = {
@@ -197,6 +199,7 @@ export type AdminQuestionDraft = {
     points: string
     lockTime: string
     status: AdminQuestionStatus
+    allowFreeText: boolean
 }
 
 export type AdminWorkspaceTab = 'questions' | 'results'

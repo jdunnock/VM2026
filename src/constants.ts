@@ -207,6 +207,7 @@ export const defaultAdminQuestionDraft: AdminQuestionDraft = {
     points: '2',
     lockTime: '',
     status: 'draft',
+    allowFreeText: false,
 }
 
 export const defaultAdminResultDraft: AdminResultDraft = {

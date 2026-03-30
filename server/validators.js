@@ -157,7 +157,9 @@ function normalizeAdminQuestionPayload(payload) {
         return null
     }
 
-    if (correctAnswer && !options.includes(correctAnswer)) {
+    const allowFreeText = payload.allowFreeText === true
+
+    if (correctAnswer && !allowFreeText && !options.includes(correctAnswer)) {
         return null
     }
 
@@ -173,6 +175,13 @@ function normalizeAdminQuestionPayload(payload) {
         return null
     }
 
+    const acceptedAnswers = Array.isArray(payload.acceptedAnswers)
+        ? payload.acceptedAnswers
+            .filter((item) => typeof item === 'string')
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0)
+        : []
+
     return {
         questionText,
         category,
@@ -181,6 +190,8 @@ function normalizeAdminQuestionPayload(payload) {
         points,
         lockTime,
         status,
+        allowFreeText,
+        acceptedAnswers,
     }
 }
 

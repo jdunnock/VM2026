@@ -183,7 +183,7 @@ Each admin-managed question must support:
 
 - Included in this step:
 	- Backend CRUD for admin-managed questions.
-	- `admin_questions` persistence model with fields: `id`, `question_text`, `category`, `options_json`, `correct_answer`, `points`, `lock_time`, `status`, `created_at`, `updated_at`.
+	- `admin_questions` persistence model with fields: `id`, `question_text`, `category`, `options_json`, `correct_answer`, `points`, `lock_time`, `status`, `allow_free_text`, `accepted_answers_json`, `created_at`, `updated_at`.
 	- Public endpoint for published questions to support `Extrafrågor` rendering in participant UI.
 	- Tips payload extension with `extraAnswers` map (`questionId` -> selected answer) stored together with participant tips.
 	- Backward-compatible tips normalization so older payloads without `extraAnswers` remain valid.
@@ -1702,4 +1702,17 @@ Checklist run date: 2026-03-25
 - Manual coverage: 3 PASS, 0 BLOCKED.
 - Phase 2 backend/API MVP flow is validated.
 - Remaining closure actions: none for Phase 2 checklist closure in this pass.
+
+### 13.4 Fuzzy search, free text answers, and admin answer reconciliation
+
+- **Purpose**: Allow admin to mark certain questions as `allowFreeText`, enabling participants to type a custom answer when the pre-defined options list doesn't match (e.g., player name with a different spelling).
+- **Data model changes**:
+	- `admin_questions.allow_free_text` (INTEGER DEFAULT 0): when 1, the question supports fuzzy search and free text input.
+	- `admin_questions.accepted_answers_json` (TEXT DEFAULT '[]'): JSON array of answer strings that are considered correct in addition to `correct_answer`.
+- **Fuzzy search**: Bigram similarity algorithm (no npm dependency) with threshold 0.3; shown as fallback when no substring match is found. Displayed with "Menade du:" hint.
+- **Free text input**: When `allowFreeText` is true and no match is found, a "Använd '{query}' som svar" option appears at the bottom of the dropdown.
+- **Admin answer reconciliation**: Admin UI shows a "Granska svar" button per free-text question. Opens a panel listing all unique participant answers with checkboxes to mark them as accepted. Accepted answers are saved via `PUT /api/admin/questions/:id/accepted-answers`.
+- **Scoring**: `scoreExtraAnswer()` checks the `acceptedAnswers` array (case-insensitive) in addition to exact `correctAnswer` match.
+- **API endpoints added**: `GET /api/admin/questions/:id/answers`, `PUT /api/admin/questions/:id/accepted-answers`.
+- **Validator**: `normalizeAdminQuestionPayload` accepts `allowFreeText` boolean; when true, `correctAnswer` is not required to be in the options list.
 

@@ -206,6 +206,7 @@ export function AdminPage({
       points: String(question.points),
       lockTime: question.lockTime.slice(0, 16),
       status: question.status,
+      allowFreeText: question.allowFreeText,
     })
     setQuestionMessage('')
   }
@@ -234,6 +235,7 @@ export function AdminPage({
       points,
       lockTime: formState.lockTime,
       status: formState.status,
+      allowFreeText: formState.allowFreeText,
     }
   }
 
@@ -466,6 +468,7 @@ export function AdminPage({
           adminQuestionCategories={adminQuestionCategories}
           saveQuestion={saveQuestion}
           resetForm={resetForm}
+          getAdminHeaders={getAdminHeaders}
         />
       ) : (
         <AdminResultsTab

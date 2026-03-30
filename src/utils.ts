@@ -329,3 +329,24 @@ export function formatDateTimeLabel(value: string | null | undefined) {
 
   return parsed.toLocaleString('sv-SE')
 }
+
+function getBigrams(str: string): Set<string> {
+  const s = str.toLowerCase()
+  const bigrams = new Set<string>()
+  for (let i = 0; i < s.length - 1; i++) {
+    bigrams.add(s.slice(i, i + 2))
+  }
+  return bigrams
+}
+
+export function bigramSimilarity(a: string, b: string): number {
+  if (a === b) return 1
+  if (a.length < 2 || b.length < 2) return 0
+  const bigramsA = getBigrams(a)
+  const bigramsB = getBigrams(b)
+  let intersection = 0
+  for (const bg of bigramsA) {
+    if (bigramsB.has(bg)) intersection++
+  }
+  return (2 * intersection) / (bigramsA.size + bigramsB.size)
+}

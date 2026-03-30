@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
     AdminQuestion,
@@ -9,6 +9,12 @@ import type {
 import squadsData from '../../data/vm2026-squads.json'
 
 type SquadData = Record<string, string[]>
+
+type AnswerEntry = {
+    answer: string
+    count: number
+    participants: string[]
+}
 
 type AdminQuestionsTabProps = {
     questionMessage: string
@@ -23,6 +29,7 @@ type AdminQuestionsTabProps = {
     adminQuestionCategories: AdminQuestionCategory[]
     saveQuestion: () => void
     resetForm: () => void
+    getAdminHeaders: () => Record<string, string> | null
 }
 
 export function AdminQuestionsTab({
@@ -38,10 +45,17 @@ export function AdminQuestionsTab({
     adminQuestionCategories,
     saveQuestion,
     resetForm,
+    getAdminHeaders,
 }: AdminQuestionsTabProps) {
     const [showPlayerPicker, setShowPlayerPicker] = useState(false)
     const [playerSearch, setPlayerSearch] = useState('')
     const [selectedCountry, setSelectedCountry] = useState('')
+    const [reviewQuestionId, setReviewQuestionId] = useState<number | null>(null)
+    const [reviewAnswers, setReviewAnswers] = useState<AnswerEntry[]>([])
+    const [reviewAccepted, setReviewAccepted] = useState<string[]>([])
+    const [reviewCorrectAnswer, setReviewCorrectAnswer] = useState('')
+    const [reviewLoading, setReviewLoading] = useState(false)
+    const [reviewMessage, setReviewMessage] = useState('')
 
     const squads = squadsData as SquadData
 
@@ -69,6 +83,55 @@ export function AdminQuestionsTab({
             }
         }
         return results.slice(0, 100)
+    }
+
+    const openReviewPanel = useCallback(async (questionId: number) => {
+        const headers = getAdminHeaders()
+        if (!headers) return
+        setReviewQuestionId(questionId)
+        setReviewLoading(true)
+        setReviewMessage('')
+        try {
+            const res = await fetch(`/api/admin/questions/${questionId}/answers`, { headers })
+            const data = await res.json()
+            setReviewAnswers(data.answers ?? [])
+            setReviewAccepted(data.acceptedAnswers ?? [])
+            setReviewCorrectAnswer(data.correctAnswer ?? '')
+        } catch {
+            setReviewMessage('Kunde inte hämta svar.')
+        } finally {
+            setReviewLoading(false)
+        }
+    }, [getAdminHeaders])
+
+    const toggleAccepted = (answer: string) => {
+        setReviewAccepted((prev) =>
+            prev.includes(answer) ? prev.filter((a) => a !== answer) : [...prev, answer]
+        )
+    }
+
+    const saveAcceptedAnswers = async () => {
+        if (reviewQuestionId === null) return
+        const headers = getAdminHeaders()
+        if (!headers) return
+        setReviewLoading(true)
+        try {
+            const res = await fetch(`/api/admin/questions/${reviewQuestionId}/accepted-answers`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ acceptedAnswers: reviewAccepted, correctAnswer: reviewCorrectAnswer.trim() }),
+            })
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Okänt fel' }))
+                setReviewMessage(err.error ?? 'Kunde inte spara.')
+                return
+            }
+            setReviewMessage(reviewCorrectAnswer.trim() ? 'Rätt svar och godkända varianter sparade — poäng uppdateras.' : 'Godkända svar sparade.')
+        } catch {
+            setReviewMessage('Kunde inte spara godkända svar.')
+        } finally {
+            setReviewLoading(false)
+        }
     }
 
     return (
@@ -113,6 +176,11 @@ export function AdminQuestionsTab({
                                                 <button className="ghost-button" type="button" disabled={isSaving} onClick={() => startEditing(question)}>
                                                     Redigera
                                                 </button>
+                                                {question.allowFreeText && (
+                                                    <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
+                                                        Granska svar
+                                                    </button>
+                                                )}
                                                 <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
                                                     Ta bort
                                                 </button>
@@ -209,6 +277,14 @@ export function AdminQuestionsTab({
                                 </div>
                             </div>
                         )}
+                        <label className="checkbox-label">
+                            <input
+                                type="checkbox"
+                                checked={formState.allowFreeText}
+                                onChange={(e) => setFormState((current) => ({ ...current, allowFreeText: e.target.checked }))}
+                            />
+                            Tillåt fritt textsvar (fuzzy-sökning + eget svar)
+                        </label>
                         <label>
                             Rätt svar
                             <input
@@ -264,6 +340,70 @@ export function AdminQuestionsTab({
                     </div>
                 </article>
             </section>
+
+            {reviewQuestionId !== null && (
+                <section className="panel">
+                    <h3>Granska svar — Fråga #{reviewQuestionId}</h3>
+                    {reviewMessage && <p className="save-pill">{reviewMessage}</p>}
+                    {reviewLoading ? (
+                        <p>Laddar svar...</p>
+                    ) : reviewAnswers.length === 0 ? (
+                        <p>Inga svar inlämnade ännu.</p>
+                    ) : (
+                        <div className="table-wrap">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Svar</th>
+                                        <th>Antal</th>
+                                        <th>Deltagare</th>
+                                        <th>Godkänd</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {reviewAnswers.map((entry) => (
+                                        <tr key={entry.answer}>
+                                            <td data-label="Svar">{entry.answer}</td>
+                                            <td data-label="Antal">{entry.count}</td>
+                                            <td data-label="Deltagare">{entry.participants.join(', ')}</td>
+                                            <td data-label="Godkänd">
+                                                <label className="checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={reviewAccepted.includes(entry.answer)}
+                                                        onChange={() => toggleAccepted(entry.answer)}
+                                                    />
+                                                </label>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    <label style={{ marginTop: '0.5rem' }}>
+                        Rätt svar (kanoniskt)
+                        <input
+                            className="special-input"
+                            type="text"
+                            value={reviewCorrectAnswer}
+                            onChange={(e) => setReviewCorrectAnswer(e.target.value)}
+                            placeholder="Ange det kanoniska rätta svaret…"
+                        />
+                    </label>
+                    <p className="status-note" style={{ margin: '0.25rem 0' }}>
+                        När rätt svar anges och sparas räknas poäng för alla deltagare vars svar matchar rätt svar eller en godkänd variant.
+                    </p>
+                    <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
+                        <button className="primary-button" type="button" disabled={reviewLoading} onClick={saveAcceptedAnswers}>
+                            {reviewCorrectAnswer.trim() ? 'Lås svar och spara' : 'Spara godkända svar'}
+                        </button>
+                        <button className="ghost-button" type="button" onClick={() => setReviewQuestionId(null)}>
+                            Stäng
+                        </button>
+                    </div>
+                </section>
+            )}
         </>
     )
 }

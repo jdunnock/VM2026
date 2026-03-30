@@ -13,6 +13,8 @@ export async function listAdminQuestions() {
         points,
         lock_time,
         status,
+        allow_free_text,
+        accepted_answers_json,
         created_at,
         updated_at
       FROM admin_questions
@@ -29,6 +31,8 @@ export async function listAdminQuestions() {
         points: row.points,
         lockTime: row.lock_time,
         status: row.status,
+        allowFreeText: row.allow_free_text === 1,
+        acceptedAnswers: parseJsonOrArray(row.accepted_answers_json),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     }))
@@ -44,7 +48,8 @@ export async function listPublishedAdminQuestions() {
         options_json,
         points,
         lock_time,
-        status
+        status,
+        allow_free_text
       FROM admin_questions
       WHERE status = 'published'
       ORDER BY lock_time ASC, id ASC
@@ -59,6 +64,7 @@ export async function listPublishedAdminQuestions() {
         points: row.points,
         lockTime: row.lock_time,
         status: row.status,
+        allowFreeText: row.allow_free_text === 1,
     }))
 }
 
@@ -73,10 +79,12 @@ export async function createAdminQuestion(question) {
         points,
         lock_time,
         status,
+        allow_free_text,
+        accepted_answers_json,
         created_at,
         updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `,
         [
             question.questionText,
@@ -86,6 +94,8 @@ export async function createAdminQuestion(question) {
             question.points,
             question.lockTime,
             question.status,
+            question.allowFreeText ? 1 : 0,
+            JSON.stringify(question.acceptedAnswers ?? []),
         ],
     )
 
@@ -104,6 +114,8 @@ export async function getAdminQuestionById(id) {
         points,
         lock_time,
         status,
+        allow_free_text,
+        accepted_answers_json,
         created_at,
         updated_at
       FROM admin_questions
@@ -125,6 +137,8 @@ export async function getAdminQuestionById(id) {
         points: row.points,
         lockTime: row.lock_time,
         status: row.status,
+        allowFreeText: row.allow_free_text === 1,
+        acceptedAnswers: parseJsonOrArray(row.accepted_answers_json),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     }
@@ -142,6 +156,8 @@ export async function updateAdminQuestion(id, question) {
         points = ?,
         lock_time = ?,
         status = ?,
+        allow_free_text = ?,
+        accepted_answers_json = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `,
@@ -153,6 +169,8 @@ export async function updateAdminQuestion(id, question) {
             question.points,
             question.lockTime,
             question.status,
+            question.allowFreeText ? 1 : 0,
+            JSON.stringify(question.acceptedAnswers ?? []),
             id,
         ],
     )
@@ -162,4 +180,33 @@ export async function updateAdminQuestion(id, question) {
 
 export async function deleteAdminQuestion(id) {
     await run('DELETE FROM admin_questions WHERE id = ?', [id])
+}
+
+export async function getQuestionAnswers(questionId) {
+    const rows = await all(
+        `
+      SELECT
+        pea.selected_answer,
+        p.name AS participant_name
+      FROM participant_extra_answers pea
+      JOIN participants p ON p.id = pea.participant_id
+      WHERE pea.question_id = ?
+      ORDER BY pea.selected_answer ASC
+    `,
+        [questionId],
+    )
+
+    const answerMap = new Map()
+    for (const row of rows) {
+        if (!answerMap.has(row.selected_answer)) {
+            answerMap.set(row.selected_answer, [])
+        }
+        answerMap.get(row.selected_answer).push(row.participant_name)
+    }
+
+    return Array.from(answerMap.entries()).map(([answer, participants]) => ({
+        answer,
+        count: participants.length,
+        participants,
+    }))
 }

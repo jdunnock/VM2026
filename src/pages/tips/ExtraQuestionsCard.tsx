@@ -48,6 +48,8 @@ export function ExtraQuestionsCard({
                                         onChange={(val) => onChangeExtraAnswer(question.id, val)}
                                         placeholder="Sök spelare…"
                                         disabled={isSaving || isLocked}
+                                        fuzzyMatch={question.allowFreeText}
+                                        allowFreeText={question.allowFreeText}
                                     />
                                 ) : (
                                     <select

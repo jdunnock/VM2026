@@ -359,7 +359,10 @@ export function AllTipsPage({
 
                                                 let cellClass = isOwn ? 'alltips-col-participant alltips-own-col' : 'alltips-col-participant'
                                                 if (isSettled && answer && correctAnswer) {
-                                                    const hit = answer.toLowerCase() === correctAnswer.toLowerCase()
+                                                    const acceptedAnswers = questionCorrectness?.acceptedAnswers ?? []
+                                                    const answerLower = answer.toLowerCase()
+                                                    const hit = answerLower === correctAnswer.toLowerCase() ||
+                                                        acceptedAnswers.some((a: string) => a.toLowerCase() === answerLower)
                                                     cellClass += hit ? ' alltips-hit-exact' : ' alltips-miss'
                                                 }
 

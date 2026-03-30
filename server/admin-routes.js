@@ -7,6 +7,7 @@ import {
     deleteAdminQuestion,
     getAdminQuestionById,
     getMatchResultById,
+    getQuestionAnswers,
     listAdminQuestions,
     listMatchResults,
     updateAdminQuestion,
@@ -125,6 +126,60 @@ function createAdminRoutes(app) {
         } catch (error) {
             console.error('Admin question delete error:', error)
             res.status(500).json({ error: 'Kunde inte ta bort adminfråga.' })
+        }
+    })
+
+    app.get('/api/admin/questions/:id/answers', async (req, res) => {
+        const questionId = parseEntityId(req.params.id)
+        if (!questionId) {
+            res.status(400).json({ error: 'Ogiltigt fråga-id.' })
+            return
+        }
+
+        try {
+            const question = await getAdminQuestionById(questionId)
+            if (!question) {
+                res.status(404).json({ error: 'Fråga hittades inte.' })
+                return
+            }
+
+            const answers = await getQuestionAnswers(questionId)
+            res.json({ answers, acceptedAnswers: question.acceptedAnswers, correctAnswer: question.correctAnswer })
+        } catch (error) {
+            console.error('Admin question answers error:', error)
+            res.status(500).json({ error: 'Kunde inte hämta svar.' })
+        }
+    })
+
+    app.put('/api/admin/questions/:id/accepted-answers', async (req, res) => {
+        const questionId = parseEntityId(req.params.id)
+        if (!questionId) {
+            res.status(400).json({ error: 'Ogiltigt fråga-id.' })
+            return
+        }
+
+        const acceptedAnswers = Array.isArray(req.body.acceptedAnswers)
+            ? req.body.acceptedAnswers.filter((a) => typeof a === 'string' && a.trim().length > 0)
+            : []
+
+        const correctAnswer = typeof req.body.correctAnswer === 'string' ? req.body.correctAnswer.trim() : undefined
+
+        try {
+            const question = await getAdminQuestionById(questionId)
+            if (!question) {
+                res.status(404).json({ error: 'Fråga hittades inte.' })
+                return
+            }
+
+            const updated = await updateAdminQuestion(questionId, {
+                ...question,
+                acceptedAnswers,
+                ...(correctAnswer !== undefined ? { correctAnswer } : {}),
+            })
+            res.json(updated)
+        } catch (error) {
+            console.error('Admin accepted answers update error:', error)
+            res.status(500).json({ error: 'Kunde inte uppdatera godkända svar.' })
         }
     })
 }

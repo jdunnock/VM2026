@@ -63,6 +63,7 @@ function createPublicRoutes(app, globalDeadline) {
                 extraAnswers[id] = {
                     correctAnswer: question.correctAnswer || null,
                     settled: Boolean(question.correctAnswer),
+                    acceptedAnswers: question.acceptedAnswers || [],
                 }
             }
 

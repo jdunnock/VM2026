@@ -176,7 +176,8 @@ export async function buildPublishedQuestionLookups() {
         category,
         correct_answer,
         points,
-        status
+        status,
+        accepted_answers_json
       FROM admin_questions
       WHERE status = 'published'
       ORDER BY id ASC
@@ -185,6 +186,12 @@ export async function buildPublishedQuestionLookups() {
 
     const byId = new Map()
     for (const row of rows) {
+        let acceptedAnswers = []
+        try {
+            acceptedAnswers = JSON.parse(row.accepted_answers_json || '[]')
+        } catch {
+            acceptedAnswers = []
+        }
         byId.set(row.id, {
             id: row.id,
             questionText: row.question_text,
@@ -192,6 +199,7 @@ export async function buildPublishedQuestionLookups() {
             correctAnswer: row.correct_answer,
             points: row.points,
             status: row.status,
+            acceptedAnswers,
         })
     }
 

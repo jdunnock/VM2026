@@ -364,6 +364,19 @@ function scoreExtraAnswer(selectedAnswer, question) {
         }
     }
 
+    const accepted = Array.isArray(question.acceptedAnswers) ? question.acceptedAnswers : []
+    if (accepted.length > 0) {
+        const answerLower = selectedAnswer.toLowerCase()
+        const isAccepted = accepted.some((a) => a.toLowerCase() === answerLower)
+        if (isAccepted) {
+            return {
+                points: Number.isInteger(question.points) ? question.points : 0,
+                reason: 'correct-answer',
+                settled: true,
+            }
+        }
+    }
+
     return {
         points: 0,
         reason: 'wrong-answer',

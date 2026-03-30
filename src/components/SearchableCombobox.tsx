@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { bigramSimilarity } from '../utils'
 
 type SearchableComboboxProps = {
     options: string[]
@@ -7,7 +8,11 @@ type SearchableComboboxProps = {
     placeholder?: string
     disabled?: boolean
     className?: string
+    fuzzyMatch?: boolean
+    allowFreeText?: boolean
 }
+
+const FUZZY_THRESHOLD = 0.3
 
 export function SearchableCombobox({
     options,
@@ -16,6 +21,8 @@ export function SearchableCombobox({
     placeholder = 'Sök…',
     disabled = false,
     className = '',
+    fuzzyMatch = false,
+    allowFreeText = false,
 }: SearchableComboboxProps) {
     const [query, setQuery] = useState('')
     const [isOpen, setIsOpen] = useState(false)
@@ -24,9 +31,37 @@ export function SearchableCombobox({
     const inputRef = useRef<HTMLInputElement>(null)
     const listRef = useRef<HTMLUListElement>(null)
 
-    const filtered = query
-        ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
-        : options
+    const { items, hasFuzzy, hasFreeText } = useMemo(() => {
+        if (!query) {
+            return { items: options.map((o) => ({ label: o, value: o })), hasFuzzy: false, hasFreeText: false }
+        }
+        const q = query.toLowerCase()
+        const exact = options.filter((o) => o.toLowerCase().includes(q))
+
+        if (exact.length > 0) {
+            return { items: exact.map((o) => ({ label: o, value: o })), hasFuzzy: false, hasFreeText: false }
+        }
+
+        let fuzzyItems: Array<{ label: string; value: string }> = []
+        if (fuzzyMatch) {
+            fuzzyItems = options
+                .map((o) => ({ option: o, score: bigramSimilarity(q, o.toLowerCase()) }))
+                .filter((r) => r.score >= FUZZY_THRESHOLD)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20)
+                .map((r) => ({ label: `${r.option}`, value: r.option }))
+        }
+
+        const result = [...fuzzyItems]
+        const showFreeText = allowFreeText && query.trim().length > 0
+        if (showFreeText) {
+            result.push({ label: `Använd "${query.trim()}" som svar`, value: query.trim() })
+        }
+
+        return { items: result, hasFuzzy: fuzzyItems.length > 0, hasFreeText: showFreeText }
+    }, [query, options, fuzzyMatch, allowFreeText])
+
+    const displayItems = items.slice(0, 50)
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -63,14 +98,14 @@ export function SearchableCombobox({
 
         if (e.key === 'ArrowDown') {
             e.preventDefault()
-            setHighlightIndex((i) => Math.min(i + 1, filtered.length - 1))
+            setHighlightIndex((i) => Math.min(i + 1, displayItems.length - 1))
         } else if (e.key === 'ArrowUp') {
             e.preventDefault()
             setHighlightIndex((i) => Math.max(i - 1, 0))
         } else if (e.key === 'Enter') {
             e.preventDefault()
-            if (highlightIndex >= 0 && highlightIndex < filtered.length) {
-                handleSelect(filtered[highlightIndex])
+            if (highlightIndex >= 0 && highlightIndex < displayItems.length) {
+                handleSelect(displayItems[highlightIndex].value)
             }
         } else if (e.key === 'Escape') {
             setIsOpen(false)
@@ -128,29 +163,31 @@ export function SearchableCombobox({
                     </button>
                 )}
             </div>
-            {isOpen && filtered.length > 0 && (
+            {isOpen && displayItems.length > 0 && (
                 <ul className="searchable-combobox-list" ref={listRef} role="listbox">
-                    {filtered.slice(0, 50).map((option, i) => (
+                    {hasFuzzy && <li className="fuzzy-hint">Menade du:</li>}
+                    {displayItems.map((item, i) => (
                         <li
-                            key={option}
+                            key={`${item.value}-${i}`}
                             role="option"
-                            aria-selected={option === value}
+                            aria-selected={item.value === value}
                             className={
                                 (i === highlightIndex ? 'highlighted ' : '') +
-                                (option === value ? 'selected' : '')
+                                (item.value === value ? 'selected ' : '') +
+                                (hasFreeText && i === displayItems.length - 1 ? 'free-text-option' : '')
                             }
                             onMouseDown={(e) => {
                                 e.preventDefault()
-                                handleSelect(option)
+                                handleSelect(item.value)
                             }}
                             onMouseEnter={() => setHighlightIndex(i)}
                         >
-                            {option}
+                            {item.label}
                         </li>
                     ))}
                 </ul>
             )}
-            {isOpen && filtered.length === 0 && query && (
+            {isOpen && displayItems.length === 0 && query && (
                 <ul className="searchable-combobox-list" role="listbox">
                     <li className="no-results">Inga matchningar</li>
                 </ul>
