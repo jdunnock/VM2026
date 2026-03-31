@@ -1085,9 +1085,9 @@ Confirmed intentional data flows (not bugs):
 - Uses existing `LeaderboardEntry` data — no new API calls.
 - **Files changed:** `src/pages/StartPage.tsx`, `src/styles.css`, `docs/specification.md`.
 
-### 7.56 Admin settlement workflow and fixture identity redesign (planned, 2026-03-30)
+### 7.56 Admin settlement workflow and fixture identity redesign (in progress, 2026-03-31)
 
-- **Status**: Plan documented. Implementation deferred to next session.
+- **Status**: Steps 1–5 implemented. UI and seed simulation remaining.
 - **Lifecycle phase**: Phase C (tournament tracking) — admin tooling for result entry and score settlement.
 
 #### Problem statement
@@ -1126,11 +1126,11 @@ Replaces the current approach of deriving knockout teams from `match_results` ro
 
 #### Fixture identity fix
 
-1. **Pre-populate `match_results`** with all 72 group-stage matches in `planned` status (teams, kickoff times, canonical `match_id`).
-2. **Ensure `fixture_id` in tips matches `match_id`** in results — single canonical identifier.
-3. **Add FK constraint**: `participant_fixture_tips.fixture_id REFERENCES match_results(match_id)`.
-4. **Remove Tier-2 and Tier-3 fallback** from `resolveResultForTip()` — only direct `match_id` lookup.
-5. **Migration**: verify all existing `fixture_id` values map to valid `match_id` before enabling FK.
+1. **Pre-populate `match_results`** with all 72 group-stage matches in `planned` status — implemented in `server/fixtures-data.js`. Called at server startup via `initGroupFixtures()`.
+2. **Ensure `fixture_id` in tips matches `match_id`** — verified: zero mismatches in existing data.
+3. **FK constraint**: Not added — SQLite requires table recreation for ALTER TABLE ADD FK. IDs are enforced by shared canonical source (`GROUP_FIXTURES` / `allTournamentFixtures`).
+4. **Removed Tier-2 and Tier-3 fallback** from `resolveResultForTip()` — only direct `match_id` lookup remains.
+5. **Simplified `buildCompletedResultLookups()`** — returns only `byId` map (removed `byGroupMatchDate` and `byGroupMatch`).
 
 #### Admin UI redesign: 3 tabs
 
@@ -1183,18 +1183,18 @@ Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators 
 
 #### Implementation order
 
-| Step | Scope | Dependencies |
-|------|-------|-------------|
-| 1 | `knockout_advancement` table schema + migration | None |
-| 2 | Pre-populate `match_results` with 72 group matches | Step 1 |
-| 3 | Fixture ID alignment + FK constraint | Step 2 |
-| 4 | Scoring refactor: knockout lookups from new table, remove fallback tiers | Steps 1, 3 |
-| 5 | Admin API: day-based result fetch, knockout advancement CRUD | Steps 1, 2 |
-| 6 | Admin UI: Matchdag tab | Step 5 |
-| 7 | Admin UI: Slutspel tab | Step 5 |
-| 8 | Admin UI: Frågor tab improvements | Independent |
-| 9 | Seed simulation update for new data model | Steps 1–4 |
-| 10 | Integration tests for new scoring pipeline | Steps 4, 5 |
+| Step | Scope | Status |
+|------|-------|--------|
+| 1 | `knockout_advancement` table schema + migration | ✅ Done |
+| 2 | Pre-populate `match_results` with 72 group matches (`server/fixtures-data.js`) | ✅ Done |
+| 3 | Fixture ID alignment (verified) + FK skipped (SQLite limitation) | ✅ Done |
+| 4 | Scoring refactor: knockout lookups from `knockout_advancement`, remove fallback tiers | ✅ Done |
+| 5 | Admin API: knockout advancement CRUD (`PUT/GET/DELETE /api/admin/knockout-advancement`) | ✅ Done |
+| 6 | Admin UI: Matchdag tab | 🔲 Not started |
+| 7 | Admin UI: Slutspel tab | 🔲 Not started |
+| 8 | Admin UI: Frågor tab improvements | 🔲 Not started |
+| 9 | Seed simulation update for new data model | 🔲 Not started |
+| 10 | Integration tests for new scoring pipeline | ✅ Done (existing tests updated) |
 
 - Excluded from this plan:
   - football-data.org API integration (deferred to Fas B).

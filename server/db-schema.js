@@ -126,6 +126,21 @@ export async function initDatabase() {
     )
   `)
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS knockout_advancement (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      round TEXT NOT NULL CHECK (round IN (
+        'Sextondelsfinal', 'Åttondelsfinal', 'Kvartsfinal', 'Semifinal', 'Final'
+      )),
+      team_name TEXT NOT NULL,
+      confirmed_at TEXT,
+      source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'api')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(round, team_name)
+    )
+  `)
+
+  await run(`CREATE INDEX IF NOT EXISTS idx_knockout_advancement_round ON knockout_advancement (round)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_fixture_tips_participant ON participant_fixture_tips (participant_id, updated_at)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_group_placements_participant_group ON participant_group_placements (participant_id, group_code)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_knockout_predictions_participant_round ON participant_knockout_predictions (participant_id, round_title)`)

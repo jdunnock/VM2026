@@ -95,6 +95,7 @@ async function start() {
     ])
 
     const { closeDatabaseConnection, openDatabaseConnection } = await import('./db-core.js')
+    const { initGroupFixtures } = await import('./fixtures-data.js')
     closeDb = closeDatabaseConnection
     openDb = openDatabaseConnection
     reinitDb = initDatabase
@@ -106,6 +107,7 @@ async function start() {
     createAdminRoutes(app)
 
     await initDatabase()
+    await initGroupFixtures()
     dbReady = true
     closeDatabase = closeFn
     console.log('Database initialized and routes registered successfully.')

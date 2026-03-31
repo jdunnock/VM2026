@@ -12,6 +12,10 @@ import {
     listMatchResults,
     updateAdminQuestion,
     upsertMatchResult,
+    listKnockoutAdvancements,
+    listKnockoutAdvancementsByRound,
+    upsertKnockoutAdvancement,
+    deleteKnockoutAdvancement,
 } from './db.js'
 import {
     parseEntityId,
@@ -180,6 +184,58 @@ function createAdminRoutes(app) {
         } catch (error) {
             console.error('Admin accepted answers update error:', error)
             res.status(500).json({ error: 'Kunde inte uppdatera godkända svar.' })
+        }
+    })
+
+    // ─── Knockout advancement ────────────────────────────────────────
+
+    app.get('/api/admin/knockout-advancement', async (req, res) => {
+        try {
+            const round = typeof req.query.round === 'string' ? req.query.round : null
+            const advancements = round
+                ? await listKnockoutAdvancementsByRound(round)
+                : await listKnockoutAdvancements()
+            res.json({ advancements })
+        } catch (error) {
+            console.error('Admin knockout advancement read error:', error)
+            res.status(500).json({ error: 'Kunde inte hämta slutspelsteam.' })
+        }
+    })
+
+    app.put('/api/admin/knockout-advancement', async (req, res) => {
+        const { round, teamName, confirmedAt, source } = req.body ?? {}
+        if (typeof round !== 'string' || typeof teamName !== 'string' || !teamName.trim()) {
+            res.status(400).json({ error: 'Ogiltig rund eller lagnamn.' })
+            return
+        }
+
+        try {
+            const result = await upsertKnockoutAdvancement({
+                round,
+                teamName: teamName.trim(),
+                confirmedAt: typeof confirmedAt === 'string' ? confirmedAt : undefined,
+                source: typeof source === 'string' ? source : undefined,
+            })
+            res.json(result)
+        } catch (error) {
+            console.error('Admin knockout advancement upsert error:', error)
+            res.status(500).json({ error: 'Kunde inte spara slutspelsteam.' })
+        }
+    })
+
+    app.delete('/api/admin/knockout-advancement', async (req, res) => {
+        const { round, teamName } = req.body ?? {}
+        if (typeof round !== 'string' || typeof teamName !== 'string') {
+            res.status(400).json({ error: 'Ogiltig rund eller lagnamn.' })
+            return
+        }
+
+        try {
+            await deleteKnockoutAdvancement(round, teamName.trim())
+            res.status(204).end()
+        } catch (error) {
+            console.error('Admin knockout advancement delete error:', error)
+            res.status(500).json({ error: 'Kunde inte ta bort slutspelsteam.' })
         }
     })
 }

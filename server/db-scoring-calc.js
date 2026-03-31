@@ -10,8 +10,6 @@ import {
     normalizeComparableText,
     extractGroupCode,
     uniqueNormalizedTexts,
-    buildGroupMatchDateKey,
-    buildGroupMatchKey,
 } from './scoring-helpers.js'
 import {
     buildScoringLookups,
@@ -386,24 +384,14 @@ function scoreExtraAnswer(selectedAnswer, question) {
 
 /**
  * Resolve which completed match result corresponds to a given fixture tip.
- * Tries by fixtureId first, then by group+match+date key, then by group+match key.
+ * Uses direct fixture_id → match_id lookup (IDs are aligned).
  * @param {object} tip
- * @param {{byId: Map, byGroupMatchDate: Map, byGroupMatch: Map}} lookups
+ * @param {{byId: Map}} lookups
  * @returns {object|null} The matched result or null.
  */
 function resolveResultForTip(tip, lookups) {
     if (typeof tip?.fixtureId === 'string' && lookups.byId.has(tip.fixtureId)) {
         return lookups.byId.get(tip.fixtureId)
-    }
-
-    const groupMatchDateKey = buildGroupMatchDateKey(tip?.group, tip?.match, tip?.date)
-    if (lookups.byGroupMatchDate.has(groupMatchDateKey)) {
-        return lookups.byGroupMatchDate.get(groupMatchDateKey)
-    }
-
-    const groupMatchKey = buildGroupMatchKey(tip?.group, tip?.match)
-    if (lookups.byGroupMatch.has(groupMatchKey)) {
-        return lookups.byGroupMatch.get(groupMatchKey)
     }
 
     return null

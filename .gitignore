@@ -6,3 +6,4 @@ build/
 .env.*
 coverage/
 /data/
+test-fixtures.mjs

@@ -17,8 +17,6 @@ import {
     normalizeText,
     normalizeComparableText,
     normalizeGroupCode,
-    buildGroupMatchDateKey,
-    buildGroupMatchKey,
 } from './scoring-helpers.js'
 
 /**
@@ -114,9 +112,8 @@ export async function getParticipantWithTipsById(participantId) {
 }
 
 /**
- * Build lookup maps for completed match results, keyed by match ID,
- * group+match+date composite key, and group+match composite key.
- * @returns {Promise<{byId: Map, byGroupMatchDate: Map, byGroupMatch: Map}>}
+ * Build lookup map for completed match results, keyed by match ID.
+ * @returns {Promise<{byId: Map}>}
  */
 async function buildCompletedResultLookups() {
     const rows = await all(
@@ -145,22 +142,12 @@ async function buildCompletedResultLookups() {
 
     const results = rows.map(mapMatchResultRow)
     const byId = new Map()
-    const byGroupMatchDate = new Map()
-    const byGroupMatch = new Map()
 
     for (const result of results) {
         byId.set(result.matchId, result)
-
-        const groupMatchDateKey = buildGroupMatchDateKey(result.groupCode, `${result.homeTeam} - ${result.awayTeam}`, result.kickoffAt)
-        byGroupMatchDate.set(groupMatchDateKey, result)
-
-        const groupMatchKey = buildGroupMatchKey(result.groupCode, `${result.homeTeam} - ${result.awayTeam}`)
-        if (!byGroupMatch.has(groupMatchKey)) {
-            byGroupMatch.set(groupMatchKey, result)
-        }
     }
 
-    return { byId, byGroupMatchDate, byGroupMatch }
+    return { byId }
 }
 
 /**
@@ -243,21 +230,18 @@ export async function buildGroupStandingsLookups() {
 }
 
 /**
- * Build knockout round lookups from completed knockout-stage results.
- * Each round entry indicates whether all expected teams have been seen
- * and which teams have appeared.
+ * Build knockout round lookups from the knockout_advancement table.
+ * Each round entry indicates whether all expected teams have been confirmed
+ * and which teams have advanced.
  * @returns {Promise<{byRound: Map}>}
  */
 export async function buildKnockoutRoundLookups() {
     const rows = await all(
         `
-      SELECT round, home_team, away_team
-      FROM match_results
-      WHERE stage = 'knockout'
-        AND result_status = 'completed'
-        AND home_score IS NOT NULL
-        AND away_score IS NOT NULL
-      ORDER BY kickoff_at ASC, match_id ASC
+      SELECT round, team_name
+      FROM knockout_advancement
+      WHERE confirmed_at IS NOT NULL
+      ORDER BY round ASC, team_name ASC
     `,
     )
 
@@ -273,15 +257,9 @@ export async function buildKnockoutRoundLookups() {
         }
 
         const roundTeams = teamsByRound.get(round)
-        for (const team of [row.home_team, row.away_team]) {
-            const normalizedKey = normalizeComparableText(team)
-            if (!normalizedKey) {
-                continue
-            }
-
-            if (!roundTeams.has(normalizedKey)) {
-                roundTeams.set(normalizedKey, normalizeText(team))
-            }
+        const normalizedKey = normalizeComparableText(row.team_name)
+        if (normalizedKey && !roundTeams.has(normalizedKey)) {
+            roundTeams.set(normalizedKey, normalizeText(row.team_name))
         }
     }
 

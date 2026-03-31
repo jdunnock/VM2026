@@ -123,3 +123,61 @@ export async function upsertMatchResult(matchResult) {
 
   return getMatchResultById(matchResult.matchId)
 }
+
+// ─── Knockout advancement ────────────────────────────────────────────
+
+const VALID_KNOCKOUT_ROUNDS = new Set([
+  'Sextondelsfinal', 'Åttondelsfinal', 'Kvartsfinal', 'Semifinal', 'Final',
+])
+
+export async function listKnockoutAdvancements() {
+  const rows = await all(
+    `SELECT id, round, team_name, confirmed_at, source, created_at
+     FROM knockout_advancement
+     ORDER BY round ASC, team_name ASC`,
+  )
+  return rows.map(mapKnockoutAdvancementRow)
+}
+
+export async function listKnockoutAdvancementsByRound(round) {
+  const rows = await all(
+    `SELECT id, round, team_name, confirmed_at, source, created_at
+     FROM knockout_advancement
+     WHERE round = ?
+     ORDER BY team_name ASC`,
+    [round],
+  )
+  return rows.map(mapKnockoutAdvancementRow)
+}
+
+export async function upsertKnockoutAdvancement({ round, teamName, confirmedAt, source }) {
+  if (!VALID_KNOCKOUT_ROUNDS.has(round)) {
+    throw new Error(`Invalid knockout round: ${round}`)
+  }
+  await run(
+    `INSERT INTO knockout_advancement (round, team_name, confirmed_at, source)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(round, team_name)
+     DO UPDATE SET confirmed_at = excluded.confirmed_at, source = excluded.source`,
+    [round, teamName, confirmedAt ?? new Date().toISOString(), source ?? 'manual'],
+  )
+  return { round, teamName, confirmedAt: confirmedAt ?? new Date().toISOString(), source: source ?? 'manual' }
+}
+
+export async function deleteKnockoutAdvancement(round, teamName) {
+  await run(
+    `DELETE FROM knockout_advancement WHERE round = ? AND team_name = ?`,
+    [round, teamName],
+  )
+}
+
+function mapKnockoutAdvancementRow(row) {
+  return {
+    id: row.id,
+    round: row.round,
+    teamName: row.team_name,
+    confirmedAt: row.confirmed_at,
+    source: row.source,
+    createdAt: row.created_at,
+  }
+}

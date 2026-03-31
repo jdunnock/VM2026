@@ -233,8 +233,8 @@ test('scores API awards exact, sign-only, wrong, missing-tip, and unsettled matc
     assert.equal(unsettledScore.data.breakdown[0].reason, 'unsettled')
 })
 
-test('scores API supports legacy fallback without fixtureId', async () => {
-    const participantId = await createParticipant('Score Legacy Fallback', 'legacy-code')
+test('scores API tips without fixtureId are unsettled (no legacy fallback)', async () => {
+    const participantId = await createParticipant('Score No Fallback', 'nofb-code')
 
     await saveTips(participantId, {
         fixtureTips: [
@@ -256,9 +256,8 @@ test('scores API supports legacy fallback without fixtureId', async () => {
     const scoreResponse = await request('GET', `/api/scores/${participantId}`)
 
     assert.equal(scoreResponse.status, 200)
-    assert.equal(scoreResponse.data.totalPoints, 1)
-    assert.equal(scoreResponse.data.breakdown[0].matchId, 'G-A-1')
-    assert.equal(scoreResponse.data.breakdown[0].reason, 'correct-sign')
+    assert.equal(scoreResponse.data.totalPoints, 0)
+    assert.equal(scoreResponse.data.breakdown[0].reason, 'unsettled')
 })
 
 test('scores API includes extra question scoring', async () => {
@@ -497,25 +496,17 @@ test('scores API knockout predictions: settled round awards per-team points', as
     const roundTitle = 'Sextondelsfinal'
     const allTeams = []
 
-    // Round of 32 requires 16 completed matches => 32 unique teams.
-    for (let index = 1; index <= 16; index += 1) {
-        const homeTeam = `KO Home ${index}`
-        const awayTeam = `KO Away ${index}`
-        allTeams.push(homeTeam, awayTeam)
+    // Round of 32 requires 32 teams confirmed in knockout_advancement.
+    for (let index = 1; index <= 32; index += 1) {
+        const teamName = `KO Team ${index}`
+        allTeams.push(teamName)
 
         const response = await request(
             'PUT',
-            `/api/admin/results/KO-R32-${index}`,
+            '/api/admin/knockout-advancement',
             {
-                stage: 'knockout',
                 round: roundTitle,
-                homeTeam,
-                awayTeam,
-                kickoffAt: `2026-07-${String(index).padStart(2, '0')}T19:00:00Z`,
-                homeScore: 2,
-                awayScore: 1,
-                resultStatus: 'completed',
-                settledAt: `2026-07-${String(index).padStart(2, '0')}T21:00:00Z`,
+                teamName,
             },
             { 'x-admin-code': 'vm2026-admin' },
         )
