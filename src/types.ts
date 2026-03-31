@@ -203,7 +203,7 @@ export type AdminQuestionDraft = {
     allowFreeText: boolean
 }
 
-export type AdminWorkspaceTab = 'questions' | 'results'
+export type AdminWorkspaceTab = 'matchdag' | 'slutspel' | 'questions'
 
 export type AdminFixtureTemplate = {
     matchId: string

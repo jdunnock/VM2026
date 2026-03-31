@@ -242,7 +242,7 @@ export function AdminResultsTab({
                                                 type="button"
                                                 onClick={() => {
                                                     setSelectedMatchId(entry.matchId)
-                                                    setActiveAdminTab('results')
+                                                    setActiveAdminTab('matchdag')
                                                 }}
                                             >
                                                 Redigera

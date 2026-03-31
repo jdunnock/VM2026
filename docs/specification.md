@@ -121,6 +121,7 @@ Each admin-managed question must support:
 	- `src/App.tsx` is the application shell for shared state, data loading, and page routing.
 	- Route-level page UIs are extracted to dedicated modules under `src/pages/` (`StartPage`, `ResultsPage`, `TipsPage`, `MyTipsPage`, `RulesPage`, `AdminPage`).
 	- `AdminPage` tab surfaces are further split to dedicated admin subcomponents under `src/pages/admin/` for question management and result management presentation while keeping existing behavior intact.
+	- Admin workspace has three tabs: `Matchdag` (day-based group match results), `Slutspel` (knockout advancement management), and `Frågor` (question management). Tab type defined as `AdminWorkspaceTab = 'matchdag' | 'slutspel' | 'questions'`.
 	- Shared score detail UI (`ParticipantScorePanel`) is reused from `src/pages/ResultsPage.tsx` in both `Resultat & poäng` and `Mina tips` flows.
 - Excluded from this step:
 	- No scoring rule changes.
@@ -1087,7 +1088,7 @@ Confirmed intentional data flows (not bugs):
 
 ### 7.56 Admin settlement workflow and fixture identity redesign (in progress, 2026-03-31)
 
-- **Status**: Steps 1–5 implemented. UI and seed simulation remaining.
+- **Status**: Steps 1–7 implemented. Frågor improvements and seed simulation remaining.
 - **Lifecycle phase**: Phase C (tournament tracking) — admin tooling for result entry and score settlement.
 
 #### Problem statement
@@ -1190,8 +1191,8 @@ Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators 
 | 3 | Fixture ID alignment (verified) + FK skipped (SQLite limitation) | ✅ Done |
 | 4 | Scoring refactor: knockout lookups from `knockout_advancement`, remove fallback tiers | ✅ Done |
 | 5 | Admin API: knockout advancement CRUD (`PUT/GET/DELETE /api/admin/knockout-advancement`) | ✅ Done |
-| 6 | Admin UI: Matchdag tab | 🔲 Not started |
-| 7 | Admin UI: Slutspel tab | 🔲 Not started |
+| 6 | Admin UI: Matchdag tab | ✅ Done |
+| 7 | Admin UI: Slutspel tab | ✅ Done |
 | 8 | Admin UI: Frågor tab improvements | 🔲 Not started |
 | 9 | Seed simulation update for new data model | 🔲 Not started |
 | 10 | Integration tests for new scoring pipeline | ✅ Done (existing tests updated) |

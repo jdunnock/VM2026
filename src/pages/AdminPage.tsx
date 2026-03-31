@@ -1,26 +1,19 @@
 import { useEffect, useState } from 'react'
 import {
-  adminFixtureTemplates,
-  defaultAdminResultDraft,
   defaultAdminQuestionDraft,
 } from '../constants'
 import type {
   AdminQuestion,
   AdminQuestionDraft,
-  AdminResultDraft,
   AdminSession,
   AdminWorkspaceTab,
   MatchResult,
 } from '../types'
 import { adminQuestionCategories } from '../types'
-import {
-  buildAdminResultDraft,
-  toDateTimeLocalValue,
-} from '../utils'
-import { useFixtureFilter } from '../hooks/useFixtureFilter'
 import { AdminSigninPanel } from './admin/AdminSigninPanel'
 import { AdminQuestionsTab } from './admin/AdminQuestionsTab'
-import { AdminResultsTab } from './admin/AdminResultsTab'
+import { AdminMatchdagTab } from './admin/AdminMatchdagTab'
+import { AdminSlutspelTab } from './admin/AdminSlutspelTab'
 
 export function AdminPage({
   adminSession,
@@ -29,32 +22,18 @@ export function AdminPage({
   adminSession: AdminSession | null
   onAdminSessionChange: (session: AdminSession | null) => void
 }) {
-  const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('questions')
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('matchdag')
   const [questions, setQuestions] = useState<AdminQuestion[]>([])
   const [results, setResults] = useState<MatchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isResultsLoading, setIsResultsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isResultSaving, setIsResultSaving] = useState(false)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [questionMessage, setQuestionMessage] = useState('')
-  const [resultsMessage, setResultsMessage] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formState, setFormState] = useState<AdminQuestionDraft>(defaultAdminQuestionDraft)
   const [adminNameInput, setAdminNameInput] = useState(adminSession?.adminName ?? '')
   const [adminCodeInput, setAdminCodeInput] = useState('')
-  const [resultDraft, setResultDraft] = useState<AdminResultDraft>(defaultAdminResultDraft)
-  const {
-    resultFilterStage,
-    setResultFilterStage,
-    resultSearchQuery,
-    setResultSearchQuery,
-    selectedMatchId,
-    setSelectedMatchId,
-    filteredFixtures,
-    filteredSavedResults,
-    selectedFixture,
-  } = useFixtureFilter(adminFixtureTemplates, results)
 
   const getAdminHeaders = () => {
     if (!adminSession?.adminCode) {
@@ -123,13 +102,11 @@ export function AdminPage({
       const resultsResponse = await fetch('/api/admin/results', { headers })
 
       const resultsPayload = await resultsResponse.json()
-      if (!resultsResponse.ok) {
-        setResultsMessage(resultsPayload.error ?? 'Kunde inte hämta adminresultat.')
-      } else {
+      if (resultsResponse.ok) {
         setResults(Array.isArray(resultsPayload.results) ? (resultsPayload.results as MatchResult[]) : [])
       }
     } catch {
-      setResultsMessage('Kunde inte hämta adminresultat.')
+      // silently fail — MatchdagTab shows its own messages
     } finally {
       setIsResultsLoading(false)
     }
@@ -139,17 +116,6 @@ export function AdminPage({
     loadQuestions()
     loadResultsData()
   }, [adminSession])
-
-  const selectedResult = results.find((entry) => entry.matchId === selectedMatchId)
-
-  useEffect(() => {
-    if (!selectedFixture) {
-      setResultDraft(defaultAdminResultDraft)
-      return
-    }
-
-    setResultDraft(buildAdminResultDraft(selectedFixture, selectedResult))
-  }, [selectedMatchId, results])
 
   const signInAdmin = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -188,7 +154,6 @@ export function AdminPage({
       })
       setAdminCodeInput('')
       setQuestionMessage('Admin inloggad.')
-      setResultsMessage('')
     } catch {
       setQuestionMessage('Kunde inte logga in som admin.')
     } finally {
@@ -312,78 +277,6 @@ export function AdminPage({
     }
   }
 
-  const resetResultDraft = () => {
-    if (!selectedFixture) {
-      setResultDraft(defaultAdminResultDraft)
-      return
-    }
-
-    setResultDraft(buildAdminResultDraft(selectedFixture, selectedResult))
-  }
-
-  const saveMatchResult = async () => {
-    const headers = getAdminHeaders()
-    if (!headers || !selectedFixture) {
-      setResultsMessage('Admin-inloggning krävs.')
-      return
-    }
-
-    const normalizedHomeScore = resultDraft.homeScore.trim()
-    const normalizedAwayScore = resultDraft.awayScore.trim()
-    const hasHomeScore = normalizedHomeScore !== ''
-    const hasAwayScore = normalizedAwayScore !== ''
-
-    if (hasHomeScore !== hasAwayScore) {
-      setResultsMessage('Fyll i båda målen eller lämna båda tomma.')
-      return
-    }
-
-    if (resultDraft.resultStatus === 'completed' && (!hasHomeScore || !hasAwayScore)) {
-      setResultsMessage('Slutförda matcher kräver båda målresultaten.')
-      return
-    }
-
-    if (resultDraft.resultStatus === 'planned' && (hasHomeScore || hasAwayScore)) {
-      setResultsMessage('Planerade matcher får inte ha sparade mål.')
-      return
-    }
-
-    setIsResultSaving(true)
-    setResultsMessage('Sparar matchresultat...')
-
-    try {
-      const response = await fetch(`/api/admin/results/${selectedFixture.matchId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          stage: selectedFixture.stage,
-          round: selectedFixture.round ?? '',
-          groupCode: selectedFixture.groupCode ?? '',
-          homeTeam: selectedFixture.homeTeam,
-          awayTeam: selectedFixture.awayTeam,
-          kickoffAt: toDateTimeLocalValue(selectedFixture.kickoffAt),
-          homeScore: hasHomeScore ? Number(normalizedHomeScore) : '',
-          awayScore: hasAwayScore ? Number(normalizedAwayScore) : '',
-          resultStatus: resultDraft.resultStatus,
-          settledAt: resultDraft.settledAt.trim(),
-        }),
-      })
-
-      const payload = await response.json()
-      if (!response.ok) {
-        setResultsMessage(payload.error ?? 'Kunde inte spara matchresultat.')
-        return
-      }
-
-      setResultsMessage('Matchresultat sparat.')
-      await loadResultsData()
-    } catch {
-      setResultsMessage('Kunde inte spara matchresultat.')
-    } finally {
-      setIsResultSaving(false)
-    }
-  }
-
   const publishedCount = questions.filter((question) => question.status === 'published').length
   const savedResultsCount = results.filter((entry) => entry.resultStatus === 'completed').length
 
@@ -393,7 +286,6 @@ export function AdminPage({
     setResults([])
     setEditingId(null)
     setQuestionMessage('Admin utloggad.')
-    setResultsMessage('')
   }
 
   if (!adminSession) {
@@ -424,24 +316,31 @@ export function AdminPage({
           <p className="status-note">Inloggad som admin: {adminSession.adminName}</p>
           <div className="tab-row">
             <button
+              className={`tab-button ${activeAdminTab === 'matchdag' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setActiveAdminTab('matchdag')}
+            >
+              Matchdag
+            </button>
+            <button
+              className={`tab-button ${activeAdminTab === 'slutspel' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setActiveAdminTab('slutspel')}
+            >
+              Slutspel
+            </button>
+            <button
               className={`tab-button ${activeAdminTab === 'questions' ? 'active' : ''}`}
               type="button"
               onClick={() => setActiveAdminTab('questions')}
             >
               Frågor
             </button>
-            <button
-              className={`tab-button ${activeAdminTab === 'results' ? 'active' : ''}`}
-              type="button"
-              onClick={() => setActiveAdminTab('results')}
-            >
-              Resultat
-            </button>
           </div>
           <button
             className="ghost-button"
             type="button"
-            disabled={isSaving || isResultSaving}
+            disabled={isSaving}
             onClick={onAdminLogout}
           >
             Logga ut admin
@@ -454,7 +353,22 @@ export function AdminPage({
         </article>
       </section>
 
-      {activeAdminTab === 'questions' ? (
+      {activeAdminTab === 'matchdag' && (
+        <AdminMatchdagTab
+          results={results}
+          isResultsLoading={isResultsLoading}
+          getAdminHeaders={getAdminHeaders}
+          onResultSaved={loadResultsData}
+        />
+      )}
+
+      {activeAdminTab === 'slutspel' && (
+        <AdminSlutspelTab
+          getAdminHeaders={getAdminHeaders}
+        />
+      )}
+
+      {activeAdminTab === 'questions' && (
         <AdminQuestionsTab
           questionMessage={questionMessage}
           isLoading={isLoading}
@@ -469,26 +383,6 @@ export function AdminPage({
           saveQuestion={saveQuestion}
           resetForm={resetForm}
           getAdminHeaders={getAdminHeaders}
-        />
-      ) : (
-        <AdminResultsTab
-          resultsMessage={resultsMessage}
-          isResultSaving={isResultSaving}
-          isResultsLoading={isResultsLoading}
-          resultFilterStage={resultFilterStage}
-          setResultFilterStage={setResultFilterStage}
-          resultSearchQuery={resultSearchQuery}
-          setResultSearchQuery={setResultSearchQuery}
-          selectedMatchId={selectedMatchId}
-          setSelectedMatchId={setSelectedMatchId}
-          filteredFixtures={filteredFixtures}
-          selectedFixture={selectedFixture}
-          resultDraft={resultDraft}
-          setResultDraft={setResultDraft}
-          saveMatchResult={saveMatchResult}
-          resetResultDraft={resetResultDraft}
-          filteredSavedResults={filteredSavedResults}
-          setActiveAdminTab={setActiveAdminTab}
         />
       )}
     </div>

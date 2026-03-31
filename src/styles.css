@@ -1753,6 +1753,129 @@ strong {
   display: grid;
 }
 
+/* Matchdag admin tab */
+.matchday-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.matchday-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 180px;
+  text-align: center;
+}
+
+.matchday-card {
+  border-left: 4px solid var(--line);
+}
+
+.matchday-card.matchday-completed {
+  border-left-color: var(--brand);
+}
+
+.matchday-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.matchday-card-header strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.matchday-score-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.matchday-score-label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  min-width: 80px;
+}
+
+.matchday-score-input {
+  width: 70px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.matchday-dash {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding-bottom: 6px;
+}
+
+/* Slutspel admin tab */
+.slutspel-round-card {
+  border-left: 4px solid var(--line);
+}
+
+.slutspel-round-card.slutspel-settled {
+  border-left-color: var(--brand);
+}
+
+.slutspel-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slutspel-team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(16, 163, 127, 0.09);
+  border: 1px solid rgba(16, 163, 127, 0.18);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.slutspel-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(185, 28, 28, 0.12);
+  color: var(--danger);
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.slutspel-remove-btn:hover {
+  background: rgba(185, 28, 28, 0.22);
+}
+
+.slutspel-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.slutspel-add-row .special-input {
+  flex: 1;
+  min-width: 120px;
+}
+
 .section-heading.compact h2 {
   font-size: clamp(1.8rem, 3vw, 2.4rem);
 }
