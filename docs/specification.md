@@ -1839,3 +1839,26 @@ Checklist run date: 2026-03-25
 - **Phase B tab visibility**: Matchdag and Slutspel tabs are hidden on the Admin page in Phase B (`phase === 'B'`), using the same `effectiveLifecyclePhase` that drives the B/C toggle button. Default active tab is now `'questions'`. Tabs appear when phase switches to C.
 - **Inline question edit form**: When the admin clicks "Redigera" on a question row, the edit form opens directly below that row in the table (instead of scrolling to a separate form at the bottom). The button toggles between "Redigera" and "Stäng". The standalone form at the bottom is hidden while an inline edit is active. A shared `renderForm()` function serves both inline edit and new-question creation modes.
 
+### 7.58 Lifecycle test snapshots and automated scoring tests (2026-04-01)
+
+- **Purpose**: Provide end-to-end regression confidence across all tournament lifecycle phases before live deployment. Addresses the risk that scoring logic is hard to test manually once the live tournament starts.
+- **Snapshot commands** (`server/seed-simulation.js`): 8 cumulative CLI commands (`S-B1` through `S-C6`) that build up tournament state step-by-step:
+  - `S-B1` (alias `reset`): Clean slate — no participants, no results.
+  - `S-B2` (alias `setup`): 15 participants with deterministic predictions (3 expert, 7 average, 5 casual tiers).
+  - `S-C1`: First 4 group matches settled.
+  - `S-C2`: +28 group matches settled (32 total).
+  - `S-C3`: All 72 group matches settled + Sextondelsfinal (R32) advancement only (32 teams, no match results).
+  - `S-C4`: R32 + R16 + QF match results settled.
+  - `S-C5`: SF match results settled.
+  - `S-C6`: Final match result settled (tournament complete — 103 total matches, 5 knockout rounds).
+- **Cutoff dates**: `SC1_CUTOFF = 2026-06-13T06:00:00Z`, `SC2_CUTOFF = 2026-06-20T05:00:00Z`, `SC3_CUTOFF = 2026-06-28T23:59:59Z`.
+- **Helper**: `insertKnockoutAdvancementOnly(teams, round)` inserts into `knockout_advancement` with `source: 'manual'` without creating match results — used for R32 where teams are known before matches are played.
+- **Automated tests** (`server/lifecycle.api.test.js`, `npm run test:lifecycle`): 5 invariant-based tests using Node test runner + spawn API server against temp DB:
+  - T1: S-C1 — fixture scoring begins (exact/sign points), no group/knockout points yet.
+  - T2: S-C2 — expert tier average fixture points > casual tier average.
+  - T3: S-C3 — 72 settled matches, group placement points > 0 for experts, 1 KO round settled with knockout points.
+  - T4: S-C4 — ≥3 KO rounds settled, valid rankings, tied participants share same rank.
+  - T5: S-C5+S-C6 — all 5 KO rounds, total = sum of components, expert avg > average avg > casual avg, no rank gaps, final standings printed.
+- **Deterministic predictions**: `makeRng(seed)` produces repeatable predictions. Expert tier (~65% accuracy), average (~45%), casual (~30%).
+- **Constraint fix**: `knockout_advancement.source` CHECK allows only `'manual'` | `'api'` — simulation uses `'manual'` (not `'simulation'`).
+

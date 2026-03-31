@@ -661,7 +661,7 @@ async function insertKnockoutResults(resultSet) {
                 round,
                 teamName,
                 confirmedAt: '2026-07-01T22:00:00Z',
-                source: 'simulation',
+                source: 'manual',
             })
         }
     }
@@ -690,6 +690,14 @@ async function settleQuestion(questionIndex, questions) {
 
 // C1 cutoff: end of June 20 — all round-1 matches (all 12 groups) + round 2 for groups A-F
 const C1_CUTOFF = '2026-06-21T04:59:59Z'
+
+// ─── Snapshot cutoffs (S-* commands) ─────────────────────────────────
+// SC1: first 4 matches (thru June 12 US evening)
+const SC1_CUTOFF = '2026-06-13T06:00:00Z'
+// SC2: one week played (thru June 19 US evening)
+const SC2_CUTOFF = '2026-06-20T05:00:00Z'
+// SC3: all group stage matches (thru June 27 US evening)
+const SC3_CUTOFF = '2026-06-28T23:59:59Z'
 
 async function phaseC1() {
     // Chronological: all group matches up to C1 cutoff (34 matches across all groups)
@@ -790,6 +798,75 @@ async function phaseReset() {
     console.log('Reset complete.')
 }
 
+// ─── Snapshot phase handlers (S-B1 through S-C6) ─────────────────────
+
+async function insertKnockoutAdvancementOnly(teams, round) {
+    let count = 0
+    for (const teamName of teams) {
+        await upsertKnockoutAdvancement({
+            round,
+            teamName,
+            confirmedAt: new Date().toISOString(),
+            source: 'manual',
+        })
+        count++
+    }
+    return count
+}
+
+async function phaseSB1() {
+    await phaseReset()
+    console.log('\nS-B1: Empty admin state. Run server to populate 72 group fixtures via initGroupFixtures().')
+}
+
+async function phaseSB2() {
+    await phaseSetup()
+    console.log('\nS-B2: 15 participants + tips + 7 questions ready. Phase B complete.')
+}
+
+async function phaseSC1() {
+    const count = await insertGroupMatchResultsBefore(SC1_CUTOFF)
+    console.log(`S-C1: Inserted ${count} group match results (first 4 matches, thru June 12)`)
+}
+
+async function phaseSC2() {
+    const count = await insertGroupMatchResultsBefore(SC2_CUTOFF, SC1_CUTOFF)
+    console.log(`S-C2: Inserted ${count} additional group match results (thru June 19)`)
+}
+
+async function phaseSC3() {
+    const remaining = await insertGroupMatchResultsBefore(SC3_CUTOFF, SC2_CUTOFF)
+    console.log(`S-C3: Inserted ${remaining} remaining group match results (thru June 27)`)
+
+    // Insert Sextondelsfinal advancement (32 teams) — no match results yet
+    const advCount = await insertKnockoutAdvancementOnly(ALL_KNOCKOUT_TEAMS, 'Sextondelsfinal')
+    console.log(`S-C3: Inserted ${advCount} Sextondelsfinal advancement teams`)
+}
+
+async function phaseSC4() {
+    // R32 match results
+    await insertKnockoutResults(R32_RESULTS)
+    console.log(`S-C4: Inserted ${R32_RESULTS.length} R32 match results`)
+
+    // R16 match results
+    await insertKnockoutResults(R16_RESULTS)
+    console.log(`S-C4: Inserted ${R16_RESULTS.length} R16 match results`)
+
+    // QF match results
+    await insertKnockoutResults(QF_RESULTS)
+    console.log(`S-C4: Inserted ${QF_RESULTS.length} QF match results`)
+}
+
+async function phaseSC5() {
+    await insertKnockoutResults(SF_RESULTS)
+    console.log(`S-C5: Inserted ${SF_RESULTS.length} SF match results`)
+}
+
+async function phaseSC6() {
+    await insertKnockoutResults(FINAL_RESULTS)
+    console.log(`S-C6: Inserted ${FINAL_RESULTS.length} final match results`)
+}
+
 // ─── CLI dispatcher ──────────────────────────────────────────────────
 
 const PHASES = {
@@ -803,6 +880,14 @@ const PHASES = {
     C6: phaseC6,
     C7: phaseC7,
     reset: phaseReset,
+    'S-B1': phaseSB1,
+    'S-B2': phaseSB2,
+    'S-C1': phaseSC1,
+    'S-C2': phaseSC2,
+    'S-C3': phaseSC3,
+    'S-C4': phaseSC4,
+    'S-C5': phaseSC5,
+    'S-C6': phaseSC6,
 }
 
 async function main() {
@@ -810,11 +895,22 @@ async function main() {
 
     if (!command || !PHASES[command]) {
         console.log('Usage: node server/seed-simulation.js <command>')
-        console.log('Commands: setup | C0 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | reset')
         console.log('')
-        console.log('Workflow:')
-        console.log('  setup → C0 → C1 → C2 → C3 → C4 → C5 → C6 → C7')
-        console.log('  reset (clean up all simulation data)')
+        console.log('Legacy commands: setup | C0 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | reset')
+        console.log('')
+        console.log('Snapshot commands (lifecycle QA):')
+        console.log('  S-B1  Empty admin (reset + fixtures only)')
+        console.log('  S-B2  15 participants + tips + 7 questions')
+        console.log('  S-C1  First 4 matches settled (12.6)')
+        console.log('  S-C2  One week played (19.6)')
+        console.log('  S-C3  All group matches + Sextondelsfinal teams (27.6)')
+        console.log('  S-C4  R32 + R16 + QF played (11.7)')
+        console.log('  S-C5  Semifinals played (15.7)')
+        console.log('  S-C6  Final played (19.7)')
+        console.log('')
+        console.log('Snapshot workflow: S-B1 → S-B2 → S-C1 → S-C2 → S-C3 → S-C4 → S-C5 → S-C6')
+        console.log('Legacy workflow:   setup → C0 → C1 → C2 → C3 → C4 → C5 → C6 → C7')
+        console.log('Reset:             reset (clean up all simulation data)')
         process.exit(1)
     }
 
@@ -834,3 +930,11 @@ main().catch((err) => {
     console.error('Simulation failed:', err)
     process.exit(1)
 })
+
+// ─── Exports for automated tests ────────────────────────────────────
+
+export {
+    phaseSetup, phaseReset,
+    phaseSB1, phaseSB2, phaseSC1, phaseSC2, phaseSC3, phaseSC4, phaseSC5, phaseSC6,
+    SIM_NAMES, EXPERT, AVERAGE, CASUAL,
+}
