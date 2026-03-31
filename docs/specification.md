@@ -1836,6 +1836,6 @@ Checklist run date: 2026-03-25
 
 ### 7.57 Admin UX improvements — tab visibility and inline edit (2026-04-01)
 
-- **Phase B tab visibility**: Matchdag and Slutspel tabs are hidden on the Admin page before the tournament starts (`savedResultsCount === 0`). Default active tab is now `'questions'`. Tabs appear once the first match result is completed.
+- **Phase B tab visibility**: Matchdag and Slutspel tabs are hidden on the Admin page in Phase B (`phase === 'B'`), using the same `effectiveLifecyclePhase` that drives the B/C toggle button. Default active tab is now `'questions'`. Tabs appear when phase switches to C.
 - **Inline question edit form**: When the admin clicks "Redigera" on a question row, the edit form opens directly below that row in the table (instead of scrolling to a separate form at the bottom). The button toggles between "Redigera" and "Stäng". The standalone form at the bottom is hidden while an inline edit is active. A shared `renderForm()` function serves both inline edit and new-question creation modes.
 

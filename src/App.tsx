@@ -152,7 +152,7 @@ function renderPage(
         />
       )
     case 'admin':
-      return <AdminPage adminSession={ui.adminSession} onAdminSessionChange={ui.onAdminSessionChange} />
+      return <AdminPage adminSession={ui.adminSession} onAdminSessionChange={ui.onAdminSessionChange} phase={ui.phase} />
     default:
       return null
   }

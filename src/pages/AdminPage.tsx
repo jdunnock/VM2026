@@ -18,9 +18,11 @@ import { AdminSlutspelTab } from './admin/AdminSlutspelTab'
 export function AdminPage({
   adminSession,
   onAdminSessionChange,
+  phase,
 }: {
   adminSession: AdminSession | null
   onAdminSessionChange: (session: AdminSession | null) => void
+  phase: 'B' | 'C'
 }) {
   const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('questions')
   const [questions, setQuestions] = useState<AdminQuestion[]>([])
@@ -279,7 +281,7 @@ export function AdminPage({
 
   const publishedCount = questions.filter((question) => question.status === 'published').length
   const savedResultsCount = results.filter((entry) => entry.resultStatus === 'completed').length
-  const tournamentStarted = savedResultsCount > 0
+  const tournamentStarted = phase === 'C'
 
   const onAdminLogout = () => {
     onAdminSessionChange(null)
