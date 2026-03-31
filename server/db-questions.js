@@ -179,6 +179,7 @@ export async function updateAdminQuestion(id, question) {
 }
 
 export async function deleteAdminQuestion(id) {
+    await run('DELETE FROM participant_extra_answers WHERE question_id = ?', [id])
     await run('DELETE FROM admin_questions WHERE id = ?', [id])
 }
 

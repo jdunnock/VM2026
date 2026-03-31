@@ -1862,3 +1862,9 @@ Checklist run date: 2026-03-25
 - **Deterministic predictions**: `makeRng(seed)` produces repeatable predictions. Expert tier (~65% accuracy), average (~45%), casual (~30%).
 - **Constraint fix**: `knockout_advancement.source` CHECK allows only `'manual'` | `'api'` — simulation uses `'manual'` (not `'simulation'`).
 
+### 7.59 Bugfix: admin question delete fails when participant answers exist (2026-03-31)
+
+- **Root cause**: `deleteAdminQuestion()` in `db-questions.js` ran `DELETE FROM admin_questions` without first removing referencing rows in `participant_extra_answers`. With `PRAGMA foreign_keys = ON`, the FK constraint `FOREIGN KEY (question_id) REFERENCES admin_questions (id)` caused a silent 500 error.
+- **Fix**: `deleteAdminQuestion()` now deletes `participant_extra_answers WHERE question_id = ?` before deleting the question itself.
+- **Validation**: 8/8 API tests + 5/5 lifecycle tests pass.
+
