@@ -48,6 +48,7 @@ type AdminQuestionsTabProps = {
     saveQuestion: () => void
     resetForm: () => void
     getAdminHeaders: () => Record<string, string> | null
+    loadQuestions: () => Promise<void>
 }
 
 export function AdminQuestionsTab({
@@ -64,10 +65,15 @@ export function AdminQuestionsTab({
     saveQuestion,
     resetForm,
     getAdminHeaders,
+    loadQuestions,
 }: AdminQuestionsTabProps) {
     const [showPlayerPicker, setShowPlayerPicker] = useState(false)
     const [playerSearch, setPlayerSearch] = useState('')
     const [selectedCountry, setSelectedCountry] = useState('')
+    const [settlingId, setSettlingId] = useState<number | null>(null)
+    const [settleAnswer, setSettleAnswer] = useState('')
+    const [settleMessage, setSettleMessage] = useState('')
+    const [settleLoading, setSettleLoading] = useState(false)
     const [review, setReview] = useState<ReviewPanelState>(initialReviewState)
 
     const squads = squadsData as SquadData
@@ -149,6 +155,33 @@ export function AdminQuestionsTab({
             }))
         } catch {
             setReview((prev) => ({ ...prev, message: 'Kunde inte spara godkända svar.', loading: false }))
+        }
+    }
+
+    const settleQuestion = async (questionId: number) => {
+        if (!settleAnswer.trim()) return
+        const headers = getAdminHeaders()
+        if (!headers) return
+        setSettleLoading(true)
+        try {
+            const res = await fetch(`/api/admin/questions/${questionId}/accepted-answers`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ acceptedAnswers: [], correctAnswer: settleAnswer.trim() }),
+            })
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Okänt fel' }))
+                setSettleMessage(err.error ?? 'Kunde inte kuitta svaret.')
+                return
+            }
+            setSettleMessage('Rätt svar sparat — poäng uppdateras.')
+            setSettlingId(null)
+            setSettleAnswer('')
+            await loadQuestions()
+        } catch {
+            setSettleMessage('Kunde inte kuitta svaret.')
+        } finally {
+            setSettleLoading(false)
         }
     }
 
@@ -383,6 +416,15 @@ export function AdminQuestionsTab({
                                                                     Granska svar
                                                                 </button>
                                                             )}
+                                                            {!question.allowFreeText && !question.correctAnswer?.trim() && (
+                                                                <button className="ghost-button" type="button" disabled={isSaving} onClick={() => {
+                                                                    setSettlingId(settlingId === question.id ? null : question.id)
+                                                                    setSettleAnswer('')
+                                                                    setSettleMessage('')
+                                                                }}>
+                                                                    {settlingId === question.id ? 'Stäng' : 'Kuitta svar'}
+                                                                </button>
+                                                            )}
                                                             <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
                                                                 Ta bort
                                                             </button>
@@ -393,6 +435,45 @@ export function AdminQuestionsTab({
                                                     <tr className="inline-edit-row">
                                                         <td colSpan={6}>
                                                             {renderForm()}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {settlingId === question.id && (
+                                                    <tr className="inline-edit-row">
+                                                        <td colSpan={6}>
+                                                            <div className="inline-edit-form">
+                                                                <article className="mini-card">
+                                                                    <span className="mini-label">Kuitta rätt svar</span>
+                                                                    <h2>{question.questionText}</h2>
+                                                                    {settleMessage && <p className="save-pill">{settleMessage}</p>}
+                                                                    <label>
+                                                                        Välj rätt svar
+                                                                        <select
+                                                                            className="special-input"
+                                                                            value={settleAnswer}
+                                                                            onChange={(e) => setSettleAnswer(e.target.value)}
+                                                                        >
+                                                                            <option value="">— Välj —</option>
+                                                                            {question.options.map((opt) => (
+                                                                                <option key={opt} value={opt}>{opt}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </label>
+                                                                    <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
+                                                                        <button
+                                                                            className="primary-button"
+                                                                            type="button"
+                                                                            disabled={!settleAnswer.trim() || settleLoading}
+                                                                            onClick={() => settleQuestion(question.id)}
+                                                                        >
+                                                                            Bekräfta och ge poäng
+                                                                        </button>
+                                                                        <button className="ghost-button" type="button" onClick={() => { setSettlingId(null); setSettleAnswer(''); setSettleMessage('') }}>
+                                                                            Avbryt
+                                                                        </button>
+                                                                    </div>
+                                                                </article>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 )}

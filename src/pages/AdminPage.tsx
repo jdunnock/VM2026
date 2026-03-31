@@ -390,6 +390,7 @@ export function AdminPage({
           saveQuestion={saveQuestion}
           resetForm={resetForm}
           getAdminHeaders={getAdminHeaders}
+          loadQuestions={loadQuestions}
         />
       )}
     </div>
