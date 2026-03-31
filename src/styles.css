@@ -1889,6 +1889,19 @@ strong {
   border-top: none;
 }
 
+/* Inline edit form in question table */
+.inline-edit-row td {
+  padding: 0 !important;
+  border: none !important;
+  background: #f7f9fb;
+}
+
+.inline-edit-form {
+  display: grid;
+  gap: 16px;
+  padding: 16px 0;
+}
+
 .section-heading.compact h2 {
   font-size: clamp(1.8rem, 3vw, 2.4rem);
 }

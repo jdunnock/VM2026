@@ -1834,3 +1834,8 @@ Checklist run date: 2026-03-25
 - **API endpoints added**: `GET /api/admin/questions/:id/answers`, `PUT /api/admin/questions/:id/accepted-answers`.
 - **Validator**: `normalizeAdminQuestionPayload` accepts `allowFreeText` boolean; when true, `correctAnswer` is not required to be in the options list.
 
+### 7.57 Admin UX improvements — tab visibility and inline edit (2026-04-01)
+
+- **Phase B tab visibility**: Matchdag and Slutspel tabs are hidden on the Admin page before the tournament starts (`savedResultsCount === 0`). Default active tab is now `'questions'`. Tabs appear once the first match result is completed.
+- **Inline question edit form**: When the admin clicks "Redigera" on a question row, the edit form opens directly below that row in the table (instead of scrolling to a separate form at the bottom). The button toggles between "Redigera" and "Stäng". The standalone form at the bottom is hidden while an inline edit is active. A shared `renderForm()` function serves both inline edit and new-question creation modes.
+

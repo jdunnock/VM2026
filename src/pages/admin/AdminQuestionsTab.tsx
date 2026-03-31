@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
     AdminQuestion,
@@ -165,6 +165,155 @@ export function AdminQuestionsTab({
         return grouped
     }, [questions, adminQuestionCategories])
 
+    const renderForm = () => (
+        <div className="inline-edit-form">
+            <article className="mini-card">
+                <span className="mini-label">{editingId ? 'Redigera fråga' : 'Skapa fråga'}</span>
+                <h2>Frågeformulär</h2>
+                <div className="stacked-actions">
+                    <label>
+                        Frågetext
+                        <input
+                            className="special-input"
+                            type="text"
+                            value={formState.questionText}
+                            onChange={(e) => setFormState((current) => ({ ...current, questionText: e.target.value }))}
+                        />
+                    </label>
+                    <label>
+                        Kategori
+                        <select
+                            className="special-input"
+                            value={formState.category}
+                            onChange={(e) => setFormState((current) => ({ ...current, category: e.target.value as AdminQuestionCategory }))}
+                        >
+                            {adminQuestionCategories.map((category) => (
+                                <option key={category} value={category}>
+                                    {category}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label>
+                        Svarsalternativ (ett per rad)
+                        <textarea
+                            className="special-input"
+                            rows={5}
+                            value={formState.optionsText}
+                            onChange={(e) => setFormState((current) => ({ ...current, optionsText: e.target.value }))}
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        className="admin-link-btn"
+                        onClick={() => setShowPlayerPicker((v) => !v)}
+                    >
+                        {showPlayerPicker ? '▲ Stäng spelarväljare' : '▼ Välj spelare från trupper'}
+                    </button>
+                    {showPlayerPicker && (
+                        <div className="player-picker-panel">
+                            <div className="player-picker-controls">
+                                <select
+                                    className="special-input"
+                                    value={selectedCountry}
+                                    onChange={(e) => setSelectedCountry(e.target.value)}
+                                >
+                                    <option value="">Alla länder</option>
+                                    {Object.keys(squads).sort().map((c) => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    className="special-input"
+                                    type="text"
+                                    placeholder="Sök spelare…"
+                                    value={playerSearch}
+                                    onChange={(e) => setPlayerSearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="player-picker-list">
+                                {getFilteredPlayers().map(({ player, country }) => (
+                                    <button
+                                        key={`${country}-${player}`}
+                                        type="button"
+                                        className={`player-picker-item${existingOptions.has(player) ? ' already-added' : ''}`}
+                                        onClick={() => addPlayerToOptions(player)}
+                                        disabled={existingOptions.has(player)}
+                                    >
+                                        {player} <span className="player-country">({country})</span>
+                                    </button>
+                                ))}
+                                {getFilteredPlayers().length === 0 && (
+                                    <p className="player-picker-empty">Inga spelare hittades</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    <label className="checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={formState.allowFreeText}
+                            onChange={(e) => setFormState((current) => ({ ...current, allowFreeText: e.target.checked }))}
+                        />
+                        Tillåt fritt textsvar (fuzzy-sökning + eget svar)
+                    </label>
+                    <label>
+                        Rätt svar
+                        <input
+                            className="special-input"
+                            type="text"
+                            value={formState.correctAnswer}
+                            onChange={(e) => setFormState((current) => ({ ...current, correctAnswer: e.target.value }))}
+                            placeholder="Valfritt tills svaret är känt"
+                        />
+                    </label>
+                    <label>
+                        Poäng
+                        <input
+                            className="special-input"
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={formState.points}
+                            onChange={(e) => setFormState((current) => ({ ...current, points: e.target.value }))}
+                        />
+                    </label>
+                    <label>
+                        Låstid
+                        <input
+                            className="special-input"
+                            type="datetime-local"
+                            value={formState.lockTime}
+                            onChange={(e) => setFormState((current) => ({ ...current, lockTime: e.target.value }))}
+                        />
+                    </label>
+                    <label>
+                        Status
+                        <select
+                            className="special-input"
+                            value={formState.status}
+                            onChange={(e) => setFormState((current) => ({ ...current, status: e.target.value as AdminQuestionStatus }))}
+                        >
+                            <option value="draft">Utkast</option>
+                            <option value="published">Publicerad</option>
+                        </select>
+                    </label>
+                </div>
+            </article>
+            <article className="mini-card">
+                <span className="mini-label">Adminåtgärder</span>
+                <div className="stacked-actions">
+                    <button className="primary-button" type="button" disabled={isSaving} onClick={saveQuestion}>
+                        {isSaving ? 'Sparar...' : editingId ? 'Uppdatera fråga' : 'Skapa fråga'}
+                    </button>
+                    <button className="ghost-button" type="button" disabled={isSaving} onClick={resetForm}>
+                        {editingId ? 'Avbryt redigering' : 'Återställ formulär'}
+                    </button>
+                </div>
+            </article>
+        </div>
+    )
+
     return (
         <>
             <section className="panel">
@@ -207,7 +356,8 @@ export function AdminQuestionsTab({
                                         </thead>
                                         <tbody>
                                             {catQuestions.map((question) => (
-                                                <tr key={question.id}>
+                                                <React.Fragment key={question.id}>
+                                                <tr>
                                                     <td data-label="Fråga">{question.questionText}</td>
                                                     <td data-label="Poäng">{question.points} p</td>
                                                     <td data-label="Låstid">{new Date(question.lockTime).toLocaleString('sv-SE')}</td>
@@ -225,8 +375,8 @@ export function AdminQuestionsTab({
                                                     </td>
                                                     <td data-label="Åtgärder">
                                                         <div className="stacked-actions">
-                                                            <button className="ghost-button" type="button" disabled={isSaving} onClick={() => startEditing(question)}>
-                                                                Redigera
+                                                            <button className="ghost-button" type="button" disabled={isSaving} onClick={() => editingId === question.id ? resetForm() : startEditing(question)}>
+                                                                {editingId === question.id ? 'Stäng' : 'Redigera'}
                                                             </button>
                                                             {question.allowFreeText && (
                                                                 <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
@@ -239,6 +389,14 @@ export function AdminQuestionsTab({
                                                         </div>
                                                     </td>
                                                 </tr>
+                                                {editingId === question.id && (
+                                                    <tr className="inline-edit-row">
+                                                        <td colSpan={6}>
+                                                            {renderForm()}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                </React.Fragment>
                                             ))}
                                         </tbody>
                                     </table>
@@ -249,152 +407,11 @@ export function AdminQuestionsTab({
                 )}
             </section>
 
-            <section className="form-grid">
-                <article className="mini-card">
-                    <span className="mini-label">{editingId ? 'Redigera fråga' : 'Skapa fråga'}</span>
-                    <h2>Frågeformulär</h2>
-                    <div className="stacked-actions">
-                        <label>
-                            Frågetext
-                            <input
-                                className="special-input"
-                                type="text"
-                                value={formState.questionText}
-                                onChange={(e) => setFormState((current) => ({ ...current, questionText: e.target.value }))}
-                            />
-                        </label>
-                        <label>
-                            Kategori
-                            <select
-                                className="special-input"
-                                value={formState.category}
-                                onChange={(e) => setFormState((current) => ({ ...current, category: e.target.value as AdminQuestionCategory }))}
-                            >
-                                {adminQuestionCategories.map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Svarsalternativ (ett per rad)
-                            <textarea
-                                className="special-input"
-                                rows={5}
-                                value={formState.optionsText}
-                                onChange={(e) => setFormState((current) => ({ ...current, optionsText: e.target.value }))}
-                            />
-                        </label>
-                        <button
-                            type="button"
-                            className="admin-link-btn"
-                            onClick={() => setShowPlayerPicker((v) => !v)}
-                        >
-                            {showPlayerPicker ? '▲ Stäng spelarväljare' : '▼ Välj spelare från trupper'}
-                        </button>
-                        {showPlayerPicker && (
-                            <div className="player-picker-panel">
-                                <div className="player-picker-controls">
-                                    <select
-                                        className="special-input"
-                                        value={selectedCountry}
-                                        onChange={(e) => setSelectedCountry(e.target.value)}
-                                    >
-                                        <option value="">Alla länder</option>
-                                        {Object.keys(squads).sort().map((c) => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        className="special-input"
-                                        type="text"
-                                        placeholder="Sök spelare…"
-                                        value={playerSearch}
-                                        onChange={(e) => setPlayerSearch(e.target.value)}
-                                    />
-                                </div>
-                                <div className="player-picker-list">
-                                    {getFilteredPlayers().map(({ player, country }) => (
-                                        <button
-                                            key={`${country}-${player}`}
-                                            type="button"
-                                            className={`player-picker-item${existingOptions.has(player) ? ' already-added' : ''}`}
-                                            onClick={() => addPlayerToOptions(player)}
-                                            disabled={existingOptions.has(player)}
-                                        >
-                                            {player} <span className="player-country">({country})</span>
-                                        </button>
-                                    ))}
-                                    {getFilteredPlayers().length === 0 && (
-                                        <p className="player-picker-empty">Inga spelare hittades</p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        <label className="checkbox-label">
-                            <input
-                                type="checkbox"
-                                checked={formState.allowFreeText}
-                                onChange={(e) => setFormState((current) => ({ ...current, allowFreeText: e.target.checked }))}
-                            />
-                            Tillåt fritt textsvar (fuzzy-sökning + eget svar)
-                        </label>
-                        <label>
-                            Rätt svar
-                            <input
-                                className="special-input"
-                                type="text"
-                                value={formState.correctAnswer}
-                                onChange={(e) => setFormState((current) => ({ ...current, correctAnswer: e.target.value }))}
-                                placeholder="Valfritt tills svaret är känt"
-                            />
-                        </label>
-                        <label>
-                            Poäng
-                            <input
-                                className="special-input"
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={formState.points}
-                                onChange={(e) => setFormState((current) => ({ ...current, points: e.target.value }))}
-                            />
-                        </label>
-                        <label>
-                            Låstid
-                            <input
-                                className="special-input"
-                                type="datetime-local"
-                                value={formState.lockTime}
-                                onChange={(e) => setFormState((current) => ({ ...current, lockTime: e.target.value }))}
-                            />
-                        </label>
-                        <label>
-                            Status
-                            <select
-                                className="special-input"
-                                value={formState.status}
-                                onChange={(e) => setFormState((current) => ({ ...current, status: e.target.value as AdminQuestionStatus }))}
-                            >
-                                <option value="draft">Utkast</option>
-                                <option value="published">Publicerad</option>
-                            </select>
-                        </label>
-                    </div>
-                </article>
-                <article className="mini-card">
-                    <span className="mini-label">Adminåtgärder</span>
-                    <div className="stacked-actions">
-                        <button className="primary-button" type="button" disabled={isSaving} onClick={saveQuestion}>
-                            {isSaving ? 'Sparar...' : editingId ? 'Uppdatera fråga' : 'Skapa fråga'}
-                        </button>
-                        <button className="ghost-button" type="button" disabled={isSaving} onClick={resetForm}>
-                            Återställ formulär
-                        </button>
-                    </div>
-                </article>
-            </section>
+            {!editingId && (
+                <section className="form-grid">
+                    {renderForm()}
+                </section>
+            )}
 
             {review.questionId !== null && (
                 <section className="panel">

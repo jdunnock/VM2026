@@ -22,7 +22,7 @@ export function AdminPage({
   adminSession: AdminSession | null
   onAdminSessionChange: (session: AdminSession | null) => void
 }) {
-  const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('matchdag')
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminWorkspaceTab>('questions')
   const [questions, setQuestions] = useState<AdminQuestion[]>([])
   const [results, setResults] = useState<MatchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -279,6 +279,7 @@ export function AdminPage({
 
   const publishedCount = questions.filter((question) => question.status === 'published').length
   const savedResultsCount = results.filter((entry) => entry.resultStatus === 'completed').length
+  const tournamentStarted = savedResultsCount > 0
 
   const onAdminLogout = () => {
     onAdminSessionChange(null)
@@ -315,20 +316,24 @@ export function AdminPage({
           </p>
           <p className="status-note">Inloggad som admin: {adminSession.adminName}</p>
           <div className="tab-row">
-            <button
-              className={`tab-button ${activeAdminTab === 'matchdag' ? 'active' : ''}`}
-              type="button"
-              onClick={() => setActiveAdminTab('matchdag')}
-            >
-              Matchdag
-            </button>
-            <button
-              className={`tab-button ${activeAdminTab === 'slutspel' ? 'active' : ''}`}
-              type="button"
-              onClick={() => setActiveAdminTab('slutspel')}
-            >
-              Slutspel
-            </button>
+            {tournamentStarted && (
+              <>
+                <button
+                  className={`tab-button ${activeAdminTab === 'matchdag' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveAdminTab('matchdag')}
+                >
+                  Matchdag
+                </button>
+                <button
+                  className={`tab-button ${activeAdminTab === 'slutspel' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveAdminTab('slutspel')}
+                >
+                  Slutspel
+                </button>
+              </>
+            )}
             <button
               className={`tab-button ${activeAdminTab === 'questions' ? 'active' : ''}`}
               type="button"
