@@ -391,6 +391,7 @@ export function AdminPage({
           resetForm={resetForm}
           getAdminHeaders={getAdminHeaders}
           loadQuestions={loadQuestions}
+          savedResultsCount={savedResultsCount}
         />
       )}
     </div>

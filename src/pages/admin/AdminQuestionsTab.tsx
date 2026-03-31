@@ -49,6 +49,7 @@ type AdminQuestionsTabProps = {
     resetForm: () => void
     getAdminHeaders: () => Record<string, string> | null
     loadQuestions: () => Promise<void>
+    savedResultsCount: number
 }
 
 export function AdminQuestionsTab({
@@ -66,6 +67,7 @@ export function AdminQuestionsTab({
     resetForm,
     getAdminHeaders,
     loadQuestions,
+    savedResultsCount,
 }: AdminQuestionsTabProps) {
     const [showPlayerPicker, setShowPlayerPicker] = useState(false)
     const [playerSearch, setPlayerSearch] = useState('')
@@ -156,6 +158,18 @@ export function AdminQuestionsTab({
         } catch {
             setReview((prev) => ({ ...prev, message: 'Kunde inte spara godkända svar.', loading: false }))
         }
+    }
+
+    const CATEGORY_SETTLE_THRESHOLD: Record<string, number> = {
+        'Gruppspelsfrågor': 72,
+        'Slutspelsfrågor': 100,
+        'Turneringsfrågor': 103,
+        '33-33-33 frågor': 103,
+    }
+
+    const isSettleable = (category: string) => {
+        const threshold = CATEGORY_SETTLE_THRESHOLD[category] ?? 103
+        return savedResultsCount >= threshold
     }
 
     const settleQuestion = async (questionId: number) => {
@@ -417,12 +431,12 @@ export function AdminQuestionsTab({
                                                                 </button>
                                                             )}
                                                             {!question.allowFreeText && !question.correctAnswer?.trim() && (
-                                                                <button className="ghost-button" type="button" disabled={isSaving} onClick={() => {
+                                                                <button className="ghost-button" type="button" disabled={isSaving || !isSettleable(question.category)} onClick={() => {
                                                                     setSettlingId(settlingId === question.id ? null : question.id)
                                                                     setSettleAnswer('')
                                                                     setSettleMessage('')
-                                                                }}>
-                                                                    {settlingId === question.id ? 'Stäng' : 'Kuitta svar'}
+                                                                }} title={!isSettleable(question.category) ? 'Resultaten är inte klara ännu' : undefined}>
+                                                                    {settlingId === question.id ? 'Stäng' : 'Bekräfta resultat'}
                                                                 </button>
                                                             )}
                                                             <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
@@ -443,7 +457,7 @@ export function AdminQuestionsTab({
                                                         <td colSpan={6}>
                                                             <div className="inline-edit-form">
                                                                 <article className="mini-card">
-                                                                    <span className="mini-label">Kuitta rätt svar</span>
+                                                                    <span className="mini-label">Bekräfta resultat</span>
                                                                     <h2>{question.questionText}</h2>
                                                                     {settleMessage && <p className="save-pill">{settleMessage}</p>}
                                                                     <label>

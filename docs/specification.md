@@ -1871,7 +1871,11 @@ Checklist run date: 2026-03-25
 ### 7.60 Admin question settlement button for non-freetext questions (2026-03-31)
 
 - **Problem**: Non-freetext questions (fixed options) had no dedicated settlement button. Admin could only set the correct answer through the full edit form ("Redigera"), which was not intuitive.
-- **Fix**: Added a "Kuitta svar" button for non-freetext questions that don't have a correct answer set yet. Opens an inline settle panel with a dropdown of the question's options and a "Bekräfta och ge poäng" button.
+- **Fix**: Added a "Bekräfta resultat" button for non-freetext questions that don't have a correct answer set yet. Opens an inline settle panel with a dropdown of the question's options and a "Bekräfta och ge poäng" button.
 - **Visibility**: The button shows when `!question.allowFreeText && !question.correctAnswer?.trim()`. Once the correct answer is saved, the button disappears and the status pill changes to "✅ rätt svar satt".
-- **Implementation**: Uses the existing `PUT /api/admin/questions/:id/accepted-answers` endpoint. Added `loadQuestions` prop to `AdminQuestionsTab` for refreshing after settlement.
+- **Category-based availability**: Button is disabled (with tooltip "Resultaten är inte klara ännu") until enough match results exist for the question's category:
+  - `Gruppspelsfrågor`: enabled when ≥72 settled matches (all group matches done)
+  - `Slutspelsfrågor`: enabled when ≥100 settled matches (through quarterfinals)
+  - `Turneringsfrågor` / `33-33-33 frågor`: enabled when ≥103 settled matches (tournament complete)
+- **Implementation**: Uses the existing `PUT /api/admin/questions/:id/accepted-answers` endpoint. `savedResultsCount` prop passed from AdminPage drives the threshold check.
 
