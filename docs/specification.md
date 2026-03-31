@@ -1088,7 +1088,7 @@ Confirmed intentional data flows (not bugs):
 
 ### 7.56 Admin settlement workflow and fixture identity redesign (in progress, 2026-03-31)
 
-- **Status**: Steps 1–7 implemented. Frågor improvements and seed simulation remaining.
+- **Status**: All steps implemented.
 - **Lifecycle phase**: Phase C (tournament tracking) — admin tooling for result entry and score settlement.
 
 #### Problem statement
@@ -1193,8 +1193,8 @@ Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators 
 | 5 | Admin API: knockout advancement CRUD (`PUT/GET/DELETE /api/admin/knockout-advancement`) | ✅ Done |
 | 6 | Admin UI: Matchdag tab | ✅ Done |
 | 7 | Admin UI: Slutspel tab | ✅ Done |
-| 8 | Admin UI: Frågor tab improvements | 🔲 Not started |
-| 9 | Seed simulation update for new data model | 🔲 Not started |
+| 8 | Admin UI: Frågor tab improvements | ✅ Done |
+| 9 | Seed simulation update for new data model | ✅ Done |
 | 10 | Integration tests for new scoring pipeline | ✅ Done (existing tests updated) |
 
 - Excluded from this plan:

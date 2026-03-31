@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type {
     AdminQuestion,
@@ -152,64 +152,101 @@ export function AdminQuestionsTab({
         }
     }
 
+    const questionsByCategory = useMemo(() => {
+        const grouped = new Map<AdminQuestionCategory, AdminQuestion[]>()
+        for (const cat of adminQuestionCategories) {
+            grouped.set(cat, [])
+        }
+        for (const q of questions) {
+            const list = grouped.get(q.category)
+            if (list) list.push(q)
+            else grouped.set(q.category, [q])
+        }
+        return grouped
+    }, [questions, adminQuestionCategories])
+
     return (
         <>
             <section className="panel">
                 {questionMessage ? <p className="save-pill">{questionMessage}</p> : null}
-                <div className="table-wrap">
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>Fråga</th>
-                                <th>Kategori</th>
-                                <th>Poäng</th>
-                                <th>Låstid</th>
-                                <th>Status</th>
-                                <th>Åtgärder</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                <tr>
-                                    <td colSpan={6}>Laddar frågor...</td>
-                                </tr>
-                            ) : questions.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6}>Inga frågor skapade ännu.</td>
-                                </tr>
-                            ) : (
-                                questions.map((question) => (
-                                    <tr key={question.id}>
-                                        <td data-label="Fråga">{question.questionText}</td>
-                                        <td data-label="Kategori">{question.category}</td>
-                                        <td data-label="Poäng">{question.points} p</td>
-                                        <td data-label="Låstid">{new Date(question.lockTime).toLocaleString('sv-SE')}</td>
-                                        <td data-label="Status">
-                                            <span className={question.status === 'published' ? 'status-badge' : 'status-badge locked'}>
-                                                {question.status === 'published' ? 'Publicerad' : 'Utkast'}
-                                            </span>
-                                        </td>
-                                        <td data-label="Åtgärder">
-                                            <div className="stacked-actions">
-                                                <button className="ghost-button" type="button" disabled={isSaving} onClick={() => startEditing(question)}>
-                                                    Redigera
-                                                </button>
-                                                {question.allowFreeText && (
-                                                    <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
-                                                        Granska svar
-                                                    </button>
-                                                )}
-                                                <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
-                                                    Ta bort
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+
+                {isLoading ? (
+                    <p>Laddar frågor...</p>
+                ) : questions.length === 0 ? (
+                    <div className="lock-warning">
+                        <p>Inga frågor skapade ännu.</p>
+                    </div>
+                ) : (
+                    adminQuestionCategories.map((cat) => {
+                        const catQuestions = questionsByCategory.get(cat) ?? []
+                        if (catQuestions.length === 0) return null
+                        const answeredCount = catQuestions.filter((q) => q.correctAnswer?.trim()).length
+
+                        return (
+                            <div key={cat} className="question-category-group">
+                                <div className="matchday-card-header">
+                                    <div>
+                                        <strong>{cat}</strong>
+                                        <span className="score-breakdown-meta">
+                                            {catQuestions.length} frågor · {answeredCount}/{catQuestions.length} rätt svar satta
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="table-wrap">
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fråga</th>
+                                                <th>Poäng</th>
+                                                <th>Låstid</th>
+                                                <th>Svar</th>
+                                                <th>Status</th>
+                                                <th>Åtgärder</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {catQuestions.map((question) => (
+                                                <tr key={question.id}>
+                                                    <td data-label="Fråga">{question.questionText}</td>
+                                                    <td data-label="Poäng">{question.points} p</td>
+                                                    <td data-label="Låstid">{new Date(question.lockTime).toLocaleString('sv-SE')}</td>
+                                                    <td data-label="Svar">
+                                                        {question.correctAnswer?.trim() ? (
+                                                            <span className="result-status-pill completed" title={question.correctAnswer}>✅ rätt svar satt</span>
+                                                        ) : (
+                                                            <span className="result-status-pill planned">⏳ väntar</span>
+                                                        )}
+                                                    </td>
+                                                    <td data-label="Status">
+                                                        <span className={question.status === 'published' ? 'status-badge' : 'status-badge locked'}>
+                                                            {question.status === 'published' ? 'Publicerad' : 'Utkast'}
+                                                        </span>
+                                                    </td>
+                                                    <td data-label="Åtgärder">
+                                                        <div className="stacked-actions">
+                                                            <button className="ghost-button" type="button" disabled={isSaving} onClick={() => startEditing(question)}>
+                                                                Redigera
+                                                            </button>
+                                                            {question.allowFreeText && (
+                                                                <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
+                                                                    Granska svar
+                                                                </button>
+                                                            )}
+                                                            <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
+                                                                Ta bort
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )
+                    })
+                )}
             </section>
 
             <section className="form-grid">

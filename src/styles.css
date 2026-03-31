@@ -1876,6 +1876,19 @@ strong {
   min-width: 120px;
 }
 
+/* Question category groups */
+.question-category-group {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.question-category-group:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
 .section-heading.compact h2 {
   font-size: clamp(1.8rem, 3vw, 2.4rem);
 }

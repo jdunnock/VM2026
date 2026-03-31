@@ -11,7 +11,7 @@ import { run, all, runTransaction, db } from './db-core.js'
 import { initDatabase, closeDatabase } from './db-schema.js'
 import { createParticipant, findParticipantByName } from './db-participants.js'
 import { upsertTipsByParticipantId, deleteTipsByParticipantId } from './db-tips.js'
-import { upsertMatchResult } from './db-results.js'
+import { upsertMatchResult, upsertKnockoutAdvancement } from './db-results.js'
 import { createAdminQuestion, updateAdminQuestion, listAdminQuestions } from './db-questions.js'
 import { hashAccessCode } from './middleware.js'
 
@@ -624,6 +624,8 @@ async function insertGroupMatchResultsBefore(cutoffUtc, excludeBeforeUtc) {
 }
 
 async function insertKnockoutResults(resultSet) {
+    const advancementsByRound = new Map()
+
     for (const [matchId, home, away, homeScore, awayScore] of resultSet) {
         const round = matchId.startsWith('KO-R32') ? 'Sextondelsfinal'
             : matchId.startsWith('KO-R16') ? 'Åttondelsfinal'
@@ -644,6 +646,24 @@ async function insertKnockoutResults(resultSet) {
             resultStatus: 'completed',
             settledAt: '2026-07-01T22:00:00Z',
         })
+
+        // Track all participating teams for knockout advancement
+        // (both home and away are teams that advanced TO this round)
+        if (!advancementsByRound.has(round)) advancementsByRound.set(round, new Set())
+        advancementsByRound.get(round).add(home)
+        advancementsByRound.get(round).add(away)
+    }
+
+    // Populate knockout_advancement table with participating teams
+    for (const [round, teams] of advancementsByRound) {
+        for (const teamName of teams) {
+            await upsertKnockoutAdvancement({
+                round,
+                teamName,
+                confirmedAt: '2026-07-01T22:00:00Z',
+                source: 'simulation',
+            })
+        }
     }
 }
 
@@ -749,6 +769,10 @@ async function phaseReset() {
     // Clear all match results
     await run('DELETE FROM match_results')
     console.log('  Cleared match_results')
+
+    // Clear knockout advancement data
+    await run('DELETE FROM knockout_advancement')
+    console.log('  Cleared knockout_advancement')
 
     // Clear admin questions (only sim questions)
     const simTexts = new Set(ADMIN_QUESTIONS.map(q => q.questionText))
