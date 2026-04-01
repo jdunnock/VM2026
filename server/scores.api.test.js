@@ -197,7 +197,7 @@ test('scores API awards exact, sign-only, wrong, missing-tip, and unsettled matc
         makeTips({
             fixtureId: 'G-A-2',
             group: 'A',
-            match: 'Sydkorea - DEN/MKD/CZE/IRL',
+            match: 'Sydkorea - Tjeckien',
             date: '2026-06-12 04:00',
             homeScore: 2,
             awayScore: 0,

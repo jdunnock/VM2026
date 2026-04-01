@@ -214,7 +214,7 @@ Rows:
 - `Kan jag ändra tips efter att jag skickat in?`
 
 FAQ answer baseline:
-- `Om ett lag visas som en placeholder (t.ex. DEN/MKD/CZE/IRL) gäller ditt tips på den platsen tills FIFA fastställer laget.`
+- `FIFA har nu fastställt samtliga 48 VM-lag, så gruppspelet visas utan kval-platshållare.`
 
 ## 3.5 Adminfrågor (concept)
 
@@ -301,7 +301,7 @@ Before sending to design refinement:
 3. Add text styles for heading/body/caption.
 4. Add color styles for primary/accent/warning states.
 5. Keep all labels in Swedish.
-6. Include notes where placeholders from FIFA may appear.
+6. Treat group-stage teams as finalised; do not show multi-team qualifier placeholders.
 
 ## 7. Notes
 

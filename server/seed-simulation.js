@@ -37,17 +37,17 @@ const CASUAL = [10, 11, 12, 13, 14]
 // ─── Group data (Swedish team names from fixtures.ts) ────────────────
 
 const GROUP_TEAMS = {
-    A: ['Mexiko', 'Sydafrika', 'Sydkorea', 'DEN/MKD/CZE/IRL'],
-    B: ['Kanada', 'Qatar', 'Schweiz', 'ITA/NIR/WAL/BIH'],
+    A: ['Mexiko', 'Sydafrika', 'Sydkorea', 'Tjeckien'],
+    B: ['Kanada', 'Qatar', 'Schweiz', 'Bosnien och Hercegovina'],
     C: ['Brasilien', 'Marocko', 'Haiti', 'Skottland'],
-    D: ['USA', 'Paraguay', 'Australien', 'TUR/ROU/SVK/KOS'],
+    D: ['USA', 'Paraguay', 'Australien', 'Turkiet'],
     E: ['Tyskland', 'Curaçao', 'Elfenbenskusten', 'Ecuador'],
-    F: ['Nederländerna', 'Japan', 'UKR/SWE/POL/ALB', 'Tunisien'],
+    F: ['Nederländerna', 'Japan', 'Sverige', 'Tunisien'],
     G: ['Belgien', 'Egypten', 'Iran', 'Nya Zeeland'],
     H: ['Spanien', 'Kap Verde', 'Saudiarabien', 'Uruguay'],
-    I: ['Frankrike', 'Senegal', 'BOL/SUR/IRQ', 'Norge'],
+    I: ['Frankrike', 'Senegal', 'Irak', 'Norge'],
     J: ['Argentina', 'Algeriet', 'Österrike', 'Jordanien'],
-    K: ['Portugal', 'NCL/JAM/COD', 'Uzbekistan', 'Colombia'],
+    K: ['Portugal', 'DR Kongo', 'Uzbekistan', 'Colombia'],
     L: ['England', 'Kroatien', 'Ghana', 'Panama'],
 }
 
@@ -74,23 +74,23 @@ const GROUP_RESULTS = {
 
 // Derived: final group standings (1st → 4th) per group
 const GROUP_STANDINGS = {
-    A: ['Mexiko', 'Sydkorea', 'DEN/MKD/CZE/IRL', 'Sydafrika'],
-    B: ['Schweiz', 'Kanada', 'Qatar', 'ITA/NIR/WAL/BIH'],
+    A: ['Mexiko', 'Sydkorea', 'Tjeckien', 'Sydafrika'],
+    B: ['Schweiz', 'Kanada', 'Qatar', 'Bosnien och Hercegovina'],
     C: ['Brasilien', 'Marocko', 'Skottland', 'Haiti'],
-    D: ['USA', 'Paraguay', 'Australien', 'TUR/ROU/SVK/KOS'],
+    D: ['USA', 'Paraguay', 'Australien', 'Turkiet'],
     E: ['Tyskland', 'Ecuador', 'Elfenbenskusten', 'Curaçao'],
-    F: ['Nederländerna', 'Japan', 'Tunisien', 'UKR/SWE/POL/ALB'],
+    F: ['Nederländerna', 'Japan', 'Tunisien', 'Sverige'],
     G: ['Belgien', 'Iran', 'Egypten', 'Nya Zeeland'],
     H: ['Spanien', 'Uruguay', 'Saudiarabien', 'Kap Verde'],
-    I: ['Frankrike', 'Norge', 'Senegal', 'BOL/SUR/IRQ'],
+    I: ['Frankrike', 'Norge', 'Senegal', 'Irak'],
     J: ['Argentina', 'Algeriet', 'Österrike', 'Jordanien'],
-    K: ['Colombia', 'Portugal', 'Uzbekistan', 'NCL/JAM/COD'],
+    K: ['Colombia', 'Portugal', 'Uzbekistan', 'DR Kongo'],
     L: ['England', 'Kroatien', 'Panama', 'Ghana'],
 }
 
 // Best 8 third-place teams that advance
 const ADVANCING_THIRDS = [
-    'Skottland', 'Senegal', 'Uzbekistan', 'DEN/MKD/CZE/IRL',
+    'Skottland', 'Senegal', 'Uzbekistan', 'Tjeckien',
     'Egypten', 'Österrike', 'Elfenbenskusten', 'Saudiarabien',
 ]
 
@@ -108,7 +108,7 @@ const R32_RESULTS = [
     ['KO-R32-1', 'Mexiko', 'Saudiarabien', 2, 0],
     ['KO-R32-2', 'Schweiz', 'Skottland', 1, 0],
     ['KO-R32-3', 'Brasilien', 'Österrike', 3, 1],
-    ['KO-R32-4', 'USA', 'DEN/MKD/CZE/IRL', 2, 1],
+    ['KO-R32-4', 'USA', 'Tjeckien', 2, 1],
     ['KO-R32-5', 'Tyskland', 'Egypten', 2, 0],
     ['KO-R32-6', 'Nederländerna', 'Elfenbenskusten', 1, 0],
     ['KO-R32-7', 'Belgien', 'Senegal', 2, 1],

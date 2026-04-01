@@ -88,8 +88,8 @@ export function RulesPage({
                 </div>
                 <div className="faq-grid">
                     <article className="mini-card">
-                        <strong>Vad händer om ett lag ännu inte är fastställt?</strong>
-                        <p>Om ett lag visas som en placeholder (t.ex. DEN/MKD/CZE/IRL) gäller ditt tips på den platsen tills FIFA fastställer laget.</p>
+                        <strong>Är alla VM-lag nu fastställda?</strong>
+                        <p>Ja. FIFA har nu bekräftat samtliga 48 lag, så gruppspelet visas utan kval-platshållare.</p>
                     </article>
                     <article className="mini-card">
                         <strong>Kan jag ändra tips efter att jag skickat in?</strong>

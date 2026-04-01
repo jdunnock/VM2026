@@ -35,11 +35,8 @@ This document is the primary product and engineering specification for VM2026.
 - Official data references:
 	- Standings: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings
 	- Scores and fixtures: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=FI&wtw-filter=ALL
-- Placeholder teams are supported until qualifiers are finalized, for example:
-	- `DEN/MKD/CZE/IRL`
-	- `ITA/NIR/WAL/BIH`
-	- `UKR/SWE/POL/ALB`
-	- `NCL/JAM/COD`
+- All 48 qualified teams are now confirmed in the official FIFA list published 2026-03-31.
+- Group-stage data must use final nation names rather than multi-team qualifier placeholders.
 
 ## 4. Prediction Targets
 
@@ -206,7 +203,7 @@ Each admin-managed question must support:
 	- Introduce one canonical fixture source module in frontend code.
 	- Use FIFA 2026 official group composition from the scores/fixtures source as fixture team baseline.
 	- Sync all 72 group-stage kickoff timestamps to FIFA 2026 official scores/fixtures schedule (`idSeason=285023` in FIFA API).
-	- Display known country names in Swedish in group fixtures while leaving qualifier placeholder labels unchanged (for example `DEN/MKD/CZE/IRL`).
+	- Display official final country names in Swedish in group fixtures.
 	- Keep exported fixture collections (`groupStageFixtures`, `allTournamentFixtures`, and derived templates) in chronological kickoff order.
 	- Model all tournament fixtures match-by-match for Phase 3 preparation:
 		- Group stage: 72 matches (12 groups x 6 matches).
@@ -1878,4 +1875,17 @@ Checklist run date: 2026-03-25
   - `Slutspelsfrågor`: enabled when ≥100 settled matches (through quarterfinals)
   - `Turneringsfrågor` / `33-33-33 frågor`: enabled when ≥103 settled matches (tournament complete)
 - **Implementation**: Uses the existing `PUT /api/admin/questions/:id/accepted-answers` endpoint. `savedResultsCount` prop passed from AdminPage drives the threshold check.
+
+### 7.61 Replace final qualifier placeholders with confirmed FIFA teams (2026-04-01)
+
+- **Official source**: Updated against FIFA's official `Qualified teams for the FIFA World Cup 2026` list published 2026-03-31, plus FIFA's 2026 play-off match reports for the two inter-confederation winners.
+- **Resolved slots**:
+	- `DEN/MKD/CZE/IRL` → `Czechia` / `Tjeckien`
+	- `ITA/NIR/WAL/BIH` → `Bosnia and Herzegovina` / `Bosnien och Hercegovina`
+	- `TUR/ROU/SVK/KOS` → `Türkiye` / `Turkiet`
+	- `UKR/SWE/POL/ALB` → `Sweden` / `Sverige`
+	- `BOL/SUR/IRQ` → `Iraq` / `Irak`
+	- `NCL/JAM/COD` → `Congo DR` / `DR Kongo`
+- **Scope**: Replaced all remaining multi-team qualifier placeholders in canonical fixture data, server-side fixture mirrors, lifecycle simulation data, tests, and user-facing rules copy.
+- **Expectation**: After this change, no group-stage team names should contain slash-separated multi-team placeholders anywhere in the repository.
 

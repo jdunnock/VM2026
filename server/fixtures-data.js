@@ -12,17 +12,17 @@ import { run } from './db-core.js'
 // ─── Data (Swedish team names, matching fixtures.ts output) ──────────
 
 const GROUP_TEAMS = {
-  A: ['Mexiko', 'Sydafrika', 'Sydkorea', 'DEN/MKD/CZE/IRL'],
-  B: ['Kanada', 'Qatar', 'Schweiz', 'ITA/NIR/WAL/BIH'],
+  A: ['Mexiko', 'Sydafrika', 'Sydkorea', 'Tjeckien'],
+  B: ['Kanada', 'Qatar', 'Schweiz', 'Bosnien och Hercegovina'],
   C: ['Brasilien', 'Marocko', 'Haiti', 'Skottland'],
-  D: ['USA', 'Paraguay', 'Australien', 'TUR/ROU/SVK/KOS'],
+  D: ['USA', 'Paraguay', 'Australien', 'Turkiet'],
   E: ['Tyskland', 'Curaçao', 'Elfenbenskusten', 'Ecuador'],
-  F: ['Nederländerna', 'Japan', 'UKR/SWE/POL/ALB', 'Tunisien'],
+  F: ['Nederländerna', 'Japan', 'Sverige', 'Tunisien'],
   G: ['Belgien', 'Egypten', 'Iran', 'Nya Zeeland'],
   H: ['Spanien', 'Kap Verde', 'Saudiarabien', 'Uruguay'],
-  I: ['Frankrike', 'Senegal', 'BOL/SUR/IRQ', 'Norge'],
+  I: ['Frankrike', 'Senegal', 'Irak', 'Norge'],
   J: ['Argentina', 'Algeriet', 'Österrike', 'Jordanien'],
-  K: ['Portugal', 'NCL/JAM/COD', 'Uzbekistan', 'Colombia'],
+  K: ['Portugal', 'DR Kongo', 'Uzbekistan', 'Colombia'],
   L: ['England', 'Kroatien', 'Ghana', 'Panama'],
 }
 
