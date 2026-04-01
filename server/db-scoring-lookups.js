@@ -13,6 +13,7 @@ import {
 } from './db-core.js'
 import { mapMatchResultRow } from './db-results.js'
 import { parseJsonOrNull, parseJsonOrArray } from './json-utils.js'
+import { QUESTION_MANIFEST } from './question-manifest.js'
 import {
     normalizeText,
     normalizeComparableText,
@@ -159,6 +160,7 @@ export async function buildPublishedQuestionLookups() {
         `
       SELECT
         id,
+        slug,
         question_text,
         category,
         correct_answer,
@@ -167,19 +169,25 @@ export async function buildPublishedQuestionLookups() {
         accepted_answers_json
       FROM admin_questions
       WHERE status = 'published'
-      ORDER BY id ASC
+        AND slug IS NOT NULL
     `,
     )
 
+    const rowsBySlug = new Map(rows.map((row) => [row.slug, row]))
     const byId = new Map()
-    for (const row of rows) {
+    for (const manifestQuestion of QUESTION_MANIFEST) {
+        const row = rowsBySlug.get(manifestQuestion.slug)
+        if (!row) {
+            continue
+        }
+
         byId.set(row.id, {
             id: row.id,
-            questionText: row.question_text,
-            category: row.category,
+            questionText: manifestQuestion.questionText,
+            category: manifestQuestion.category,
             correctAnswer: row.correct_answer,
-            points: row.points,
-            status: row.status,
+            points: manifestQuestion.points,
+            status: manifestQuestion.status,
             acceptedAnswers: parseJsonOrArray(row.accepted_answers_json),
         })
     }

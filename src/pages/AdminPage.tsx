@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react'
-import {
-  defaultAdminQuestionDraft,
-} from '../constants'
 import type {
   AdminQuestion,
-  AdminQuestionDraft,
   AdminSession,
   AdminWorkspaceTab,
   MatchResult,
 } from '../types'
-import { adminQuestionCategories } from '../types'
 import { AdminSigninPanel } from './admin/AdminSigninPanel'
 import { AdminQuestionsTab } from './admin/AdminQuestionsTab'
 import { AdminMatchdagTab } from './admin/AdminMatchdagTab'
@@ -29,11 +24,8 @@ export function AdminPage({
   const [results, setResults] = useState<MatchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isResultsLoading, setIsResultsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [questionMessage, setQuestionMessage] = useState('')
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [formState, setFormState] = useState<AdminQuestionDraft>(defaultAdminQuestionDraft)
   const [adminNameInput, setAdminNameInput] = useState(adminSession?.adminName ?? '')
   const [adminCodeInput, setAdminCodeInput] = useState('')
 
@@ -163,122 +155,6 @@ export function AdminPage({
     }
   }
 
-  const startEditing = (question: AdminQuestion) => {
-    setEditingId(question.id)
-    setFormState({
-      questionText: question.questionText,
-      category: question.category,
-      optionsText: question.options.join('\n'),
-      correctAnswer: question.correctAnswer ?? '',
-      points: String(question.points),
-      lockTime: question.lockTime.slice(0, 16),
-      status: question.status,
-      allowFreeText: question.allowFreeText,
-    })
-    setQuestionMessage('')
-  }
-
-  const resetForm = () => {
-    setEditingId(null)
-    setFormState(defaultAdminQuestionDraft)
-  }
-
-  const parseFormPayload = () => {
-    const options = formState.optionsText
-      .split('\n')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-
-    const points = Number(formState.points)
-    if (!formState.questionText.trim() || options.length < 2 || Number.isNaN(points)) {
-      return null
-    }
-
-    return {
-      questionText: formState.questionText.trim(),
-      category: formState.category,
-      options,
-      correctAnswer: formState.correctAnswer.trim(),
-      points,
-      lockTime: formState.lockTime,
-      status: formState.status,
-      allowFreeText: formState.allowFreeText,
-    }
-  }
-
-  const saveQuestion = async () => {
-    const headers = getAdminHeaders()
-    if (!headers) {
-      setQuestionMessage('Admin-inloggning krävs.')
-      return
-    }
-
-    const payload = parseFormPayload()
-    if (!payload) {
-      setQuestionMessage('Fyll i alla fält. Minst två svarsalternativ krävs.')
-      return
-    }
-
-    setIsSaving(true)
-    setQuestionMessage('Sparar...')
-
-    try {
-      const response = await fetch(editingId ? `/api/admin/questions/${editingId}` : '/api/admin/questions', {
-        method: editingId ? 'PUT' : 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      })
-
-      const responsePayload = await response.json()
-      if (!response.ok) {
-        setQuestionMessage(responsePayload.error ?? 'Kunde inte spara frågan.')
-        return
-      }
-
-      setQuestionMessage(editingId ? 'Frågan uppdaterad.' : 'Frågan skapad.')
-      resetForm()
-      await loadQuestions()
-    } catch {
-      setQuestionMessage('Kunde inte spara frågan.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const deleteQuestion = async (questionId: number) => {
-    const headers = getAdminHeaders()
-    if (!headers) {
-      setQuestionMessage('Admin-inloggning krävs.')
-      return
-    }
-
-    setIsSaving(true)
-    setQuestionMessage('Tar bort fråga...')
-
-    try {
-      const response = await fetch(`/api/admin/questions/${questionId}`, {
-        method: 'DELETE',
-        headers,
-      })
-
-      if (!response.ok) {
-        const payload = await response.json()
-        setQuestionMessage(payload.error ?? 'Kunde inte ta bort frågan.')
-        return
-      }
-
-      setQuestionMessage('Frågan borttagen.')
-      if (editingId === questionId) {
-        resetForm()
-      }
-      await loadQuestions()
-    } catch {
-      setQuestionMessage('Kunde inte ta bort frågan.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   const publishedCount = questions.filter((question) => question.status === 'published').length
   const savedResultsCount = results.filter((entry) => entry.resultStatus === 'completed').length
   const tournamentStarted = phase === 'C'
@@ -287,7 +163,6 @@ export function AdminPage({
     onAdminSessionChange(null)
     setQuestions([])
     setResults([])
-    setEditingId(null)
     setQuestionMessage('Admin utloggad.')
   }
 
@@ -314,7 +189,7 @@ export function AdminPage({
             <h1>Adminpanel</h1>
           </div>
           <p className="lead-text">
-            Admin kan hantera både extrafrågor och de officiella matchresultat som driver poängräkningen.
+            Admin hanterar officiella matchresultat och fastställer svar för de fördefinierade extrafrågorna.
           </p>
           <p className="status-note">Inloggad som admin: {adminSession.adminName}</p>
           <div className="tab-row">
@@ -347,7 +222,7 @@ export function AdminPage({
           <button
             className="ghost-button"
             type="button"
-            disabled={isSaving}
+            disabled={isSigningIn}
             onClick={onAdminLogout}
           >
             Logga ut admin
@@ -355,8 +230,8 @@ export function AdminPage({
         </div>
         <article className="mini-card emphasis">
           <span className="mini-label">Status</span>
-          <strong>{publishedCount} publicerade frågor, {savedResultsCount} slutresultat</strong>
-          <p>Frågor och matchresultat hanteras från samma adminsession.</p>
+          <strong>{publishedCount} fasta frågor, {savedResultsCount} slutresultat</strong>
+          <p>Frågestruktur synkas från manifestet. Adminpanelen används bara för rättning och resultat.</p>
         </article>
       </section>
 
@@ -380,15 +255,6 @@ export function AdminPage({
           questionMessage={questionMessage}
           isLoading={isLoading}
           questions={questions}
-          isSaving={isSaving}
-          startEditing={startEditing}
-          deleteQuestion={deleteQuestion}
-          editingId={editingId}
-          formState={formState}
-          setFormState={setFormState}
-          adminQuestionCategories={adminQuestionCategories}
-          saveQuestion={saveQuestion}
-          resetForm={resetForm}
           getAdminHeaders={getAdminHeaders}
           loadQuestions={loadQuestions}
           savedResultsCount={savedResultsCount}

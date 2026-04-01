@@ -399,7 +399,7 @@ function resolveResultForTip(tip, lookups) {
 
 /**
  * Score a single fixture tip against a completed match result.
- * Returns 2 points for exact score, 1 for correct sign (1/X/2), 0 otherwise.
+ * Returns 3 points for exact score (2 result + 1 sign), 1 for correct sign (1/X/2), 0 otherwise.
  * @param {object} tip
  * @param {object|null} result
  * @returns {{points: number, reason: string, predictedSign: string|null, actualSign: string|null}}
@@ -430,7 +430,7 @@ function scoreFixtureTip(tip, result) {
 
     if (homeScore === result.homeScore && awayScore === result.awayScore) {
         return {
-            points: 2,
+            points: 3,
             reason: 'exact-score',
             predictedSign,
             actualSign,

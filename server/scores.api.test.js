@@ -213,7 +213,7 @@ test('scores API awards exact, sign-only, wrong, missing-tip, and unsettled matc
     const unsettledScore = await request('GET', `/api/scores/${unsettledParticipant}`)
 
     assert.equal(exactScore.status, 200)
-    assert.equal(exactScore.data.totalPoints, 2)
+    assert.equal(exactScore.data.totalPoints, 3)
     assert.equal(exactScore.data.breakdown[0].reason, 'exact-score')
 
     assert.equal(signScore.status, 200)
@@ -261,23 +261,19 @@ test('scores API tips without fixtureId are unsettled (no legacy fallback)', asy
 })
 
 test('scores API includes extra question scoring', async () => {
-    const questionResponse = await request(
-        'POST',
-        '/api/admin/questions',
-        {
-            questionText: 'Extra score test question',
-            category: 'Gruppspelsfrågor',
-            options: ['A', 'B'],
-            correctAnswer: 'A',
-            points: 3,
-            lockTime: '2026-06-09T21:00:00.000Z',
-            status: 'published',
-        },
+    const questionsResponse = await request('GET', '/api/admin/questions', null, { 'x-admin-code': 'vm2026-admin' })
+    assert.equal(questionsResponse.status, 200)
+
+    const question = questionsResponse.data.questions.find((entry) => entry.questionText === 'Vilken grupp görs det flest mål i totalt?')
+    assert.ok(question, 'Expected a manifest-backed group question')
+
+    const settleResponse = await request(
+        'PUT',
+        `/api/admin/questions/${question.id}/accepted-answers`,
+        { acceptedAnswers: [], correctAnswer: 'Grupp A' },
         { 'x-admin-code': 'vm2026-admin' },
     )
-
-    assert.equal(questionResponse.status, 201)
-    const questionId = questionResponse.data.id
+    assert.equal(settleResponse.status, 200)
 
     const correctParticipant = await createParticipant('Score Extra Correct', 'extra-1')
     await saveTips(correctParticipant, {
@@ -285,7 +281,7 @@ test('scores API includes extra question scoring', async () => {
         groupPlacements: [],
         knockoutPredictions: [],
         extraAnswers: {
-            [String(questionId)]: 'A',
+            [String(question.id)]: 'Grupp A',
         },
     })
 
@@ -295,7 +291,7 @@ test('scores API includes extra question scoring', async () => {
         groupPlacements: [],
         knockoutPredictions: [],
         extraAnswers: {
-            [String(questionId)]: 'B',
+            [String(question.id)]: 'Grupp B',
         },
     })
 
@@ -303,8 +299,8 @@ test('scores API includes extra question scoring', async () => {
     const wrongScore = await request('GET', `/api/scores/${wrongParticipant}`)
 
     assert.equal(correctScore.status, 200)
-    assert.equal(correctScore.data.extraQuestionPoints, 3)
-    assert.equal(correctScore.data.totalPoints, 3)
+    assert.equal(correctScore.data.extraQuestionPoints, 2)
+    assert.equal(correctScore.data.totalPoints, 2)
     assert.equal(correctScore.data.settledQuestions, 1)
     assert.equal(correctScore.data.extraBreakdown[0].reason, 'correct-answer')
 
@@ -369,7 +365,7 @@ test('scores API returns leaderboard ordering with shared ranks', async () => {
 
     assert.equal(leaderboardEntries.length, 3)
     assert.deepEqual(leaderboardEntries.map((entry) => entry.name), ['Leaderboard Leader', 'Leaderboard Tie A', 'Leaderboard Tie B'])
-    assert.deepEqual(leaderboardEntries.map((entry) => entry.totalPoints), [2, 1, 1])
+    assert.deepEqual(leaderboardEntries.map((entry) => entry.totalPoints), [3, 1, 1])
     assert.ok(leaderboardEntries[0].rank < leaderboardEntries[1].rank)
     assert.equal(leaderboardEntries[1].rank, leaderboardEntries[2].rank)
     assert.equal(leaderboardEntries[1].positionLabel, leaderboardEntries[2].positionLabel)
@@ -631,7 +627,7 @@ test('scores API edge case: partial match results track settled and unsettled co
 
     assert.equal(score.status, 200)
     assert.equal(score.data.settledMatches, 3)
-    assert.equal(score.data.fixturePoints, 3)
+    assert.equal(score.data.fixturePoints, 4)
 
     const unsettledEntry = score.data.breakdown.find((entry) => entry.fixtureId === 'SET-C-4')
     assert.ok(unsettledEntry)

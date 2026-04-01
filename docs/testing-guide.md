@@ -2,7 +2,7 @@
 
 ## Yleiskatsaus
 
-`server/seed-simulation.js` sisältää 8 snapshot-komentoa (`S-B1` → `S-C6`), jotka rakentavat turnauksen tilan vaihe vaiheelta. Jokaisessa vaiheessa voit tarkistaa sivuston käyttöliittymän ja pistetilanteen selaimessa.
+`server/seed-simulation.js` sisältää 8 snapshot-komentoa (`S-B1` → `S-C6`), jotka rakentavat turnauksen tilan vaihe vaiheelta. Extrafrågor-kysymykset tulevat nyt automaattisesti staattisesta manifestista, joten snapshotit eivät enää luo omaa erillistä kysymysjoukkoa.
 
 ## Edellytykset
 
@@ -15,7 +15,7 @@ Ajettava järjestyksessä — jokainen vaihe rakentuu edellisen päälle.
 
 ```
 node server/seed-simulation.js S-B1     # Tyhjä tila (reset)
-node server/seed-simulation.js S-B2     # 15 osallistujaa + vinkit + 7 kysymystä
+node server/seed-simulation.js S-B2     # 15 osallistujaa + vinkit + 15 manifestikysymystä
 node server/seed-simulation.js S-C1     # 4 ensimmäistä ottelua ratkaistuna
 node server/seed-simulation.js S-C2     # +28 ottelua (yhteensä 32)
 node server/seed-simulation.js S-C3     # Kaikki 72 lohko-ottelua + Sextondelsfinal-joukkueet
@@ -32,7 +32,7 @@ node server/seed-simulation.js S-C6     # Finaali pelattu (turnaus valmis)
 node server/seed-simulation.js S-B1
 ```
 
-Avaa selain → Admin-sivu näyttää tyhjältä. Ei osallistujia, ei tuloksia.
+Avaa selain → Admin-sivulla ei ole simuloituja osallistujia eikä tuloksia. Frågor-välilehti näyttää kuitenkin manifestista synkatut vakioidut kysymykset.
 
 ### 2. Lisää osallistujat ja ennusteet
 
@@ -46,7 +46,7 @@ Tämä luo:
   - **Average** (David–Julia) — ~45 %
   - **Casual** (Karl–Oscar) — ~30 %
 - Jokainen osallistuja saa otteluennusteet, lohkosijoitukset, pudotuspelivalinnat
-- 7 Extrafrågor-kysymystä (2 asetettua, 5 avoimena)
+- 15 Extrafrågor-kysymystä manifestista
 
 Tarkista selaimessa:
 - Kirjaudu sisään nimellä "Anders", koodi `1234`
@@ -65,7 +65,7 @@ node server/seed-simulation.js S-C1
 
 **Mitä tarkistaa selaimessa:**
 - Resultat & poäng -sivu näyttää tuloslistasijoitukset
-- Vain ottelupistelaskenta (exact 2p, sign 1p)
+- Vain ottelupistelaskenta (exact 3p = 2p resultat + 1p tecken, sign-only 1p)
 - Ei vielä lohko- tai pudotuspelipistelaskentaa
 
 ```bash
@@ -124,7 +124,7 @@ Expert-taso dominoi, casual jää viimeiseksi.
 node server/seed-simulation.js reset
 ```
 
-Poistaa kaikki simulaatio-osallistujat, tulokset ja knockout-etenemät.
+Poistaa kaikki simulaatio-osallistujat, tulokset ja knockout-etenemät sekä tyhjentää manifestikysymysten runtime-ratkaisut. Kysymysrakenne jää paikalleen.
 
 ## Automatisoidut testit
 

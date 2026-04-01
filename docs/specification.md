@@ -25,7 +25,7 @@ This document is the primary product and engineering specification for VM2026.
 - Real-time tournament tracking implementation.
 - Automated score ingestion and points calculation engine.
 - Leaderboard logic during tournament.
-- Detailed final points table values (Poangsattning numbers will be finalized later).
+- Alternative scoring schemes beyond the current fixed ruleset.
 
 ## 3. Tournament Data Baseline
 
@@ -354,7 +354,7 @@ Each admin-managed question must support:
 		- `Special`
 	- Finalized scoring values for current implementation:
 		- Group-stage match tip:
-			- exact score: 2 points
+			- exact score: 3 points total (`2 points for correct result + 1 point for correct 1/X/2`)
 			- correct `1/X/2` only: 1 point
 		- Group placements:
 			- 1 point per team in the correct final position within its group
@@ -1376,7 +1376,7 @@ Coverage principle:
 
 | Scenario | Tip Data | Match Result | Expected Points | Notes |
 |----------|----------|--------------|-----------------|-------|
-| Exact score | home=1, away=0, sign=1 | home=1, away=0, status=completed | 2 | Hit all three |
+| Exact score | home=1, away=0, sign=1 | home=1, away=0, status=completed | 3 | Hit all three; exact result includes the correct sign point |
 | Correct sign | home=1, away=0, sign=1 | home=1, away=1, status=completed | 1 | Sign correct, score wrong |
 | Wrong sign | home=1, away=0, sign=1 | home=1, away=0 *reversed* → sign=2 | 0 | Sign wrong |
 | No tip | null, null, '' | home=1, away=1, status=completed | 0 | Participant didn't enter |
@@ -1853,7 +1853,7 @@ Checklist run date: 2026-03-25
 - **Automated tests** (`server/lifecycle.api.test.js`, `npm run test:lifecycle`): 5 invariant-based tests using Node test runner + spawn API server against temp DB:
   - T1: S-C1 — fixture scoring begins (exact/sign points), no group/knockout points yet.
   - T2: S-C2 — expert tier average fixture points > casual tier average.
-  - T3: S-C3 — 72 settled matches, group placement points > 0 for experts, 1 KO round settled with knockout points.
+	- T3: S-C3 — 72 settled matches, group placement points > 0 for experts, 1 KO round settled with knockout points, and golden fixture assertion for Anders `Mexiko - Sydkorea = 1-0` awarding 3 points.
   - T4: S-C4 — ≥3 KO rounds settled, valid rankings, tied participants share same rank.
   - T5: S-C5+S-C6 — all 5 KO rounds, total = sum of components, expert avg > average avg > casual avg, no rank gaps, final standings printed.
 - **Deterministic predictions**: `makeRng(seed)` produces repeatable predictions. Expert tier (~65% accuracy), average (~45%), casual (~30%).
@@ -1888,4 +1888,67 @@ Checklist run date: 2026-03-25
 	- `NCL/JAM/COD` → `Congo DR` / `DR Kongo`
 - **Scope**: Replaced all remaining multi-team qualifier placeholders in canonical fixture data, server-side fixture mirrors, lifecycle simulation data, tests, and user-facing rules copy.
 - **Expectation**: After this change, no group-stage team names should contain slash-separated multi-team placeholders anywhere in the repository.
+
+### 7.62 Static question manifest and settlement-only admin flow (2026-04-01)
+
+- **Source of truth change**: Extra-question structure is no longer authored from the admin UI. Canonical question definitions now live in `server/question-manifest.js` as a 15-question manifest derived from `EM-tipset 2024.xls` rows 63-106, with the agreed wording corrections:
+	- `Hur många mål gör Sverige i gruppspelet?`
+	- `Vilket land gör flest mål i VM av Sverige, Tjeckien och Norge?`
+- **Manifest coverage**:
+	- `Turneringsfrågor`: `Slutsegrare`, `Skytteligavinnare`
+	- `Gruppspelsfrågor`: 4 fixed questions
+	- `Slutspelsfrågor`: 4 fixed questions
+	- `33-33-33 frågor`: 5 fixed questions
+- **Points model**: `Slutsegrare` and `Skytteligavinnare` are worth 4 points each. All remaining manifest questions are worth 2 points each.
+- **Runtime model**: SQLite `admin_questions` remains the persistence layer for runtime settlement state (`correct_answer`, `accepted_answers_json`, timestamps, FK target for `participant_extra_answers`), but structure fields are synchronized from the manifest at startup instead of being admin-editable.
+- **DB sync behavior**:
+	- `admin_questions.slug` is added as the stable manifest identifier.
+	- Startup sync backfills `slug` by exact text when possible, updates manifest-backed rows in place, inserts any missing manifest rows, and leaves non-manifest legacy rows untouched but hidden from active read endpoints.
+	- Public/admin question listings and question scoring lookups now include only manifest-backed rows in manifest order.
+- **Admin UX change**: Admin `Frågor` tab is settlement-only. Structural create/edit/delete is removed from the UI and blocked in the API. Admin can only inspect the predefined questions, set `correctAnswer` for fixed-option questions via `Bekräfta resultat`, and review/save accepted variants for free-text questions via `Granska svar`.
+- **Lifecycle scripts**: `server/seed-simulation.js` now uses the manifest as its only question source. Reset no longer deletes question definitions; instead it clears runtime settlement state and participant simulation data.
+- **Compatibility note**: Existing participant extra answers continue to use numeric `question_id` foreign keys. This refactor preserves manifest-backed row IDs when a question can be matched by `slug` or exact text during sync; legacy non-manifest questions are excluded from active UI/API flows.
+
+### 7.63 Rules page scoring copy aligned with fixed scoring rules (2026-04-01)
+
+- **Problem:** The participant-facing FAQ on `Regler och låsning` still said scoring is admin-defined and may vary per category, which contradicted the implemented fixed scoring rules and the Excel-based baseline.
+- **Fix:** Update the visible FAQ copy to state the currently implemented base scoring explicitly: correct `1/X/2` = 1 point, exact score = 3 points total (`2 for result + 1 for sign`), and each correctly placed team in a settled group = 1 point.
+- This is a copy/spec alignment change only; backend scoring logic already matched these rules.
+- **Files changed:** `src/pages/RulesPage.tsx`, `docs/specification.md`.
+- **No API or backend changes.**
+
+### 7.64 Exact score awards cumulative match points (2026-04-01)
+
+- **Problem:** Match scoring treated `exact score` and `correct 1/X/2` as mutually exclusive, awarding only 2 points for an exact hit. The agreed rules and Excel wording are cumulative: `Rätt tecken 1p, rätt resultat 2p`.
+- **Fix:** Change fixture scoring so an exact score awards 3 points total (`2 for exact result + 1 for the implied correct sign`). Sign-only hits remain 1 point.
+- **Regression coverage:** Update API scoring tests and user-facing documentation examples to assert the cumulative exact-score rule.
+- **Files changed:** `server/db-scoring-calc.js`, `server/scores.api.test.js`, `src/pages/RulesPage.tsx`, `docs/specification.md`, `docs/testing-guide.md`.
+- **Validation:** `npm run test:api`, `npm run test:lifecycle`, `npm run build`.
+
+### 7.65 Admin question settlement readiness indicators (2026-04-01)
+
+- **Problem:** In Phase C the `Frågor` tab only exposed settlement readiness through a disabled `Bekräfta resultat` button tooltip (`Resultaten är inte klara ännu`). Admin could not quickly scan which fixed-option questions were ready to confirm and which still waited for more saved match results.
+- **Fix:** Add visible readiness indicators in the admin question table for fixed-option manifest questions:
+	- unanswered but eligible questions show `Redo att bekräfta`
+	- unanswered but blocked questions show `Väntar på resultat` plus result-progress text (`saved/threshold`, remaining count)
+	- category headers show compact counts for `redo att bekräfta` and `väntar på resultat`
+	- ready confirmation actions use a brand-tinted outline style and the row gets a subtle green readiness highlight instead of a blue primary CTA
+- **Scope:** UI-only change in the existing settlement-only admin flow. No API changes.
+- **Files changed:** `src/pages/admin/AdminQuestionsTab.tsx`, `src/styles.css`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.66 Admin question readiness uses per-question manifest steps (2026-04-01)
+
+- **Problem:** Readiness for `Bekräfta resultat` was based on coarse category thresholds. In `S-C4`, several `Slutspelsfrågor` that depend on the final tournament outcome still appeared ready even though the manifest only settles them at the end of the tournament.
+- **Fix:** Drive readiness from per-question manifest slugs instead of category alone. Frontend now maps each manifest-backed slug to its required completed-result threshold:
+	- group-stage settlement questions: `72`
+	- final/tournament settlement questions: `103`
+	- fallback to category threshold only for legacy or unknown rows
+- **Examples blocked correctly before tournament end:**
+	- `Antal mål under ordinarie matchtid i finalen?`
+	- `Hur många mål gör han som vinner skytteligan i VM?`
+	- `Hur många 0-0 matcher blir det totalt under turneringen?`
+	- `Hur många slutspelsmatcher slutar oavgjort under ordinarie matchtid?`
+- **Files changed:** `src/pages/admin/AdminQuestionsTab.tsx`, `docs/specification.md`.
+- **Validation:** `npm run build`
 

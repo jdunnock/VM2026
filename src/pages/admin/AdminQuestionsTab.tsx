@@ -1,14 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
-import type {
-    AdminQuestion,
-    AdminQuestionCategory,
-    AdminQuestionDraft,
-    AdminQuestionStatus,
-} from '../../types'
-import squadsData from '../../data/vm2026-squads.json'
-
-type SquadData = Record<string, string[]>
+import React, { useCallback, useMemo, useState } from 'react'
+import type { AdminQuestion, AdminQuestionCategory } from '../../types'
+import { adminQuestionCategories } from '../../types'
 
 type AnswerEntry = {
     answer: string
@@ -38,81 +30,65 @@ type AdminQuestionsTabProps = {
     questionMessage: string
     isLoading: boolean
     questions: AdminQuestion[]
-    isSaving: boolean
-    startEditing: (question: AdminQuestion) => void
-    deleteQuestion: (questionId: number) => void
-    editingId: number | null
-    formState: AdminQuestionDraft
-    setFormState: Dispatch<SetStateAction<AdminQuestionDraft>>
-    adminQuestionCategories: AdminQuestionCategory[]
-    saveQuestion: () => void
-    resetForm: () => void
     getAdminHeaders: () => Record<string, string> | null
     loadQuestions: () => Promise<void>
     savedResultsCount: number
+}
+
+const CATEGORY_SETTLE_THRESHOLD: Record<string, number> = {
+    'Gruppspelsfrågor': 72,
+    'Slutspelsfrågor': 100,
+    'Turneringsfrågor': 103,
+    '33-33-33 frågor': 103,
+}
+
+const QUESTION_SETTLE_RESULT_THRESHOLD_BY_SLUG: Record<string, number> = {
+    'group-most-goals-total': 72,
+    'group-five-plus-goal-matches': 72,
+    'group-zero-goal-teams': 72,
+    'group-sweden-goals': 72,
+    'final-regulation-goals': 103,
+    'top-scorer-goals': 103,
+    'tournament-zero-zero-matches': 103,
+    'knockout-regulation-draws': 103,
+    'tournament-winner': 103,
+    'top-scorer': 103,
+    'top-scorer-kane-lukaku-griezmann': 103,
+    'top-scorer-gvardiol-maguire-van-dijk': 103,
+    'top-scorer-bruno-kdb-bellingham': 103,
+    'team-most-goals-sweden-czechia-norway': 103,
+    'team-most-goals-spain-germany-portugal': 103,
+}
+
+function getSettleThreshold(question: AdminQuestion) {
+    if (question.slug && QUESTION_SETTLE_RESULT_THRESHOLD_BY_SLUG[question.slug] !== undefined) {
+        return QUESTION_SETTLE_RESULT_THRESHOLD_BY_SLUG[question.slug]
+    }
+
+    return CATEGORY_SETTLE_THRESHOLD[question.category] ?? 103
 }
 
 export function AdminQuestionsTab({
     questionMessage,
     isLoading,
     questions,
-    isSaving,
-    startEditing,
-    deleteQuestion,
-    editingId,
-    formState,
-    setFormState,
-    adminQuestionCategories,
-    saveQuestion,
-    resetForm,
     getAdminHeaders,
     loadQuestions,
     savedResultsCount,
 }: AdminQuestionsTabProps) {
-    const [showPlayerPicker, setShowPlayerPicker] = useState(false)
-    const [playerSearch, setPlayerSearch] = useState('')
-    const [selectedCountry, setSelectedCountry] = useState('')
     const [settlingId, setSettlingId] = useState<number | null>(null)
     const [settleAnswer, setSettleAnswer] = useState('')
     const [settleMessage, setSettleMessage] = useState('')
     const [settleLoading, setSettleLoading] = useState(false)
     const [review, setReview] = useState<ReviewPanelState>(initialReviewState)
 
-    const squads = squadsData as SquadData
-
-    const existingOptions = new Set(
-        formState.optionsText.split('\n').map((s) => s.trim()).filter(Boolean)
-    )
-
-    function addPlayerToOptions(player: string) {
-        if (existingOptions.has(player)) return
-        const current = formState.optionsText.trim()
-        const updated = current ? `${current}\n${player}` : player
-        setFormState((prev) => ({ ...prev, optionsText: updated }))
-    }
-
-    function getFilteredPlayers(): Array<{ player: string; country: string }> {
-        const results: Array<{ player: string; country: string }> = []
-        const countries = selectedCountry ? [selectedCountry] : Object.keys(squads).sort()
-        const q = playerSearch.toLowerCase()
-        for (const country of countries) {
-            const players = squads[country] ?? []
-            for (const player of players) {
-                if (!q || player.toLowerCase().includes(q) || country.toLowerCase().includes(q)) {
-                    results.push({ player, country })
-                }
-            }
-        }
-        return results.slice(0, 100)
-    }
-
     const openReviewPanel = useCallback(async (questionId: number) => {
         const headers = getAdminHeaders()
         if (!headers) return
         setReview({ ...initialReviewState, questionId, loading: true })
         try {
-            const res = await fetch(`/api/admin/questions/${questionId}/answers`, { headers })
-            const data = await res.json()
+            const response = await fetch(`/api/admin/questions/${questionId}/answers`, { headers })
+            const data = await response.json()
             setReview((prev) => ({
                 ...prev,
                 answers: data.answers ?? [],
@@ -129,7 +105,7 @@ export function AdminQuestionsTab({
         setReview((prev) => ({
             ...prev,
             accepted: prev.accepted.includes(answer)
-                ? prev.accepted.filter((a) => a !== answer)
+                ? prev.accepted.filter((item) => item !== answer)
                 : [...prev.accepted, answer],
         }))
     }
@@ -140,37 +116,29 @@ export function AdminQuestionsTab({
         if (!headers) return
         setReview((prev) => ({ ...prev, loading: true }))
         try {
-            const res = await fetch(`/api/admin/questions/${review.questionId}/accepted-answers`, {
+            const response = await fetch(`/api/admin/questions/${review.questionId}/accepted-answers`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify({ acceptedAnswers: review.accepted, correctAnswer: review.correctAnswer.trim() }),
             })
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Okänt fel' }))
-                setReview((prev) => ({ ...prev, message: err.error ?? 'Kunde inte spara.', loading: false }))
+            if (!response.ok) {
+                const errorPayload = await response.json().catch(() => ({ error: 'Okänt fel' }))
+                setReview((prev) => ({ ...prev, message: errorPayload.error ?? 'Kunde inte spara.', loading: false }))
                 return
             }
+
             setReview((prev) => ({
                 ...prev,
                 message: review.correctAnswer.trim() ? 'Rätt svar och godkända varianter sparade — poäng uppdateras.' : 'Godkända svar sparade.',
                 loading: false,
             }))
+            await loadQuestions()
         } catch {
             setReview((prev) => ({ ...prev, message: 'Kunde inte spara godkända svar.', loading: false }))
         }
     }
 
-    const CATEGORY_SETTLE_THRESHOLD: Record<string, number> = {
-        'Gruppspelsfrågor': 72,
-        'Slutspelsfrågor': 100,
-        'Turneringsfrågor': 103,
-        '33-33-33 frågor': 103,
-    }
-
-    const isSettleable = (category: string) => {
-        const threshold = CATEGORY_SETTLE_THRESHOLD[category] ?? 103
-        return savedResultsCount >= threshold
-    }
+    const isSettleable = (question: AdminQuestion) => savedResultsCount >= getSettleThreshold(question)
 
     const settleQuestion = async (questionId: number) => {
         if (!settleAnswer.trim()) return
@@ -178,16 +146,17 @@ export function AdminQuestionsTab({
         if (!headers) return
         setSettleLoading(true)
         try {
-            const res = await fetch(`/api/admin/questions/${questionId}/accepted-answers`, {
+            const response = await fetch(`/api/admin/questions/${questionId}/accepted-answers`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify({ acceptedAnswers: [], correctAnswer: settleAnswer.trim() }),
             })
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Okänt fel' }))
-                setSettleMessage(err.error ?? 'Kunde inte kuitta svaret.')
+            if (!response.ok) {
+                const errorPayload = await response.json().catch(() => ({ error: 'Okänt fel' }))
+                setSettleMessage(errorPayload.error ?? 'Kunde inte kuitta svaret.')
                 return
             }
+
             setSettleMessage('Rätt svar sparat — poäng uppdateras.')
             setSettlingId(null)
             setSettleAnswer('')
@@ -201,191 +170,57 @@ export function AdminQuestionsTab({
 
     const questionsByCategory = useMemo(() => {
         const grouped = new Map<AdminQuestionCategory, AdminQuestion[]>()
-        for (const cat of adminQuestionCategories) {
-            grouped.set(cat, [])
+        for (const category of adminQuestionCategories) {
+            grouped.set(category, [])
         }
-        for (const q of questions) {
-            const list = grouped.get(q.category)
-            if (list) list.push(q)
-            else grouped.set(q.category, [q])
+        for (const question of questions) {
+            const list = grouped.get(question.category)
+            if (list) list.push(question)
         }
         return grouped
-    }, [questions, adminQuestionCategories])
-
-    const renderForm = () => (
-        <div className="inline-edit-form">
-            <article className="mini-card">
-                <span className="mini-label">{editingId ? 'Redigera fråga' : 'Skapa fråga'}</span>
-                <h2>Frågeformulär</h2>
-                <div className="stacked-actions">
-                    <label>
-                        Frågetext
-                        <input
-                            className="special-input"
-                            type="text"
-                            value={formState.questionText}
-                            onChange={(e) => setFormState((current) => ({ ...current, questionText: e.target.value }))}
-                        />
-                    </label>
-                    <label>
-                        Kategori
-                        <select
-                            className="special-input"
-                            value={formState.category}
-                            onChange={(e) => setFormState((current) => ({ ...current, category: e.target.value as AdminQuestionCategory }))}
-                        >
-                            {adminQuestionCategories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Svarsalternativ (ett per rad)
-                        <textarea
-                            className="special-input"
-                            rows={5}
-                            value={formState.optionsText}
-                            onChange={(e) => setFormState((current) => ({ ...current, optionsText: e.target.value }))}
-                        />
-                    </label>
-                    <button
-                        type="button"
-                        className="admin-link-btn"
-                        onClick={() => setShowPlayerPicker((v) => !v)}
-                    >
-                        {showPlayerPicker ? '▲ Stäng spelarväljare' : '▼ Välj spelare från trupper'}
-                    </button>
-                    {showPlayerPicker && (
-                        <div className="player-picker-panel">
-                            <div className="player-picker-controls">
-                                <select
-                                    className="special-input"
-                                    value={selectedCountry}
-                                    onChange={(e) => setSelectedCountry(e.target.value)}
-                                >
-                                    <option value="">Alla länder</option>
-                                    {Object.keys(squads).sort().map((c) => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
-                                </select>
-                                <input
-                                    className="special-input"
-                                    type="text"
-                                    placeholder="Sök spelare…"
-                                    value={playerSearch}
-                                    onChange={(e) => setPlayerSearch(e.target.value)}
-                                />
-                            </div>
-                            <div className="player-picker-list">
-                                {getFilteredPlayers().map(({ player, country }) => (
-                                    <button
-                                        key={`${country}-${player}`}
-                                        type="button"
-                                        className={`player-picker-item${existingOptions.has(player) ? ' already-added' : ''}`}
-                                        onClick={() => addPlayerToOptions(player)}
-                                        disabled={existingOptions.has(player)}
-                                    >
-                                        {player} <span className="player-country">({country})</span>
-                                    </button>
-                                ))}
-                                {getFilteredPlayers().length === 0 && (
-                                    <p className="player-picker-empty">Inga spelare hittades</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                    <label className="checkbox-label">
-                        <input
-                            type="checkbox"
-                            checked={formState.allowFreeText}
-                            onChange={(e) => setFormState((current) => ({ ...current, allowFreeText: e.target.checked }))}
-                        />
-                        Tillåt fritt textsvar (fuzzy-sökning + eget svar)
-                    </label>
-                    <label>
-                        Rätt svar
-                        <input
-                            className="special-input"
-                            type="text"
-                            value={formState.correctAnswer}
-                            onChange={(e) => setFormState((current) => ({ ...current, correctAnswer: e.target.value }))}
-                            placeholder="Valfritt tills svaret är känt"
-                        />
-                    </label>
-                    <label>
-                        Poäng
-                        <input
-                            className="special-input"
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={formState.points}
-                            onChange={(e) => setFormState((current) => ({ ...current, points: e.target.value }))}
-                        />
-                    </label>
-                    <label>
-                        Låstid
-                        <input
-                            className="special-input"
-                            type="datetime-local"
-                            value={formState.lockTime}
-                            onChange={(e) => setFormState((current) => ({ ...current, lockTime: e.target.value }))}
-                        />
-                    </label>
-                    <label>
-                        Status
-                        <select
-                            className="special-input"
-                            value={formState.status}
-                            onChange={(e) => setFormState((current) => ({ ...current, status: e.target.value as AdminQuestionStatus }))}
-                        >
-                            <option value="draft">Utkast</option>
-                            <option value="published">Publicerad</option>
-                        </select>
-                    </label>
-                </div>
-            </article>
-            <article className="mini-card">
-                <span className="mini-label">Adminåtgärder</span>
-                <div className="stacked-actions">
-                    <button className="primary-button" type="button" disabled={isSaving} onClick={saveQuestion}>
-                        {isSaving ? 'Sparar...' : editingId ? 'Uppdatera fråga' : 'Skapa fråga'}
-                    </button>
-                    <button className="ghost-button" type="button" disabled={isSaving} onClick={resetForm}>
-                        {editingId ? 'Avbryt redigering' : 'Återställ formulär'}
-                    </button>
-                </div>
-            </article>
-        </div>
-    )
+    }, [questions])
 
     return (
         <>
             <section className="panel">
                 {questionMessage ? <p className="save-pill">{questionMessage}</p> : null}
+                <div className="lock-warning" style={{ marginBottom: '1rem' }}>
+                    <p>Frågestrukturen styrs av den fasta manifestlistan. Här kan du bara sätta rätt svar och godkända varianter.</p>
+                </div>
 
                 {isLoading ? (
                     <p>Laddar frågor...</p>
                 ) : questions.length === 0 ? (
                     <div className="lock-warning">
-                        <p>Inga frågor skapade ännu.</p>
+                        <p>Inga manifestfrågor synkade ännu.</p>
                     </div>
                 ) : (
-                    adminQuestionCategories.map((cat) => {
-                        const catQuestions = questionsByCategory.get(cat) ?? []
-                        if (catQuestions.length === 0) return null
-                        const answeredCount = catQuestions.filter((q) => q.correctAnswer?.trim()).length
+                    adminQuestionCategories.map((category) => {
+                        const categoryQuestions = questionsByCategory.get(category) ?? []
+                        if (categoryQuestions.length === 0) return null
+
+                        const answeredCount = categoryQuestions.filter((question) => question.correctAnswer?.trim()).length
+                        const readyCount = categoryQuestions.filter((question) => !question.allowFreeText && !question.correctAnswer?.trim() && isSettleable(question)).length
+                        const waitingCount = categoryQuestions.filter((question) => !question.allowFreeText && !question.correctAnswer?.trim() && !isSettleable(question)).length
 
                         return (
-                            <div key={cat} className="question-category-group">
+                            <div key={category} className="question-category-group">
                                 <div className="matchday-card-header">
                                     <div>
-                                        <strong>{cat}</strong>
+                                        <strong>{category}</strong>
                                         <span className="score-breakdown-meta">
-                                            {catQuestions.length} frågor · {answeredCount}/{catQuestions.length} rätt svar satta
+                                            {categoryQuestions.length} frågor · {answeredCount}/{categoryQuestions.length} rätt svar satta
                                         </span>
+                                        {(readyCount > 0 || waitingCount > 0) && (
+                                            <div className="inline-stats question-settlement-summary">
+                                                {readyCount > 0 && (
+                                                    <span className="result-status-pill live">{readyCount} redo att bekräfta</span>
+                                                )}
+                                                {waitingCount > 0 && (
+                                                    <span className="result-status-pill planned">{waitingCount} väntar på resultat</span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -402,95 +237,121 @@ export function AdminQuestionsTab({
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {catQuestions.map((question) => (
+                                            {categoryQuestions.map((question) => (
                                                 <React.Fragment key={question.id}>
-                                                <tr>
-                                                    <td data-label="Fråga">{question.questionText}</td>
-                                                    <td data-label="Poäng">{question.points} p</td>
-                                                    <td data-label="Låstid">{new Date(question.lockTime).toLocaleString('sv-SE')}</td>
-                                                    <td data-label="Svar">
-                                                        {question.correctAnswer?.trim() ? (
-                                                            <span className="result-status-pill completed" title={question.correctAnswer}>✅ rätt svar satt</span>
-                                                        ) : (
-                                                            <span className="result-status-pill planned">⏳ väntar</span>
-                                                        )}
-                                                    </td>
-                                                    <td data-label="Status">
-                                                        <span className={question.status === 'published' ? 'status-badge' : 'status-badge locked'}>
-                                                            {question.status === 'published' ? 'Publicerad' : 'Utkast'}
-                                                        </span>
-                                                    </td>
-                                                    <td data-label="Åtgärder">
-                                                        <div className="stacked-actions">
-                                                            <button className="ghost-button" type="button" disabled={isSaving} onClick={() => editingId === question.id ? resetForm() : startEditing(question)}>
-                                                                {editingId === question.id ? 'Stäng' : 'Redigera'}
-                                                            </button>
-                                                            {question.allowFreeText && (
-                                                                <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
-                                                                    Granska svar
-                                                                </button>
+                                                    {(() => {
+                                                        const hasCorrectAnswer = Boolean(question.correctAnswer?.trim())
+                                                        const questionIsSettleable = isSettleable(question)
+                                                        const threshold = getSettleThreshold(question)
+                                                        const resultsRemaining = Math.max(0, threshold - savedResultsCount)
+                                                        const rowClassName = question.allowFreeText
+                                                            ? ''
+                                                            : hasCorrectAnswer
+                                                                ? ''
+                                                                : questionIsSettleable
+                                                                    ? 'question-row-ready'
+                                                                    : 'question-row-waiting'
+
+                                                        return (
+                                                    <tr className={rowClassName}>
+                                                        <td data-label="Fråga">{question.questionText}</td>
+                                                        <td data-label="Poäng">{question.points} p</td>
+                                                        <td data-label="Låstid">{new Date(question.lockTime).toLocaleString('sv-SE')}</td>
+                                                        <td data-label="Svar">
+                                                            {hasCorrectAnswer ? (
+                                                                <span className="result-status-pill completed" title={question.correctAnswer}>✅ rätt svar satt</span>
+                                                            ) : question.allowFreeText ? (
+                                                                <span className="result-status-pill planned">Manuell granskning</span>
+                                                            ) : questionIsSettleable ? (
+                                                                <span className="result-status-pill live">Redo att bekräfta</span>
+                                                            ) : (
+                                                                <div className="question-pending-status">
+                                                                    <span className="result-status-pill planned">Väntar på resultat</span>
+                                                                    <span className="score-breakdown-meta">
+                                                                        {savedResultsCount}/{threshold} resultat sparade · {resultsRemaining} kvar
+                                                                    </span>
+                                                                </div>
                                                             )}
-                                                            {!question.allowFreeText && !question.correctAnswer?.trim() && (
-                                                                <button className="ghost-button" type="button" disabled={isSaving || !isSettleable(question.category)} onClick={() => {
-                                                                    setSettlingId(settlingId === question.id ? null : question.id)
-                                                                    setSettleAnswer('')
-                                                                    setSettleMessage('')
-                                                                }} title={!isSettleable(question.category) ? 'Resultaten är inte klara ännu' : undefined}>
-                                                                    {settlingId === question.id ? 'Stäng' : 'Bekräfta resultat'}
-                                                                </button>
-                                                            )}
-                                                            <button className="ghost-button danger" type="button" disabled={isSaving} onClick={() => deleteQuestion(question.id)}>
-                                                                Ta bort
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {editingId === question.id && (
-                                                    <tr className="inline-edit-row">
-                                                        <td colSpan={6}>
-                                                            {renderForm()}
                                                         </td>
-                                                    </tr>
-                                                )}
-                                                {settlingId === question.id && (
-                                                    <tr className="inline-edit-row">
-                                                        <td colSpan={6}>
-                                                            <div className="inline-edit-form">
-                                                                <article className="mini-card">
-                                                                    <span className="mini-label">Bekräfta resultat</span>
-                                                                    <h2>{question.questionText}</h2>
-                                                                    {settleMessage && <p className="save-pill">{settleMessage}</p>}
-                                                                    <label>
-                                                                        Välj rätt svar
-                                                                        <select
-                                                                            className="special-input"
-                                                                            value={settleAnswer}
-                                                                            onChange={(e) => setSettleAnswer(e.target.value)}
-                                                                        >
-                                                                            <option value="">— Välj —</option>
-                                                                            {question.options.map((opt) => (
-                                                                                <option key={opt} value={opt}>{opt}</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </label>
-                                                                    <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
-                                                                        <button
-                                                                            className="primary-button"
-                                                                            type="button"
-                                                                            disabled={!settleAnswer.trim() || settleLoading}
-                                                                            onClick={() => settleQuestion(question.id)}
-                                                                        >
-                                                                            Bekräfta och ge poäng
-                                                                        </button>
-                                                                        <button className="ghost-button" type="button" onClick={() => { setSettlingId(null); setSettleAnswer(''); setSettleMessage('') }}>
-                                                                            Avbryt
-                                                                        </button>
-                                                                    </div>
-                                                                </article>
+                                                        <td data-label="Status">
+                                                            <span className={question.status === 'published' ? 'status-badge' : 'status-badge locked'}>
+                                                                {question.status === 'published' ? 'Publicerad' : 'Utkast'}
+                                                            </span>
+                                                        </td>
+                                                        <td data-label="Åtgärder">
+                                                            <div className="stacked-actions">
+                                                                {question.allowFreeText && (
+                                                                    <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
+                                                                        Granska svar
+                                                                    </button>
+                                                                )}
+                                                                {!question.allowFreeText && !hasCorrectAnswer && (
+                                                                    <button
+                                                                        className={questionIsSettleable ? 'ghost-button question-action-button ready' : 'ghost-button question-action-button'}
+                                                                        type="button"
+                                                                        disabled={!questionIsSettleable}
+                                                                        onClick={() => {
+                                                                            setSettlingId(settlingId === question.id ? null : question.id)
+                                                                            setSettleAnswer('')
+                                                                            setSettleMessage('')
+                                                                        }}
+                                                                        title={!questionIsSettleable ? `Resultaten är inte klara ännu (${savedResultsCount}/${threshold})` : undefined}
+                                                                    >
+                                                                        {settlingId === question.id ? 'Stäng' : questionIsSettleable ? 'Bekräfta resultat' : 'Väntar på resultat'}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                )}
+                                                        )
+                                                    })()}
+                                                    {settlingId === question.id && (
+                                                        <tr className="inline-edit-row">
+                                                            <td colSpan={6}>
+                                                                <div className="inline-edit-form">
+                                                                    <article className="mini-card">
+                                                                        <span className="mini-label">Bekräfta resultat</span>
+                                                                        <h2>{question.questionText}</h2>
+                                                                        {settleMessage && <p className="save-pill">{settleMessage}</p>}
+                                                                        <label>
+                                                                            Välj rätt svar
+                                                                            <select
+                                                                                className="special-input"
+                                                                                value={settleAnswer}
+                                                                                onChange={(event) => setSettleAnswer(event.target.value)}
+                                                                            >
+                                                                                <option value="">— Välj —</option>
+                                                                                {question.options.map((option) => (
+                                                                                    <option key={option} value={option}>{option}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </label>
+                                                                        <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
+                                                                            <button
+                                                                                className="primary-button"
+                                                                                type="button"
+                                                                                disabled={!settleAnswer.trim() || settleLoading}
+                                                                                onClick={() => settleQuestion(question.id)}
+                                                                            >
+                                                                                Bekräfta och ge poäng
+                                                                            </button>
+                                                                            <button
+                                                                                className="ghost-button"
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setSettlingId(null)
+                                                                                    setSettleAnswer('')
+                                                                                    setSettleMessage('')
+                                                                                }}
+                                                                            >
+                                                                                Avbryt
+                                                                            </button>
+                                                                        </div>
+                                                                    </article>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </React.Fragment>
                                             ))}
                                         </tbody>
@@ -502,15 +363,9 @@ export function AdminQuestionsTab({
                 )}
             </section>
 
-            {!editingId && (
-                <section className="form-grid">
-                    {renderForm()}
-                </section>
-            )}
-
             {review.questionId !== null && (
                 <section className="panel">
-                    <h3>Granska svar — Fråga #{review.questionId}</h3>
+                    <h3>Granska svar</h3>
                     {review.message && <p className="save-pill">{review.message}</p>}
                     {review.loading ? (
                         <p>Laddar svar...</p>
@@ -554,7 +409,7 @@ export function AdminQuestionsTab({
                             className="special-input"
                             type="text"
                             value={review.correctAnswer}
-                            onChange={(e) => setReview((prev) => ({ ...prev, correctAnswer: e.target.value }))}
+                            onChange={(event) => setReview((prev) => ({ ...prev, correctAnswer: event.target.value }))}
                             placeholder="Ange det kanoniska rätta svaret…"
                         />
                     </label>

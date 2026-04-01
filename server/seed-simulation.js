@@ -12,8 +12,9 @@ import { initDatabase, closeDatabase } from './db-schema.js'
 import { createParticipant, findParticipantByName } from './db-participants.js'
 import { upsertTipsByParticipantId, deleteTipsByParticipantId } from './db-tips.js'
 import { upsertMatchResult, upsertKnockoutAdvancement } from './db-results.js'
-import { createAdminQuestion, updateAdminQuestion, listAdminQuestions } from './db-questions.js'
+import { syncAdminQuestionsFromManifest, updateAdminQuestion, listAdminQuestions } from './db-questions.js'
 import { hashAccessCode } from './middleware.js'
+import { QUESTION_ANSWER_KEY, QUESTION_SETTLEMENT_STEPS } from './question-manifest.js'
 
 // ─── Constants ───────────────────────────────────────────────────────
 
@@ -191,77 +192,6 @@ const GROUP_KICKOFFS = {
     'L|0|3': '2026-06-27T21:00:00Z', 'L|1|2': '2026-06-27T21:00:00Z',
 }
 
-// ─── Admin questions ─────────────────────────────────────────────────
-
-const ADMIN_QUESTIONS = [
-    {
-        questionText: 'Vilken grupp får flest mål totalt?',
-        category: 'Gruppspelsfrågor',
-        options: ['Grupp A', 'Grupp B', 'Grupp C', 'Grupp D', 'Grupp E', 'Grupp F', 'Grupp G', 'Grupp H', 'Grupp I', 'Grupp J', 'Grupp K', 'Grupp L'],
-        correctAnswer: '',
-        points: 3,
-        lockTime: '2026-06-09T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Hur många 0-0-matcher blir det i gruppspelet?',
-        category: 'Gruppspelsfrågor',
-        options: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-        correctAnswer: '',
-        points: 3,
-        lockTime: '2026-06-09T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Kommer något europeiskt lag att nå semifinal?',
-        category: 'Slutspelsfrågor',
-        options: ['Ja', 'Nej'],
-        correctAnswer: '',
-        points: 4,
-        lockTime: '2026-06-28T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Hur många mål görs i kvartsfinalerna totalt?',
-        category: 'Slutspelsfrågor',
-        options: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24'],
-        correctAnswer: '',
-        points: 4,
-        lockTime: '2026-06-28T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Vilken kontinent vinner VM 2026?',
-        category: '33-33-33 frågor',
-        options: ['Europa', 'Sydamerika', 'Övrig'],
-        correctAnswer: '',
-        points: 5,
-        lockTime: '2026-06-09T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Slutsegrare',
-        category: 'Turneringsfrågor',
-        options: ['Brasilien', 'Frankrike', 'Argentina', 'Spanien', 'Tyskland', 'England'],
-        correctAnswer: '',
-        points: 4,
-        lockTime: '2026-06-09T22:00:00',
-        status: 'published',
-    },
-    {
-        questionText: 'Skytteligavinnare',
-        category: 'Turneringsfrågor',
-        options: ['Kylian Mbappé', 'Lionel Messi', 'Erling Haaland', 'Harry Kane', 'Vinícius Jr.', 'Lamine Yamal'],
-        correctAnswer: '',
-        points: 4,
-        lockTime: '2026-06-09T22:00:00',
-        status: 'published',
-    },
-]
-
-// Correct answers per question index (applied during settlement phases)
-const QUESTION_ANSWERS = ['Grupp F', '5', 'Ja', '14', 'Sydamerika', 'Brasilien', 'Kylian Mbappé']
-
 // ─── Deterministic pseudo-random ─────────────────────────────────────
 
 function makeRng(seed) {
@@ -436,10 +366,13 @@ function generateExtraAnswers(participantIndex, simQuestions, allPublishedQuesti
     const isCasual = CASUAL.includes(participantIndex)
     const correctRate = isExpert ? 0.6 : isCasual ? 0.2 : 0.4
 
-    // Build lookup for sim question correct answers by id
+    // Build lookup for manifest question correct answers by id
     const simCorrectById = {}
-    for (let qi = 0; qi < simQuestions.length; qi++) {
-        simCorrectById[simQuestions[qi].id] = QUESTION_ANSWERS[qi]
+    for (const question of simQuestions) {
+        const answer = question.slug ? QUESTION_ANSWER_KEY[question.slug] : null
+        if (answer?.correctAnswer) {
+            simCorrectById[question.id] = answer.correctAnswer
+        }
     }
 
     const answers = {}
@@ -503,26 +436,12 @@ async function phaseSetup() {
         participantIds.push(p.id)
     }
 
-    // Create admin questions (always create new ones, keep existing untouched)
-    let questions = []
-    const existingQuestions = await listAdminQuestions()
-    // Check if our sim questions already exist (by matching text)
-    const simTexts = new Set(ADMIN_QUESTIONS.map(q => q.questionText))
-    const existingSim = existingQuestions.filter(q => simTexts.has(q.questionText ?? q.question_text))
-    if (existingSim.length >= ADMIN_QUESTIONS.length) {
-        console.log(`  Sim questions already exist, reusing`)
-        questions = existingSim.slice(0, ADMIN_QUESTIONS.length)
-    } else {
-        for (const qDef of ADMIN_QUESTIONS) {
-            const q = await createAdminQuestion(qDef)
-            questions.push(q)
-            console.log(`  Created question id=${q.id}: "${q.questionText}"`)
-        }
-    }
+    await syncAdminQuestionsFromManifest()
+    const questions = await listAdminQuestions()
+    console.log(`  Synced ${questions.length} manifest questions`)
 
-    // Collect ALL published questions (sim + manually created) for extra answer generation
-    const allPublished = (await listAdminQuestions()).filter(q => (q.status ?? '') === 'published')
-    console.log(`  Found ${allPublished.length} published questions total (${questions.length} sim + ${allPublished.length - questions.length} manual)`)
+    const allPublished = questions.filter((q) => (q.status ?? '') === 'published')
+    console.log(`  Found ${allPublished.length} published questions total`)
 
     // Generate and save tips for each participant
     for (let i = 0; i < SIM_NAMES.length; i++) {
@@ -536,7 +455,7 @@ async function phaseSetup() {
         console.log(`  Saved tips for "${SIM_NAMES[i]}"`)
     }
 
-    console.log(`\nSetup complete: ${participantIds.length} participants, ${questions.length} sim questions, ${allPublished.length} total published questions`)
+    console.log(`\nSetup complete: ${participantIds.length} participants, ${questions.length} manifest questions, ${allPublished.length} total published questions`)
 }
 
 async function phaseC0() {
@@ -667,24 +586,14 @@ async function insertKnockoutResults(resultSet) {
     }
 }
 
-async function settleQuestion(questionIndex, questions) {
-    const allQ = questions || await listAdminQuestions()
-    // Find sim questions by matching text, sort by ID ascending
-    const simTexts = ADMIN_QUESTIONS.map(q => q.questionText)
-    const simQ = allQ
-        .filter(q => simTexts.includes(q.questionText ?? q.question_text))
-        .sort((a, b) => a.id - b.id)
-    if (questionIndex >= simQ.length) return
-    const q = simQ[questionIndex]
-    const correctAnswer = QUESTION_ANSWERS[questionIndex]
+async function settleQuestionBySlug(slug, questions) {
+    const q = (questions || await listAdminQuestions()).find((question) => question.slug === slug)
+    const answer = QUESTION_ANSWER_KEY[slug]
+    if (!q || !answer?.correctAnswer) return
     await updateAdminQuestion(q.id, {
-        questionText: q.questionText ?? q.question_text,
-        category: q.category,
-        options: typeof q.options === 'string' ? JSON.parse(q.options) : (q.options ?? []),
-        correctAnswer,
-        points: q.points,
-        lockTime: q.lockTime ?? q.lock_time,
-        status: 'published',
+        ...q,
+        correctAnswer: answer.correctAnswer,
+        acceptedAnswers: answer.acceptedAnswers ?? [],
     })
 }
 
@@ -710,11 +619,11 @@ async function phaseC2() {
     const remaining = await insertGroupMatchResultsBefore('2026-06-28T23:59:59Z', C1_CUTOFF)
     console.log(`C2: Inserted ${remaining} remaining group match results`)
 
-    // Settle Gruppspelsfrågor (questions 0, 1)
     const questions = await listAdminQuestions()
-    await settleQuestion(0, questions)
-    await settleQuestion(1, questions)
-    console.log('C2: Settled 2 Gruppspelsfrågor')
+    for (const slug of QUESTION_SETTLEMENT_STEPS.C2) {
+        await settleQuestionBySlug(slug, questions)
+    }
+    console.log(`C2: Settled ${QUESTION_SETTLEMENT_STEPS.C2.length} Gruppspelsfrågor`)
 }
 
 async function phaseC3() {
@@ -736,23 +645,22 @@ async function phaseC6() {
     await insertKnockoutResults(SF_RESULTS)
     console.log(`C6: Inserted ${SF_RESULTS.length} SF match results`)
 
-    // Settle Slutspelsfrågor (questions 2, 3)
     const questions = await listAdminQuestions()
-    await settleQuestion(2, questions)
-    await settleQuestion(3, questions)
-    console.log('C6: Settled 2 Slutspelsfrågor')
+    for (const slug of QUESTION_SETTLEMENT_STEPS.C6) {
+        await settleQuestionBySlug(slug, questions)
+    }
+    console.log(`C6: Settled ${QUESTION_SETTLEMENT_STEPS.C6.length} Slutspelsfrågor`)
 }
 
 async function phaseC7() {
     await insertKnockoutResults(FINAL_RESULTS)
     console.log(`C7: Inserted ${FINAL_RESULTS.length} final match results`)
 
-    // Settle remaining questions: 33-33-33 (4), Slutsegrare (5), Skytteligavinnare (6)
     const questions = await listAdminQuestions()
-    await settleQuestion(4, questions)
-    await settleQuestion(5, questions)
-    await settleQuestion(6, questions)
-    console.log('C7: Settled 33-33-33, Slutsegrare, and Skytteligavinnare')
+    for (const slug of QUESTION_SETTLEMENT_STEPS.C7) {
+        await settleQuestionBySlug(slug, questions)
+    }
+    console.log(`C7: Settled ${QUESTION_SETTLEMENT_STEPS.C7.length} remaining questions`)
 }
 
 async function phaseReset() {
@@ -782,18 +690,15 @@ async function phaseReset() {
     await run('DELETE FROM knockout_advancement')
     console.log('  Cleared knockout_advancement')
 
-    // Clear admin questions (only sim questions)
-    const simTexts = new Set(ADMIN_QUESTIONS.map(q => q.questionText))
     const allQ = await listAdminQuestions()
     for (const q of allQ) {
-        const text = q.questionText ?? q.question_text
-        if (simTexts.has(text)) {
-            // Remove FK references first
-            await run('DELETE FROM participant_extra_answers WHERE question_id = ?', [q.id])
-            await run('DELETE FROM admin_questions WHERE id = ?', [q.id])
-        }
+        await updateAdminQuestion(q.id, {
+            ...q,
+            correctAnswer: '',
+            acceptedAnswers: [],
+        })
     }
-    console.log('  Cleared sim admin_questions')
+    console.log('  Reset manifest question settlements')
 
     console.log('Reset complete.')
 }
@@ -816,12 +721,12 @@ async function insertKnockoutAdvancementOnly(teams, round) {
 
 async function phaseSB1() {
     await phaseReset()
-    console.log('\nS-B1: Empty admin state. Run server to populate 72 group fixtures via initGroupFixtures().')
+    console.log('\nS-B1: Clean simulation state. Manifest questions remain available; no simulated participants or results exist.')
 }
 
 async function phaseSB2() {
     await phaseSetup()
-    console.log('\nS-B2: 15 participants + tips + 7 questions ready. Phase B complete.')
+    console.log('\nS-B2: 15 participants + tips + manifest questions ready. Phase B complete.')
 }
 
 async function phaseSC1() {
@@ -899,8 +804,8 @@ async function main() {
         console.log('Legacy commands: setup | C0 | C1 | C2 | C3 | C4 | C5 | C6 | C7 | reset')
         console.log('')
         console.log('Snapshot commands (lifecycle QA):')
-        console.log('  S-B1  Empty admin (reset + fixtures only)')
-        console.log('  S-B2  15 participants + tips + 7 questions')
+        console.log('  S-B1  Clean simulation state (manifest questions only)')
+        console.log('  S-B2  15 participants + tips + 15 manifest questions')
         console.log('  S-C1  First 4 matches settled (12.6)')
         console.log('  S-C2  One week played (19.6)')
         console.log('  S-C3  All group matches + Sextondelsfinal teams (27.6)')

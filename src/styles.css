@@ -1889,6 +1889,44 @@ strong {
   border-top: none;
 }
 
+.question-settlement-summary {
+  margin-top: 8px;
+}
+
+.question-category-group .data-table tbody tr.question-row-ready td {
+  background: linear-gradient(180deg, rgba(16, 163, 127, 0.06) 0%, rgba(16, 163, 127, 0.02) 100%);
+}
+
+.question-category-group .data-table tbody tr.question-row-ready td:first-child {
+  border-left: 3px solid rgba(16, 163, 127, 0.35);
+}
+
+.question-pending-status {
+  display: grid;
+  gap: 4px;
+}
+
+.question-pending-status .score-breakdown-meta {
+  display: block;
+}
+
+.question-action-button {
+  justify-content: center;
+  min-width: 170px;
+}
+
+.question-action-button.ready {
+  background: rgba(16, 163, 127, 0.08);
+  border-color: rgba(16, 163, 127, 0.22);
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.question-action-button.ready:hover {
+  background: rgba(16, 163, 127, 0.14);
+  border-color: rgba(16, 163, 127, 0.3);
+}
+
 /* Inline edit form in question table */
 .inline-edit-row td {
   padding: 0 !important;

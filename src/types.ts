@@ -54,6 +54,7 @@ export type AdminQuestionStatus = 'draft' | 'published'
 
 export type AdminQuestion = {
     id: number
+    slug?: string | null
     questionText: string
     category: AdminQuestionCategory
     options: string[]
@@ -191,17 +192,6 @@ export const myTipsSectionTabs = ['Gruppspel', 'Grupplaceringar', 'Slutspel', 'E
 export type MyTipsSectionTab = (typeof myTipsSectionTabs)[number]
 
 export const adminQuestionCategories: AdminQuestionCategory[] = ['Gruppspelsfrågor', 'Slutspelsfrågor', 'Turneringsfrågor', '33-33-33 frågor']
-
-export type AdminQuestionDraft = {
-    questionText: string
-    category: AdminQuestionCategory
-    optionsText: string
-    correctAnswer: string
-    points: string
-    lockTime: string
-    status: AdminQuestionStatus
-    allowFreeText: boolean
-}
 
 export type AdminWorkspaceTab = 'matchdag' | 'slutspel' | 'questions'
 

@@ -5,7 +5,6 @@ import type {
     RuleRow,
     GroupPlacement,
     KnockoutPredictionRound,
-    AdminQuestionDraft,
     AdminResultDraft,
     MatchResultStage,
     AdminFixtureTemplate,
@@ -200,17 +199,6 @@ export const ruleRows: RuleRow[] = [
         lockTime: `Gemensam deadline: ${GLOBAL_DEADLINE_LABEL}`,
     },
 ]
-
-export const defaultAdminQuestionDraft: AdminQuestionDraft = {
-    questionText: '',
-    category: 'Gruppspelsfrågor',
-    optionsText: '',
-    correctAnswer: '',
-    points: '2',
-    lockTime: '',
-    status: 'draft',
-    allowFreeText: false,
-}
 
 export const defaultAdminResultDraft: AdminResultDraft = {
     resultStatus: 'planned',

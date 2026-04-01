@@ -97,7 +97,7 @@ export function RulesPage({
                     </article>
                     <article className="mini-card">
                         <strong>Hur räknas poäng?</strong>
-                        <p>Poängsystemet definieras av admin och kan variera per kategori. Exakta resultat ger oftast högre poäng än rätt 1/X/2.</p>
+                        <p>Rätt 1/X/2 ger 1 poäng. Exakt resultat ger 3 poäng totalt: 2 poäng för rätt resultat och 1 poäng för rätt 1/X/2. Varje rätt lag på rätt plats i gruppen ger 1 poäng.</p>
                     </article>
                     <article className="mini-card">
                         <strong>Vad händer om en match flyttas eller ställs in?</strong>

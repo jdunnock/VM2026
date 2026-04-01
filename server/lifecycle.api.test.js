@@ -236,6 +236,15 @@ test('T3: S-C3 — all groups + Sextondelsfinal: 72 matches, group placement + K
     const expertKOAvg = tierAvg(scores, 'knockoutPoints', EXPERT_INDICES)
     assert.ok(expertKOAvg > 0,
         `Expert avg knockoutPoints (${expertKOAvg.toFixed(1)}) should be > 0`)
+
+    // Golden scenario: Anders exact hit on Mexiko - Sydkorea must award 3 points total.
+    const goldenFixture = detail.breakdown.find((entry) => entry.match === 'Mexiko - Sydkorea')
+    assert.ok(goldenFixture, 'Expected Anders breakdown to contain Mexiko - Sydkorea')
+    assert.equal(goldenFixture.predictedHomeScore, 1)
+    assert.equal(goldenFixture.predictedAwayScore, 0)
+    assert.deepEqual(goldenFixture.result, { homeScore: 1, awayScore: 0 })
+    assert.equal(goldenFixture.reason, 'exact-score')
+    assert.equal(goldenFixture.points, 3, 'Exact score should award 3 points total (2 result + 1 sign)')
 })
 
 test('T4: S-C4 — R32+R16+QF: multiple knockout rounds settled, rankings intact', async () => {

@@ -81,7 +81,7 @@ app.get('/api/startup-status', (_req, res) => {
 async function start() {
   try {
     const [
-      { initDatabase, closeDatabase: closeFn },
+      { initDatabase, closeDatabase: closeFn, syncAdminQuestionsFromManifest },
       { createAuthRoutes },
       { createAdminRoutes },
       { createPublicRoutes },
@@ -98,7 +98,10 @@ async function start() {
     const { initGroupFixtures } = await import('./fixtures-data.js')
     closeDb = closeDatabaseConnection
     openDb = openDatabaseConnection
-    reinitDb = initDatabase
+    reinitDb = async () => {
+      await initDatabase()
+      await syncAdminQuestionsFromManifest()
+    }
 
     // Register route handlers (BEFORE SPA fallback)
     createAuthRoutes(app, authRateLimit)
@@ -107,6 +110,7 @@ async function start() {
     createAdminRoutes(app)
 
     await initDatabase()
+    await syncAdminQuestionsFromManifest()
     await initGroupFixtures()
     dbReady = true
     closeDatabase = closeFn

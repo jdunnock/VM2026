@@ -28,6 +28,7 @@ export async function initDatabase() {
   await run(`
     CREATE TABLE IF NOT EXISTS admin_questions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT,
       question_text TEXT NOT NULL,
       category TEXT NOT NULL,
       options_json TEXT NOT NULL,
@@ -43,6 +44,7 @@ export async function initDatabase() {
   `)
 
   // Migrations for existing databases
+  try { await run('ALTER TABLE admin_questions ADD COLUMN slug TEXT'); console.log('Migration: slug column added') } catch (_) {}
   try { await run('ALTER TABLE admin_questions ADD COLUMN allow_free_text INTEGER NOT NULL DEFAULT 0'); console.log('Migration: allow_free_text column added') } catch (_) {}
   try { await run("ALTER TABLE admin_questions ADD COLUMN accepted_answers_json TEXT NOT NULL DEFAULT '[]'"); console.log('Migration: accepted_answers_json column added') } catch (_) {}
 
@@ -141,6 +143,7 @@ export async function initDatabase() {
   `)
 
   await run(`CREATE INDEX IF NOT EXISTS idx_knockout_advancement_round ON knockout_advancement (round)`)
+  await run(`CREATE INDEX IF NOT EXISTS idx_admin_questions_slug ON admin_questions (slug)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_fixture_tips_participant ON participant_fixture_tips (participant_id, updated_at)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_group_placements_participant_group ON participant_group_placements (participant_id, group_code)`)
   await run(`CREATE INDEX IF NOT EXISTS idx_knockout_predictions_participant_round ON participant_knockout_predictions (participant_id, round_title)`)

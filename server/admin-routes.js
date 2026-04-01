@@ -3,10 +3,7 @@
  */
 
 import {
-    createAdminQuestion,
-    deleteAdminQuestion,
     getAdminQuestionById,
-    getMatchResultById,
     getQuestionAnswers,
     listAdminQuestions,
     listMatchResults,
@@ -17,12 +14,7 @@ import {
     upsertKnockoutAdvancement,
     deleteKnockoutAdvancement,
 } from './db.js'
-import {
-    parseEntityId,
-    parseMatchId,
-    normalizeAdminQuestionPayload,
-    normalizeMatchResultPayload,
-} from './validators.js'
+import { parseEntityId, parseMatchId, normalizeMatchResultPayload } from './validators.js'
 
 function createAdminRoutes(app) {
     app.get('/api/admin/questions', async (_req, res) => {
@@ -67,70 +59,16 @@ function createAdminRoutes(app) {
         }
     })
 
-    app.post('/api/admin/questions', async (req, res) => {
-        const questionPayload = normalizeAdminQuestionPayload(req.body)
-        if (!questionPayload) {
-            res.status(400).json({ error: 'Ogiltigt adminfråga-format.' })
-            return
-        }
-
-        try {
-            const createdQuestion = await createAdminQuestion(questionPayload)
-            res.status(201).json(createdQuestion)
-        } catch (error) {
-            console.error('Admin question create error:', error)
-            res.status(500).json({ error: 'Kunde inte skapa adminfråga.' })
-        }
+    app.post('/api/admin/questions', async (_req, res) => {
+        res.status(405).json({ error: 'Frågestrukturen hanteras via manifest och kan inte skapas här.' })
     })
 
-    app.put('/api/admin/questions/:id', async (req, res) => {
-        const questionId = parseEntityId(req.params.id)
-        if (!questionId) {
-            res.status(400).json({ error: 'Ogiltigt fråga-id.' })
-            return
-        }
-
-        const questionPayload = normalizeAdminQuestionPayload(req.body)
-        if (!questionPayload) {
-            res.status(400).json({ error: 'Ogiltigt adminfråga-format.' })
-            return
-        }
-
-        try {
-            const existingQuestion = await getAdminQuestionById(questionId)
-            if (!existingQuestion) {
-                res.status(404).json({ error: 'Fråga hittades inte.' })
-                return
-            }
-
-            const updatedQuestion = await updateAdminQuestion(questionId, questionPayload)
-            res.json(updatedQuestion)
-        } catch (error) {
-            console.error('Admin question update error:', error)
-            res.status(500).json({ error: 'Kunde inte uppdatera adminfråga.' })
-        }
+    app.put('/api/admin/questions/:id', async (_req, res) => {
+        res.status(405).json({ error: 'Frågestrukturen hanteras via manifest och kan inte redigeras här.' })
     })
 
-    app.delete('/api/admin/questions/:id', async (req, res) => {
-        const questionId = parseEntityId(req.params.id)
-        if (!questionId) {
-            res.status(400).json({ error: 'Ogiltigt fråga-id.' })
-            return
-        }
-
-        try {
-            const existingQuestion = await getAdminQuestionById(questionId)
-            if (!existingQuestion) {
-                res.status(404).json({ error: 'Fråga hittades inte.' })
-                return
-            }
-
-            await deleteAdminQuestion(questionId)
-            res.status(204).end()
-        } catch (error) {
-            console.error('Admin question delete error:', error)
-            res.status(500).json({ error: 'Kunde inte ta bort adminfråga.' })
-        }
+    app.delete('/api/admin/questions/:id', async (_req, res) => {
+        res.status(405).json({ error: 'Frågestrukturen hanteras via manifest och kan inte tas bort här.' })
     })
 
     app.get('/api/admin/questions/:id/answers', async (req, res) => {
