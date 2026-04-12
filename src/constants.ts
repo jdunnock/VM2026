@@ -57,14 +57,9 @@ function buildGroupPlacementTemplates(): GroupPlacement[] {
     }
 
     return GROUP_CODES.map((groupCode) => {
-        const picks = [...(teamsByGroup.get(groupCode) ?? [])]
-        while (picks.length < 4) {
-            picks.push('')
-        }
-
         return {
             group: `Grupp ${groupCode}`,
-            picks: picks.slice(0, 4),
+            picks: ['', '', '', ''],
         }
     })
 }
@@ -72,7 +67,17 @@ function buildGroupPlacementTemplates(): GroupPlacement[] {
 export const groupPlacementTemplates: GroupPlacement[] = buildGroupPlacementTemplates()
 
 export const groupTeamOptions = Object.fromEntries(
-    groupPlacementTemplates.map((template) => [template.group, template.picks]),
+    GROUP_CODES.map((groupCode) => {
+        const teams: string[] = []
+        for (const fixture of fixtureTemplates) {
+            if (fixture.group !== groupCode) continue
+            const [homeTeam, awayTeam] = fixture.match.split(' - ')
+            for (const team of [homeTeam, awayTeam]) {
+                if (team && !teams.includes(team)) teams.push(team)
+            }
+        }
+        return [`Grupp ${groupCode}`, teams]
+    }),
 ) as Record<string, string[]>
 
 export function getAvailableGroupTeams(placement: GroupPlacement, index: number): string[] {

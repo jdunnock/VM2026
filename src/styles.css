@@ -1104,6 +1104,11 @@ strong {
   min-width: 0;
 }
 
+.stacked-cards .mini-card {
+  display: grid;
+  gap: 8px;
+}
+
 .mini-card {
   border-radius: var(--radius-lg);
 }

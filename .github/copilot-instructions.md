@@ -18,3 +18,5 @@ Do not:
 - create duplicate workflow guidance in `docs/` and `.github/skills/`
 - mix project-specific product decisions into reusable template skills
 - expand scope without explicit approval
+
+# Canonical skill source: github.com/jdunnock/ai-team

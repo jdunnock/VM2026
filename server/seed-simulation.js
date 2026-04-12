@@ -21,6 +21,7 @@ import { QUESTION_ANSWER_KEY, QUESTION_SETTLEMENT_STEPS } from './question-manif
 const DATA_DIR = path.resolve(process.cwd(), 'data')
 const DB_PATH = path.join(DATA_DIR, 'vm2026.db')
 const BACKUP_PATH = path.join(DATA_DIR, 'vm2026-pre-sim.db')
+const LAST_SIMULATION_STATUS_PATH = path.join(DATA_DIR, 'last-seed-simulation.json')
 const ACCESS_CODE = '1234'
 
 const SIM_NAMES = [
@@ -366,6 +367,17 @@ function generateExtraAnswers(participantIndex, simQuestions, allPublishedQuesti
     const isCasual = CASUAL.includes(participantIndex)
     const correctRate = isExpert ? 0.6 : isCasual ? 0.2 : 0.4
 
+    const freeTextFallbackAnswersBySlug = {
+        'top-scorer': [
+            'Kylian Mbappé',
+            'Harry Kane',
+            'Erling Haaland',
+            'Jude Bellingham',
+            'Vinicius Jr.',
+            'Lautaro Martínez',
+        ],
+    }
+
     // Build lookup for manifest question correct answers by id
     const simCorrectById = {}
     for (const question of simQuestions) {
@@ -378,13 +390,27 @@ function generateExtraAnswers(participantIndex, simQuestions, allPublishedQuesti
     const answers = {}
     for (const q of allPublishedQuestions) {
         const options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options ?? [])
-        if (options.length === 0) continue
         const correctAnswer = simCorrectById[q.id]
+
+        if (q.allowFreeText && options.length === 0) {
+            const fallbackAnswers = q.slug ? (freeTextFallbackAnswersBySlug[q.slug] ?? []) : []
+            if (correctAnswer && rng() < correctRate) {
+                answers[String(q.id)] = correctAnswer
+            } else if (fallbackAnswers.length > 0) {
+                const wrongAnswers = fallbackAnswers.filter((answer) => answer !== correctAnswer)
+                const pool = wrongAnswers.length > 0 ? wrongAnswers : fallbackAnswers
+                answers[String(q.id)] = pool[Math.floor(rng() * pool.length)]
+            }
+            continue
+        }
+
+        if (options.length === 0) continue
+
         if (correctAnswer && rng() < correctRate) {
             answers[String(q.id)] = correctAnswer
         } else if (correctAnswer) {
             // Pick wrong answer for sim question
-            const wrong = options.filter(o => o !== correctAnswer)
+            const wrong = options.filter((o) => o !== correctAnswer)
             answers[String(q.id)] = wrong.length > 0 ? wrong[Math.floor(rng() * wrong.length)] : options[0]
         } else {
             // Non-sim question: pick random option
@@ -409,6 +435,20 @@ function addHours(dateStr, hours) {
     const d = new Date(dateStr)
     d.setHours(d.getHours() + hours)
     return d.toISOString()
+}
+
+function writeLastSimulationStatus(command) {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+
+    const payload = {
+        command,
+        displayCommand: `node server/seed-simulation.js ${command}`,
+        updatedAt: new Date().toISOString(),
+    }
+
+    fs.writeFileSync(LAST_SIMULATION_STATUS_PATH, JSON.stringify(payload, null, 2))
 }
 
 // ─── Phase handlers ──────────────────────────────────────────────────
@@ -824,6 +864,7 @@ async function main() {
 
     try {
         await PHASES[command]()
+        writeLastSimulationStatus(command)
     } finally {
         await closeDatabase()
     }

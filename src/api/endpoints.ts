@@ -8,6 +8,7 @@ import type {
   ParticipantScoreDetail,
   ParticipantSession,
   PersistedTipsState,
+  SimulationStatus,
 } from '../types'
 
 // --- Auth ---
@@ -21,6 +22,10 @@ export async function signIn(name: string, code: string): Promise<ParticipantSes
 
 export async function fetchConfig(): Promise<{ globalDeadline: string }> {
   return apiGet('/api/config')
+}
+
+export async function fetchSimulationStatus(): Promise<SimulationStatus> {
+  return apiGet('/api/simulation-status')
 }
 
 // --- Scores ---

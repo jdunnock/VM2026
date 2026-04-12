@@ -305,6 +305,25 @@ test('T5: S-C5 + S-C6 — SF + Final: all KO rounds, total integrity, tier ranki
     assert.ok(averageAvg > casualAvg,
         `Average avg (${averageAvg.toFixed(1)}) should exceed casual avg (${casualAvg.toFixed(1)})`)
 
+    const questionsResponse = await request('GET', '/api/admin/questions', null, { 'x-admin-code': adminCode })
+    assert.equal(questionsResponse.status, 200)
+    const topScorerQuestion = questionsResponse.data.questions.find((question) => question.slug === 'top-scorer')
+    assert.ok(topScorerQuestion, 'Expected manifest-backed top-scorer question in admin question list')
+
+    const topScorerAnswersResponse = await request(
+        'GET',
+        `/api/admin/questions/${topScorerQuestion.id}/answers`,
+        null,
+        { 'x-admin-code': adminCode },
+    )
+    assert.equal(topScorerAnswersResponse.status, 200)
+    assert.ok(topScorerAnswersResponse.data.answers.length > 0,
+        'Expected top-scorer review to contain submitted answers after S-C6')
+    const submittedAnswerCount = topScorerAnswersResponse.data.answers
+        .reduce((sum, answer) => sum + answer.count, 0)
+    assert.equal(submittedAnswerCount, SIM_NAMES.length,
+        'Expected one simulated top-scorer answer per participant after S-C6')
+
     // Leaderboard should have no rank gaps (ranks are dense: 1, 2, 2, 4... not 1, 3)
     const leaderboard = await getLeaderboard()
     const simBoard = leaderboard.filter((e) => SIM_NAMES.includes(e.name))

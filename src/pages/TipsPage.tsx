@@ -138,7 +138,6 @@ export function TipsPage({
           onChangeExtraAnswer={onChangeExtraAnswer}
           isSaving={isSaving}
           isGlobalLockActive={isGlobalLockActive}
-          globalDeadlineLabel={globalDeadlineLabel}
         />
       ) : null}
 

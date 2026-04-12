@@ -2,13 +2,20 @@ import type { AdminQuestion, ExtraAnswers } from '../../types'
 import { SearchableCombobox } from '../../components/SearchableCombobox'
 import { COMBOBOX_OPTION_THRESHOLD } from '../../constants'
 
+function getComboboxPlaceholder(question: AdminQuestion): string {
+    if (question.allowFreeText) return 'Skriv eller sök svar…'
+    if (question.options.every(o => /^\d+$/.test(o))) return 'Antal'
+    if (question.slug === 'tournament-winner') return 'Sök land…'
+    if (question.slug === 'group-most-goals-total') return 'Välj grupp'
+    return 'Välj…'
+}
+
 type ExtraQuestionsCardProps = {
     publishedQuestions: AdminQuestion[]
     extraAnswers: ExtraAnswers
     onChangeExtraAnswer: (questionId: number, answer: string) => void
     isSaving: boolean
     isGlobalLockActive: boolean
-    globalDeadlineLabel: string
 }
 
 export function ExtraQuestionsCard({
@@ -17,13 +24,11 @@ export function ExtraQuestionsCard({
     onChangeExtraAnswer,
     isSaving,
     isGlobalLockActive,
-    globalDeadlineLabel,
 }: ExtraQuestionsCardProps) {
     return (
         <section className="panel">
             <div className="section-heading compact">
                 <p className="eyebrow">Extrafrågor</p>
-                <h2>Dynamiska frågor</h2>
             </div>
             <div className="stacked-cards">
                 {publishedQuestions.length === 0 ? (
@@ -41,13 +46,12 @@ export function ExtraQuestionsCard({
                             <article className="mini-card" key={question.id}>
                                 <span className="mini-label">{question.category}</span>
                                 <strong>{question.questionText}</strong>
-                                <span className="status-note">Låstid: {globalDeadlineLabel}</span>
-                                {question.options.length > COMBOBOX_OPTION_THRESHOLD ? (
+                                {question.allowFreeText || question.options.length > COMBOBOX_OPTION_THRESHOLD ? (
                                     <SearchableCombobox
                                         options={question.options}
                                         value={selectedAnswer}
                                         onChange={(val) => onChangeExtraAnswer(question.id, val)}
-                                        placeholder="Sök spelare…"
+                                        placeholder={getComboboxPlaceholder(question)}
                                         disabled={isSaving || isLocked}
                                         allowFreeText={question.allowFreeText}
                                     />

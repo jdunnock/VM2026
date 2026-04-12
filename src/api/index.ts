@@ -2,6 +2,7 @@ export { ApiError } from './client'
 export {
   signIn,
   fetchConfig,
+  fetchSimulationStatus,
   fetchLeaderboard,
   fetchParticipantScore,
   fetchPublicResults,

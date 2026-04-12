@@ -2,6 +2,9 @@
  * Public routes: health, config, results, leaderboard, questions
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
+
 import {
     getMatchResultById,
     getParticipantScoreByParticipantId,
@@ -15,6 +18,27 @@ import {
 } from './db.js'
 import { parseParticipantId, parseMatchId } from './validators.js'
 
+const LAST_SIMULATION_STATUS_PATH = path.resolve(process.cwd(), 'data', 'last-seed-simulation.json')
+
+function readLastSimulationStatus() {
+    if (!fs.existsSync(LAST_SIMULATION_STATUS_PATH)) {
+        return { command: null, displayCommand: null, updatedAt: null }
+    }
+
+    try {
+        const raw = fs.readFileSync(LAST_SIMULATION_STATUS_PATH, 'utf8')
+        const parsed = JSON.parse(raw)
+        return {
+            command: typeof parsed.command === 'string' ? parsed.command : null,
+            displayCommand: typeof parsed.displayCommand === 'string' ? parsed.displayCommand : null,
+            updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
+        }
+    } catch (error) {
+        console.error('Simulation status read error:', error)
+        return { command: null, displayCommand: null, updatedAt: null }
+    }
+}
+
 function createPublicRoutes(app, globalDeadline) {
     app.get('/api/health', (_req, res) => {
         res.json({ status: 'ok' })
@@ -22,6 +46,10 @@ function createPublicRoutes(app, globalDeadline) {
 
     app.get('/api/config', (_req, res) => {
         res.json({ globalDeadline })
+    })
+
+    app.get('/api/simulation-status', (_req, res) => {
+        res.json(readLastSimulationStatus())
     })
 
     app.get('/api/results', async (_req, res) => {

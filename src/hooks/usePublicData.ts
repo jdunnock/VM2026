@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchPublicResults as apiFetchResults, fetchPublishedQuestions as apiFetchQuestions } from '../api'
-import type { AdminQuestion, MatchResult, PageId } from '../types'
+import { fetchPublicResults as apiFetchResults, fetchPublishedQuestions as apiFetchQuestions, fetchSimulationStatus as apiFetchSimulationStatus } from '../api'
+import type { AdminQuestion, MatchResult, PageId, SimulationStatus } from '../types'
 
 /**
  * Manages public data: match results and published questions.
@@ -10,6 +10,7 @@ import type { AdminQuestion, MatchResult, PageId } from '../types'
 export function usePublicData(activePage: PageId) {
   const [results, setResults] = useState<MatchResult[]>([])
   const [publishedQuestions, setPublishedQuestions] = useState<AdminQuestion[]>([])
+  const [simulationStatus, setSimulationStatus] = useState<SimulationStatus>({ command: null, displayCommand: null, updatedAt: null })
 
   // Load results when relevant pages are active
   useEffect(() => {
@@ -33,9 +34,15 @@ export function usePublicData(activePage: PageId) {
       } catch {
         setPublishedQuestions([])
       }
+
+      try {
+        setSimulationStatus(await apiFetchSimulationStatus())
+      } catch {
+        setSimulationStatus({ command: null, displayCommand: null, updatedAt: null })
+      }
     }
     load()
   }, [activePage])
 
-  return { results, publishedQuestions }
+  return { results, publishedQuestions, simulationStatus }
 }

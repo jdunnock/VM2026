@@ -7,6 +7,7 @@ import type {
     KnockoutPredictionRound,
     LeaderboardEntry,
     ParticipantSession,
+    SimulationStatus,
 } from '../types'
 
 type StartPageProps = {
@@ -19,6 +20,7 @@ type StartPageProps = {
     knockoutPredictions: KnockoutPredictionRound[]
     extraAnswers: ExtraAnswers
     publishedQuestions: AdminQuestion[]
+    simulationStatus: SimulationStatus
 }
 
 function getMedalEmoji(rank: number): string {
@@ -38,6 +40,7 @@ export function StartPage({
     knockoutPredictions,
     extraAnswers,
     publishedQuestions,
+    simulationStatus,
 }: StartPageProps) {
     const currentEntry = participant
         ? leaderboard.find((entry) => entry.participantId === participant.participantId) ?? null
@@ -63,6 +66,9 @@ export function StartPage({
     ]
 
     const leader = leaderboard.length > 0 ? leaderboard[0] : null
+    const simulationStatusLabel = simulationStatus.updatedAt
+        ? new Date(simulationStatus.updatedAt).toLocaleString('sv-SE')
+        : null
 
     return (
         <div className="page-stack">
@@ -78,6 +84,23 @@ export function StartPage({
                     </p>
                 </div>
                 <span className="save-pill">{participant ? (isTrackingPhase ? 'Turnering pågår' : tipsSaveMessage) : 'Inte inloggad'}</span>
+            </section>
+
+            <section className="panel">
+                <div className="section-heading compact">
+                    <p className="eyebrow">QA-status</p>
+                    <h2>Senast körda testscript</h2>
+                </div>
+                {simulationStatus.displayCommand ? (
+                    <>
+                        <p className="lead-text" style={{ marginBottom: 8 }}>{simulationStatus.displayCommand}</p>
+                        <p className="status-note" style={{ margin: 0 }}>
+                            {simulationStatusLabel ? `Körd: ${simulationStatusLabel}` : 'Körtid saknas'}
+                        </p>
+                    </>
+                ) : (
+                    <p className="status-note">Inget lifecycle-testscript har loggats ännu.</p>
+                )}
             </section>
 
             {/* Phase C: Tournament dashboard */}

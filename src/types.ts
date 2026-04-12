@@ -26,6 +26,12 @@ export type AdminSession = {
     adminCode: string
 }
 
+export type SimulationStatus = {
+    command: string | null
+    displayCommand: string | null
+    updatedAt: string | null
+}
+
 export type FixtureTip = {
     fixtureId?: string
     group?: string

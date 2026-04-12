@@ -16,6 +16,7 @@ import type {
   PageId,
   ParticipantScoreDetail,
   ParticipantSession,
+  SimulationStatus,
 } from './types'
 import { LoginPage } from './pages/LoginPage'
 import { StartPage } from './pages/StartPage'
@@ -62,6 +63,7 @@ interface RenderPageScoresProps {
 
 interface RenderPageUIProps {
   publishedQuestions: AdminQuestion[]
+  simulationStatus: SimulationStatus
   adminSession: AdminSession | null
   onAdminSessionChange: (session: AdminSession | null) => void
   isTouchDevice: boolean
@@ -90,6 +92,7 @@ function renderPage(
           knockoutPredictions={tips.knockoutPredictions}
           extraAnswers={tips.extraAnswers}
           publishedQuestions={ui.publishedQuestions}
+          simulationStatus={ui.simulationStatus}
         />
       )
     case 'tips':
@@ -170,7 +173,7 @@ export function App() {
   // Data hooks
   const { leaderboard, loadLeaderboard } = useLeaderboard(participant)
   const { participantScoreDetail, isParticipantScoreLoading, loadParticipantScore } = useParticipantScoreDetail(participant, activePage)
-  const { results, publishedQuestions } = usePublicData(activePage)
+  const { results, publishedQuestions, simulationStatus } = usePublicData(activePage)
   const { allTipsParticipants, isAllTipsLoading, correctnessData } = useAllTipsData(activePage)
 
   // UI state
@@ -350,6 +353,7 @@ export function App() {
           },
           ui: {
             publishedQuestions,
+            simulationStatus,
             adminSession,
             onAdminSessionChange: setAdminSession,
             isTouchDevice,

@@ -82,6 +82,10 @@ export function AdminQuestionsTab({
     const [settleLoading, setSettleLoading] = useState(false)
     const [review, setReview] = useState<ReviewPanelState>(initialReviewState)
 
+    const closeReviewPanel = useCallback(() => {
+        setReview(initialReviewState)
+    }, [])
+
     const openReviewPanel = useCallback(async (questionId: number) => {
         const headers = getAdminHeaders()
         if (!headers) return
@@ -179,6 +183,73 @@ export function AdminQuestionsTab({
         }
         return grouped
     }, [questions])
+
+    const renderReviewPanel = (questionText: string) => (
+        <div className="inline-edit-form">
+            <article className="mini-card">
+                <span className="mini-label">Granska svar</span>
+                <h2>{questionText}</h2>
+                {review.message && <p className="save-pill">{review.message}</p>}
+                {review.loading ? (
+                    <p>Laddar svar...</p>
+                ) : review.answers.length === 0 ? (
+                    <p>Inga svar inlämnade ännu.</p>
+                ) : (
+                    <div className="table-wrap">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Svar</th>
+                                    <th>Antal</th>
+                                    <th>Deltagare</th>
+                                    <th>Godkänd</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {review.answers.map((entry) => (
+                                    <tr key={entry.answer}>
+                                        <td data-label="Svar">{entry.answer}</td>
+                                        <td data-label="Antal">{entry.count}</td>
+                                        <td data-label="Deltagare">{entry.participants.join(', ')}</td>
+                                        <td data-label="Godkänd">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={review.accepted.includes(entry.answer)}
+                                                    onChange={() => toggleAccepted(entry.answer)}
+                                                />
+                                            </label>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <label style={{ marginTop: '0.5rem' }}>
+                    Rätt svar (kanoniskt)
+                    <input
+                        className="special-input"
+                        type="text"
+                        value={review.correctAnswer}
+                        onChange={(event) => setReview((prev) => ({ ...prev, correctAnswer: event.target.value }))}
+                        placeholder="Ange det kanoniska rätta svaret…"
+                    />
+                </label>
+                <p className="status-note" style={{ margin: '0.25rem 0' }}>
+                    När rätt svar anges och sparas räknas poäng för alla deltagare vars svar matchar rätt svar eller en godkänd variant.
+                </p>
+                <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
+                    <button className="primary-button" type="button" disabled={review.loading} onClick={saveAcceptedAnswers}>
+                        {review.correctAnswer.trim() ? 'Lås svar och spara' : 'Spara godkända svar'}
+                    </button>
+                    <button className="ghost-button" type="button" onClick={closeReviewPanel}>
+                        Stäng
+                    </button>
+                </div>
+            </article>
+        </div>
+    )
 
     return (
         <>
@@ -281,8 +352,21 @@ export function AdminQuestionsTab({
                                                         <td data-label="Åtgärder">
                                                             <div className="stacked-actions">
                                                                 {question.allowFreeText && (
-                                                                    <button className="ghost-button" type="button" onClick={() => openReviewPanel(question.id)}>
-                                                                        Granska svar
+                                                                    <button
+                                                                        className="ghost-button"
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (review.questionId === question.id) {
+                                                                                closeReviewPanel()
+                                                                                return
+                                                                            }
+                                                                            setSettlingId(null)
+                                                                            setSettleAnswer('')
+                                                                            setSettleMessage('')
+                                                                            openReviewPanel(question.id)
+                                                                        }}
+                                                                    >
+                                                                            {review.questionId === question.id ? 'Stäng' : 'Granska svar'}
                                                                     </button>
                                                                 )}
                                                                 {!question.allowFreeText && !hasCorrectAnswer && (
@@ -291,6 +375,7 @@ export function AdminQuestionsTab({
                                                                         type="button"
                                                                         disabled={!questionIsSettleable}
                                                                         onClick={() => {
+                                                                                closeReviewPanel()
                                                                             setSettlingId(settlingId === question.id ? null : question.id)
                                                                             setSettleAnswer('')
                                                                             setSettleMessage('')
@@ -305,6 +390,13 @@ export function AdminQuestionsTab({
                                                     </tr>
                                                         )
                                                     })()}
+                                                    {review.questionId === question.id && (
+                                                        <tr className="inline-edit-row">
+                                                            <td colSpan={6}>
+                                                                {renderReviewPanel(question.questionText)}
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                     {settlingId === question.id && (
                                                         <tr className="inline-edit-row">
                                                             <td colSpan={6}>
@@ -362,70 +454,6 @@ export function AdminQuestionsTab({
                     })
                 )}
             </section>
-
-            {review.questionId !== null && (
-                <section className="panel">
-                    <h3>Granska svar</h3>
-                    {review.message && <p className="save-pill">{review.message}</p>}
-                    {review.loading ? (
-                        <p>Laddar svar...</p>
-                    ) : review.answers.length === 0 ? (
-                        <p>Inga svar inlämnade ännu.</p>
-                    ) : (
-                        <div className="table-wrap">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Svar</th>
-                                        <th>Antal</th>
-                                        <th>Deltagare</th>
-                                        <th>Godkänd</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {review.answers.map((entry) => (
-                                        <tr key={entry.answer}>
-                                            <td data-label="Svar">{entry.answer}</td>
-                                            <td data-label="Antal">{entry.count}</td>
-                                            <td data-label="Deltagare">{entry.participants.join(', ')}</td>
-                                            <td data-label="Godkänd">
-                                                <label className="checkbox-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={review.accepted.includes(entry.answer)}
-                                                        onChange={() => toggleAccepted(entry.answer)}
-                                                    />
-                                                </label>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                    <label style={{ marginTop: '0.5rem' }}>
-                        Rätt svar (kanoniskt)
-                        <input
-                            className="special-input"
-                            type="text"
-                            value={review.correctAnswer}
-                            onChange={(event) => setReview((prev) => ({ ...prev, correctAnswer: event.target.value }))}
-                            placeholder="Ange det kanoniska rätta svaret…"
-                        />
-                    </label>
-                    <p className="status-note" style={{ margin: '0.25rem 0' }}>
-                        När rätt svar anges och sparas räknas poäng för alla deltagare vars svar matchar rätt svar eller en godkänd variant.
-                    </p>
-                    <div className="stacked-actions" style={{ marginTop: '0.5rem' }}>
-                        <button className="primary-button" type="button" disabled={review.loading} onClick={saveAcceptedAnswers}>
-                            {review.correctAnswer.trim() ? 'Lås svar och spara' : 'Spara godkända svar'}
-                        </button>
-                        <button className="ghost-button" type="button" onClick={() => setReview(initialReviewState)}>
-                            Stäng
-                        </button>
-                    </div>
-                </section>
-            )}
         </>
     )
 }

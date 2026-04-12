@@ -1952,3 +1952,29 @@ Checklist run date: 2026-03-25
 - **Files changed:** `src/pages/admin/AdminQuestionsTab.tsx`, `docs/specification.md`.
 - **Validation:** `npm run build`
 
+### 7.67 Free-text manifest questions work in participant and admin flows (2026-04-01)
+
+- **Problem:** `Skytteligavinnare` is a manifest-backed `allowFreeText` question with an empty options list. Participant UI rendered it as an empty select instead of a writable combobox, and simulation setup skipped it entirely, so `Granska svar` had nothing to review even after `S-C6`.
+- **Fix:** Treat `allowFreeText` questions as combobox inputs even when `options` is empty, and generate deterministic free-text simulation answers for manifest questions like `Skytteligavinnare` so admin review has real submitted answers.
+- **Regression coverage:** Lifecycle test asserts that after `S-C6`, the admin answers endpoint for `Skytteligavinnare` contains submitted answers from simulated participants.
+- **Files changed:** `src/pages/tips/ExtraQuestionsCard.tsx`, `server/seed-simulation.js`, `server/lifecycle.api.test.js`, `docs/specification.md`.
+- **Validation:** `npm run test:lifecycle`, `npm run build`
+
+### 7.68 Admin review opens inline under the selected question (2026-04-01)
+
+- **Problem:** `Granska svar` opened in a separate panel below the whole question list, which forced extra scrolling and broke the row-local workflow already used by `Bekräfta resultat`.
+- **Fix:** Render the review UI as an inline expansion row directly under the selected question. The `Granska svar` button now toggles that row open/closed, and opening review closes any active `Bekräfta resultat` row so only one inline action panel is shown at a time.
+- **Files changed:** `src/pages/admin/AdminQuestionsTab.tsx`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.69 Start page shows the last lifecycle test script run (2026-04-03)
+
+- **Problem:** Lifecycle QA relies on manual CLI snapshot commands (`S-B1` ... `S-C6`), but after a break it is easy to forget which snapshot was last applied to the local database.
+- **Fix:** Persist the latest successful `server/seed-simulation.js` command to a small metadata file under `data/`, expose it via a public backend endpoint, and render it on the Start page as a QA status hint.
+- **Behavior details:**
+	- Every successful `node server/seed-simulation.js <command>` run updates the stored metadata.
+	- The Start page shows the latest full command string and timestamp when metadata exists.
+	- If no lifecycle script has been run yet, the Start page instead shows that no test script has been logged.
+- **Files changed:** `docs/specification.md`, `server/public-routes.js`, `server/seed-simulation.js`, `src/App.tsx`, `src/api/endpoints.ts`, `src/api/index.ts`, `src/hooks/usePublicData.ts`, `src/pages/StartPage.tsx`, `src/types.ts`.
+- **Validation:** `npm run build`
+
