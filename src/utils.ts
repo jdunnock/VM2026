@@ -160,12 +160,12 @@ export function getKnockoutListId(roundTitle: string): string {
 
 export function getBaseKnockoutTeams(groupPlacements: GroupPlacement[]): string[] {
   const canonicalTeams = new Set<string>()
-  groupPlacementTemplates.forEach((group) => {
-    group.picks.forEach((pick) => {
-      if (pick.trim()) {
-        canonicalTeams.add(pick)
-      }
-    })
+
+  // Always include the full tournament team pool as base suggestions.
+  fixtureTemplates.forEach((fixture) => {
+    const [homeTeam, awayTeam] = fixture.match.split(' - ')
+    if (homeTeam?.trim()) canonicalTeams.add(homeTeam)
+    if (awayTeam?.trim()) canonicalTeams.add(awayTeam)
   })
 
   groupPlacements.forEach((group) => {

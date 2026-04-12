@@ -1771,6 +1771,8 @@ const scoreFixtureTip = (tip, result) => {
 - Spec-first rule: update this file before or together with behavior changes.
 - Process hygiene rule: when backend/API code or API validation rules are changed, restart running API dev processes before smoke tests.
 - Canonical workflow skill source: `.github/skills/`.
+- Team orchestration order for substantial tasks: `@orchestrator` -> `@implementer` -> `@reviewer` -> `@qa-tester`.
+- Commit quality gate: spec updated (when applicable), validation executed, review findings resolved/accepted, rollback path stated.
 
 ## 12. Open Questions
 
@@ -1976,5 +1978,12 @@ Checklist run date: 2026-03-25
 	- The Start page shows the latest full command string and timestamp when metadata exists.
 	- If no lifecycle script has been run yet, the Start page instead shows that no test script has been logged.
 - **Files changed:** `docs/specification.md`, `server/public-routes.js`, `server/seed-simulation.js`, `src/App.tsx`, `src/api/endpoints.ts`, `src/api/index.ts`, `src/hooks/usePublicData.ts`, `src/pages/StartPage.tsx`, `src/types.ts`.
+- **Validation:** `npm run build`
+
+### 7.70 Lämna tips Slutspel dropdowns always show full team pool (2026-04-12)
+
+- **Problem:** On `Lämna tips -> Slutspel`, round pick dropdown/typeahead suggestions could collapse to only a few teams (for example 4) when group placement defaults were empty and only a small number of teams had been manually selected.
+- **Fix:** Build the knockout base suggestion pool from all tournament fixture team names (home/away from fixture templates), then merge any user-picked teams on top. This guarantees full MM team coverage in sextondelsfinal-final pick inputs while still preserving typed custom picks.
+- **Files changed:** `src/utils.ts`, `docs/specification.md`.
 - **Validation:** `npm run build`
 
