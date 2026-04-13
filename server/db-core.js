@@ -9,20 +9,15 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
-// Open database with explicit error handling
-export let db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error(`Failed to open database at ${dbPath}:`, err.message)
-    console.error(`Data directory: ${dataDir}, exists: ${fs.existsSync(dataDir)}`)
-    console.error(`CWD: ${process.cwd()}`)
-    throw err
-  }
-})
+// Database is initialized lazily on first use (after volume is mounted in Railway)
+export let db = null
 
 export function closeDatabaseConnection() {
   return new Promise((resolve, reject) => {
+    if (!db) return resolve()
     db.close((err) => {
       if (err) console.warn('Warning closing DB connection:', err.message)
+      db = null
       resolve()
     })
   })
@@ -30,8 +25,17 @@ export function closeDatabaseConnection() {
 
 export function openDatabaseConnection() {
   return new Promise((resolve, reject) => {
+    if (db) return resolve() // already open
+    
     db = new sqlite3.Database(dbPath, (openErr) => {
-      if (openErr) return reject(openErr)
+      if (openErr) {
+        console.error(`Failed to open database at ${dbPath}:`, openErr.message)
+        console.error(`Data directory: ${dataDir}, exists: ${fs.existsSync(dataDir)}`)
+        console.error(`CWD: ${process.cwd()}`)
+        db = null
+        return reject(openErr)
+      }
+      console.log(`✓ Database initialized at ${dbPath}`)
       resolve()
     })
   })
@@ -57,6 +61,9 @@ export const KNOCKOUT_ROUND_TEAM_COUNTS = {
 }
 
 export function run(sql, params = []) {
+  if (!db) {
+    return Promise.reject(new Error('Database not initialized. Call openDatabaseConnection() first.'))
+  }
   return new Promise((resolve, reject) => {
     db.run(sql, params, function onRun(err) {
       if (err) {

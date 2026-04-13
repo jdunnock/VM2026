@@ -109,6 +109,9 @@ async function start() {
     createTipsRoutes(app)
     createAdminRoutes(app)
 
+    // Open database connection FIRST (lazy init, waits for volume mount in Railway)
+    await openDatabaseConnection()
+    
     await initDatabase()
     await syncAdminQuestionsFromManifest()
     await initGroupFixtures()
