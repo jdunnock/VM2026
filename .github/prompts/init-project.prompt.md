@@ -8,7 +8,7 @@ Initialize this repository as a new software project.
 Rules:
 - Use `.github/skills/` as the canonical workflow skill source.
 - Do not duplicate skill content into `docs/`.
-- Create `docs/specification.md` from `docs/specification.template.md`.
+- Create `docs/specification.md` from `docs/specification.template.md` if it exists.
 - Keep changes minimal and practical.
 - Ask for missing product details before finalizing project-specific content.
 

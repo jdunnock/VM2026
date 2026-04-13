@@ -1,5 +1,5 @@
 ---
-name: ai-coding-operating-system
+name: AI Coding Operating System
 description: "Use when: establishing the default AI-assisted engineering operating model for a repository, including scope control, spec-first work, validation, and reporting discipline."
 ---
 

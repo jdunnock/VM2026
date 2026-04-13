@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run VM2026 API",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev:api"
+			],
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Run VM2026 Frontend",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}

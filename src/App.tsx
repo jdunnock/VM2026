@@ -268,16 +268,20 @@ export function App() {
       return Boolean(adminSession)
     }
 
-    if (isTrackingPhaseActive && item.id === 'tips') {
-      return false
+    if (item.id === 'alltips') {
+      // Admin can review all submitted tips already in phase B; participants still see this in phase C only.
+      return Boolean(adminSession) || isTrackingPhaseActive
     }
 
-    if (!isTrackingPhaseActive && item.id === 'alltips') {
+    if (isTrackingPhaseActive && item.id === 'tips') {
       return false
     }
 
     return true
   })
+
+  const isSnapshotPhaseBCommand = typeof simulationStatus.command === 'string' && simulationStatus.command.startsWith('S-B')
+  const showDevPhaseToggle = !isSnapshotPhaseBCommand
 
   return (
     <div className="app-shell">
@@ -365,14 +369,16 @@ export function App() {
         })}
       </main>
 
-      <button
-        className="dev-phase-toggle"
-        type="button"
-        onClick={() => setPhaseOverride(phaseOverride === 'C' ? 'B' : 'C')}
-        title={`Fas ${effectiveLifecyclePhase} (klicka för att byta)`}
-      >
-        {effectiveLifecyclePhase}
-      </button>
+      {showDevPhaseToggle ? (
+        <button
+          className="dev-phase-toggle"
+          type="button"
+          onClick={() => setPhaseOverride(phaseOverride === 'C' ? 'B' : 'C')}
+          title={`Fas ${effectiveLifecyclePhase} (klicka för att byta)`}
+        >
+          {effectiveLifecyclePhase}
+        </button>
+      ) : null}
     </div>
   )
 }

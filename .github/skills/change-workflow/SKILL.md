@@ -1,5 +1,5 @@
 ---
-name: change-workflow
+name: Change Workflow
 description: "Use when: implementing a requested change end-to-end, updating specification, validating, and completing git/reporting steps in a controlled workflow."
 ---
 
@@ -12,9 +12,9 @@ Use this skill when a user asks for a concrete change and expects the task to be
 - Fast mode: only with explicit approval or exceptional urgency
 
 ## Required sequence
-1. Update `docs/specification.md` first or in the same change set.
+1. Update the project specification file first or in the same change set.
 2. Implement the requested change with minimal scope.
-3. For visible UI changes, provide a local review link and wait for `ok` / `ei ok` when practical.
+3. For visible UI changes, provide a local review link and wait for `approved` / `rejected` when practical.
 4. Run targeted validation.
 5. Complete git actions according to the chosen mode.
 6. Report: what changed, files, validation, risks, rollback, commit SHA, deploy status if applicable.

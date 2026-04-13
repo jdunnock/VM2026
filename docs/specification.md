@@ -1913,6 +1913,39 @@ Checklist run date: 2026-03-25
 
 ### 7.63 Rules page scoring copy aligned with fixed scoring rules (2026-04-01)
 
+### 7.64 Bugfix: localhost dev login failed when Vite moved off the default port (2026-04-13)
+
+- **Root cause**: `server/middleware.js` only allowed a fixed CORS origin whitelist (`localhost:4173`, `localhost:5173`, one LAN host). When Vite started on `localhost:5175` because `5173`/`5174` were already occupied, browser login requests from the dev frontend were rejected with `CORS: origin 'http://localhost:5175' not allowed`. Vite surfaced that upstream failure as a plain `500 Internal Server Error`, which the frontend displayed as `Request failed: 500`.
+- **Fix**: In non-production mode, CORS now also accepts loopback development origins on any port (`localhost`, `127.0.0.1`, `::1`) while keeping the explicit allowlist and production behavior unchanged.
+- **Validation**: Reproduced the failing CORS error in the API logs for `http://localhost:5175`, applied the middleware fix, then verified `POST /api/auth/sign-in` succeeds again through the frontend origin for both `jarmo` and `juha` with code `1234`.
+
+### 7.65 Bugfix: mobile LAN testing blocked by dev host binding and CORS origin policy (2026-04-13)
+
+- **Root cause**: Two separate dev constraints blocked phone testing on the same Wi-Fi:
+	1. Vite dev server was started without `--host`, so it listened only on localhost (`[::1]:5175`) and was unreachable via LAN IP.
+	2. API CORS dev allow rules accepted localhost loopback but rejected LAN origins like `http://192.168.x.x:5175`.
+- **Fix**:
+	- Frontend should be started for mobile testing with host binding enabled (for example `npm run dev -- --host 0.0.0.0 --port 5175`).
+	- `server/middleware.js` now accepts RFC1918 private IPv4 origins (`10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`) in non-production mode, while keeping production behavior unchanged.
+- **Validation**: Reproduced failure with `Origin: http://192.168.1.124:5175` (CORS 500), applied fix, then verified sign-in succeeds for the same origin when API is restarted with updated middleware.
+
+### 7.66 Admin visibility override: All Tips available in Phase B for monitoring (2026-04-13)
+
+- **Problem**: In Phase B, `Alla tips` was hidden globally. Admin could not quickly verify which invited testers had submitted predictions before moving lifecycle forward.
+- **Fix**: Navigation visibility now allows `Alla tips` when an admin session exists, regardless of phase. Non-admin participants keep existing behavior (tab shown only in tracking phase).
+- **Scope**: Frontend navigation visibility logic only (`src/App.tsx`). No API contract changes.
+- **Validation**: Build check passed and logic review confirms:
+	- Phase B + no admin session => `Alla tips` hidden
+	- Phase B + admin session => `Alla tips` visible
+	- Phase C => existing visibility behavior preserved
+
+### 7.67 UX guard: hide phase override toggle during explicit S-B snapshot state (2026-04-13)
+
+- **Problem**: During snapshot-based QA runs where latest command is explicitly `S-B*` (for example `S-B1`), the manual `Fas B/Fas C` dev toggle remained visible. This invited accidental lifecycle overrides that could conflict with the intended script-driven test state.
+- **Fix**: `App.tsx` now hides the dev phase toggle when `simulationStatus.command` starts with `S-B`. For all other states (including `S-C*`, legacy commands, and normal non-simulation use), toggle behavior remains unchanged.
+- **Scope**: Frontend-only display logic (`src/App.tsx`). No backend/API changes.
+- **Validation**: Build check passed; conditional rendering logic verified for `S-B*` vs non-`S-B*` simulation commands.
+
 - **Problem:** The participant-facing FAQ on `Regler och låsning` still said scoring is admin-defined and may vary per category, which contradicted the implemented fixed scoring rules and the Excel-based baseline.
 - **Fix:** Update the visible FAQ copy to state the currently implemented base scoring explicitly: correct `1/X/2` = 1 point, exact score = 3 points total (`2 for result + 1 for sign`), and each correctly placed team in a settled group = 1 point.
 - This is a copy/spec alignment change only; backend scoring logic already matched these rules.

@@ -1,5 +1,5 @@
 ---
-name: prompt-templates
+name: Prompt Templates
 description: "Use when: drafting high-quality prompts for feature work, bugfixes, refactors, audits, releases, or structured AI-assisted development requests."
 ---
 

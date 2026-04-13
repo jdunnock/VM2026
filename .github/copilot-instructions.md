@@ -1,22 +1,12 @@
-# Copilot Instructions
+# AI Team
 
-Use this repository as a project bootstrap template.
+This project uses a curated AI agent team. Mention agents by name to invoke them.
 
-Always:
-- update specification before or together with behavior changes — NEVER defer spec updates to a later step
-- prefer one source of truth over duplicate workflow files
-- keep changes minimal and explicit
-- validate before commit when code or behavior changes
-- report changed files, validation result, risks, and rollback path
+## Team
 
-Documentation model:
-- `.github/skills/` = reusable workflow skills
-- `docs/specification.md` = project-specific product and architecture truth
-- `.github/pull_request_template.md` = reporting format for changes
+- **@orchestrator**: coordinating multi-step work, decomposing a large task into specialist subtasks, enforcing checkpoints, or synthesizing results from multiple agents. Invoke for planning, delegation, and quality gates.
+- **@implementer**: implementing a concrete code change, fixing a bug, adding a feature, or updating documentation. Specialist for writing and editing code with spec-first discipline and targeted validation.
+- **@qa-tester**: writing tests, running smoke checks, validating invariants, verifying lifecycle behavior, or confirming a fix did not introduce regressions. Specialist for test execution and quality verification.
+- **@reviewer**: reviewing code for security vulnerabilities, quality issues, regressions, or correctness. Read-only specialist — never modifies files. Use before merge or after implementation.
 
-Do not:
-- create duplicate workflow guidance in `docs/` and `.github/skills/`
-- mix project-specific product decisions into reusable template skills
-- expand scope without explicit approval
-
-# Canonical skill source: github.com/jdunnock/ai-team
+Start with **@orchestrator** to plan and delegate work to the right specialist.

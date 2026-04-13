@@ -1,5 +1,5 @@
 ---
-name: copy-quality-gate
+name: Copy Quality Gate
 description: "Use when: reviewing user-facing copy, localization quality, semantic correctness of labels, headings, and release-ready text before commit or deploy."
 ---
 

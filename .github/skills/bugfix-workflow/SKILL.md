@@ -1,5 +1,5 @@
 ---
-name: bugfix-workflow
+name: Bugfix Workflow
 description: "Use when: a bug, regression, or failing flow needs root-cause analysis, minimal correction, targeted validation, and rollback-aware reporting."
 ---
 
@@ -10,7 +10,7 @@ description: "Use when: a bug, regression, or failing flow needs root-cause anal
 2. Confirm root cause before changing code.
 3. Fix with the smallest defensible change.
 4. Run targeted validation.
-5. Update `docs/specification.md` changelog when behavior or operational understanding changes.
+5. Update the project specification file changelog when behavior or operational understanding changes.
 6. Report root cause, fix, validation, risks, and rollback.
 
 ## Done when

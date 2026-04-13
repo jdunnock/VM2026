@@ -1,5 +1,5 @@
 ---
-name: release-workflow
+name: Release Workflow
 description: "Use when: preparing a release, production push, deployment verification, post-deploy smoke checks, and rollback planning."
 ---
 

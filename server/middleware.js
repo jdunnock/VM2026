@@ -18,6 +18,34 @@ const allowedOrigins = process.env.CORS_ORIGINS
 
 const isProduction = process.env.NODE_ENV === 'production'
 
+function isPrivateIpv4Host(hostname) {
+    const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+    if (!ipv4Match) return false
+
+    const octets = ipv4Match.slice(1).map(Number)
+    if (octets.some((value) => Number.isNaN(value) || value < 0 || value > 255)) {
+        return false
+    }
+
+    const [a, b] = octets
+
+    // RFC1918 private ranges for LAN development
+    if (a === 10) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+
+    return false
+}
+
+function isAllowedDevOrigin(origin) {
+    try {
+        const url = new URL(origin)
+        return ['localhost', '127.0.0.1', '::1'].includes(url.hostname) || isPrivateIpv4Host(url.hostname)
+    } catch {
+        return false
+    }
+}
+
 function hashAccessCode(code) {
     return crypto.scryptSync(code, salt, 64).toString('hex')
 }
@@ -62,6 +90,7 @@ function setupMiddleware(app) {
                 // In production, allow same-origin (frontend served from same host)
                 if (isProduction) return callback(null, true)
                 if (allowedOrigins.includes(origin)) return callback(null, true)
+                if (isAllowedDevOrigin(origin)) return callback(null, true)
                 callback(new Error(`CORS: origin '${origin}' not allowed`))
             },
             methods: ['GET', 'POST', 'PUT', 'DELETE'],
