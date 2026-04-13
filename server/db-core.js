@@ -9,7 +9,15 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
-export let db = new sqlite3.Database(dbPath)
+// Open database with explicit error handling
+export let db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error(`Failed to open database at ${dbPath}:`, err.message)
+    console.error(`Data directory: ${dataDir}, exists: ${fs.existsSync(dataDir)}`)
+    console.error(`CWD: ${process.cwd()}`)
+    throw err
+  }
+})
 
 export function closeDatabaseConnection() {
   return new Promise((resolve, reject) => {
