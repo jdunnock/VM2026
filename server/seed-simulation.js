@@ -859,6 +859,10 @@ async function main() {
         process.exit(1)
     }
 
+    // Open database connection first (lazy init for Railway volume mount)
+    const { openDatabaseConnection } = await import('./db-core.js')
+    await openDatabaseConnection()
+    
     await initDatabase()
     console.log(`\n=== Simulation: ${command} ===\n`)
 
