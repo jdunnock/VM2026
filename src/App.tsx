@@ -281,7 +281,7 @@ export function App() {
   })
 
   const isSnapshotPhaseBCommand = typeof simulationStatus.command === 'string' && simulationStatus.command.startsWith('S-B')
-  const showDevPhaseToggle = !isSnapshotPhaseBCommand
+  const showDevPhaseToggle = !isSnapshotPhaseBCommand && effectiveLifecyclePhase !== 'B'
 
   return (
     <div className="app-shell">
