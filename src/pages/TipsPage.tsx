@@ -142,7 +142,6 @@ export function TipsPage({
       ) : null}
 
       <section className="action-bar">
-        <button className="ghost-button" type="button" onClick={() => { if (window.confirm('Vill du verkligen rensa alla sparade tips? Detta kan inte ångras.')) { onClear() } }} disabled={isSaving || isGlobalLockActive}>Rensa sparade</button>
         {hasUnsavedChanges && <span className="save-pill unsaved">Osparade ändringar</span>}
         <span className="save-pill">{saveMessage}</span>
         <button className="primary-button" type="button" onClick={onSave} disabled={isSaving || isGlobalLockActive}>
