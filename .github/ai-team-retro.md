@@ -41,6 +41,7 @@ gaps: none
 role-confusion: none
 improvement: Add one UI acceptance test for phase-gated nav that explicitly covers admin-session overrides in Phase B.
 reviewed: false
+reviewed: true
 <!-- /retro-entry -->
 
 <!-- retro-entry -->
@@ -51,4 +52,49 @@ gaps: none
 role-confusion: none
 improvement: Add a tiny helper in UI state (`isPhaseScriptLocked`) to centralize future script-state-driven visibility rules.
 reviewed: false
+reviewed: true
+<!-- /retro-entry -->
+
+<!-- retro-entry -->
+date: 2026-04-14
+agent: GitHub Copilot
+task: Railway DB resetointi ja snapshot upload -workflow dokumentoitu ja automatisoitu
+
+gaps: none
+role-confusion: none
+improvement: Ohjeet ja retro-muistiinpanot tallennetaan aina sekä projektin omaan muistiin että ai-team-retro.md-tiedostoon, jotta tiimi löytää ne Composerista.
+reviewed: false
+reviewed: true
+<!-- /retro-entry -->
+
+<!-- retro-entry -->
+date: 2026-04-14
+agent: GitHub Copilot
+task: Testausohjeiden (fas B) tuottaminen ruotsiksi epäonnistui, koska ohjeessa oli suomen ja ruotsin kieltä sekaisin.
+gaps: Ei riittävää ruotsin kielen hallintaa ohjeiden tuottamiseen ilman virheitä.
+role-confusion: none
+improvement: Tarvitaan AI-skill, joka hallitsee ruotsin kielen ja pystyy tuottamaan ohjeet (ja muun dokumentaation) virheettömällä ruotsilla.
+reviewed: false
+reviewed: true
+<!-- /retro-entry -->
+
+<!-- retro-entry -->
+date: 2026-04-14
+agent: Orchestrator (Morgan)
+task: Uuden tiimin katsaus — 10 agenttia arvioitu rooleittain, tunnistettu päällekkäisyydet, puutteet ja kehityskohteet.
+gaps:
+  1. Deployment-roolien päällekkäisyys: Kolme erillistä deployment-agenttia (Drew, Taylor, Riley) — vastuualueet menevät osin päällekkäin. Yhdeksi yhdistäminen tai selkeä rajaus olisi tehokkaampaa.
+  2. Keskeneräiset agentit: commit-and-deploy-engineer ja deployment-coordinator sisältävät tyhjät osiot (Responsibilities, Approach, Constraints, Output Format).
+  3. Language Expert on minimaalinen: Ei vastuita, lähestymistapaa eikä rajoitteita. Tämä näkyi suoraan kun ruotsinkielinen dokumentaatio jäi puoliksi suomeksi.
+  4. Content Validator vs. Language Expert — päällekkäisyys: Molemmat liittyvät tekstin laadunvarmistukseen, rajat epäselvät.
+  5. Senior UX Designer viittaa ulkoisiin työkaluihin (Figma, Adobe XD, InVision) joita AI-agentti ei voi käyttää.
+role-confusion: Deployment-roolien väliset rajat epäselvät (Drew vs. Taylor vs. Riley). Language Expert ja Content Validator saattavat tehdä samoja asioita.
+improvement:
+  1. Yhdistä tai rajaa deployment-agentit: yksi riittäisi, tai selkeä jako (Riley=tekninen deploy, Drew=commit-kuri, Taylor=koordinointi).
+  2. Täydennä keskeneräiset agentit (Drew, Taylor) — kunnolliset Responsibilities, Approach, Constraints, Output Format.
+  3. Vahvista Language Expert: lisää vastuut, kielen spesifiointi (ruotsi), esimerkkisäännöt, toolit.
+  4. Harkitse Content Validator + Language Expert -yhdistämistä yhdeksi "Copy & Language Quality" -agentiksi.
+  5. Senior UX Designer: poista viittaukset ulkoisiin työkaluihin tai rajaa rooli AI-kontekstissa mahdollisiin tehtäviin.
+reviewed: false
+reviewed: true
 <!-- /retro-entry -->

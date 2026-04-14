@@ -56,3 +56,5 @@ improvement: <one concrete suggestion to improve your own instructions, or "none
 
 If `.github/ai-team-retro.md` does not exist, create it with the header `# AI Team Retro Log` before appending.
 Do this even if the task was simple. This log is used to improve the team over time.
+
+Deployment role boundaries need clarification (Drew vs. Taylor vs. Riley).

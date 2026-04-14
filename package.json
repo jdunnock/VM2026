@@ -12,6 +12,9 @@
     "start": "NODE_ENV=production node server/index.js",
     "preview": "vite preview",
     "seed:sim": "node server/seed-simulation.js"
+    ,
+    "deploy:snapshot": "node scripts/deploy-snapshot.js",
+    "clear:all-participants": "node scripts/clear-all-participants.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
