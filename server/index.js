@@ -110,7 +110,27 @@ async function start() {
     createAdminRoutes(app)
 
     // Open database connection FIRST (lazy init, waits for volume mount in Railway)
-    await openDatabaseConnection()
+    // Retry up to 10 times with 1s delay if SQLITE_CANTOPEN
+    let dbReady = false
+    let lastError = null
+    for (let i = 0; i < 10; i++) {
+      try {
+        await openDatabaseConnection()
+        dbReady = true
+        break
+      } catch (err) {
+        lastError = err
+        if (String(err.message).includes('SQLITE_CANTOPEN')) {
+          console.warn(`Database not ready (attempt ${i+1}/10), retrying in 1s...`)
+          await new Promise(res => setTimeout(res, 1000))
+        } else {
+          throw err
+        }
+      }
+    }
+    if (!dbReady) {
+      throw lastError || new Error('Database could not be opened after 10 attempts')
+    }
     
     await initDatabase()
     await syncAdminQuestionsFromManifest()
