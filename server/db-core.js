@@ -87,7 +87,11 @@ export async function runTransaction(work) {
   }
 }
 
+
 export function get(sql, params = []) {
+  if (!db) {
+    return Promise.reject(new Error('Database not initialized. Call openDatabaseConnection() first.'))
+  }
   return new Promise((resolve, reject) => {
     db.get(sql, params, (err, row) => {
       if (err) {
@@ -99,7 +103,11 @@ export function get(sql, params = []) {
   })
 }
 
+
 export function all(sql, params = []) {
+  if (!db) {
+    return Promise.reject(new Error('Database not initialized. Call openDatabaseConnection() first.'))
+  }
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => {
       if (err) {
