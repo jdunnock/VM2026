@@ -2085,6 +2085,7 @@ Checklist run date: 2026-03-25
 
 - **Problem:** In mobile `Lämna tips -> Gruppspel`, untouched spinner fields looked like `0-0`, which could be mistaken as an already set prediction.
 - **Fix:** Spinner selects now default to an explicit empty option (`x`) for both home and away scores, so untouched rows are visually `x-x` until the participant picks a score.
+- **Behavior note:** Changing one spinner side no longer auto-fills the opposite side to `0` (for example `x-x` -> home `0` now remains `0-x`, not `0-0`).
 - **Scope:** Display-level UX clarification only. Persisted value model remains unchanged (`''` until picked).
 - **Files changed:** `src/pages/tips/GroupsFixturesCard.tsx`, `docs/specification.md`.
 - **Validation:** `npm run build`

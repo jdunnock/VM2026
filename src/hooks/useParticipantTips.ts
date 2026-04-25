@@ -8,7 +8,7 @@ import type {
   KnockoutPredictionRound,
   ParticipantSession,
 } from '../types'
-import { createDefaultFixtureTips, deriveSignFromScore, normalizePersistedTipsState } from '../utils'
+import { createDefaultFixtureTips, deriveSignFromScore, normalizeKnockoutPickLabel, normalizePersistedTipsState } from '../utils'
 
 /**
  * Manages participant tips state: fixture tips, group placements, knockout predictions, extra answers.
@@ -93,16 +93,6 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
           const nextTip: FixtureTip = {
             ...tip,
             [key]: scoreValue,
-          }
-
-          if (_source === 'wheel-score') {
-            if (key === 'homeScore' && nextTip.awayScore === '') {
-              nextTip.awayScore = 0
-            }
-
-            if (key === 'awayScore' && nextTip.homeScore === '') {
-              nextTip.homeScore = 0
-            }
           }
 
           return {
@@ -198,6 +188,42 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
         return {
           ...round,
           picks: round.picks.map((pick, pickIndex) => (pickIndex === index ? value : pick)),
+        }
+      }),
+    )
+  }
+
+  const onToggleKnockoutPrediction = (roundTitle: string, teamName: string) => {
+    if (isGlobalLockActive) {
+      return
+    }
+
+    const normalizedTeamName = normalizeKnockoutPickLabel(teamName)
+    if (!normalizedTeamName) {
+      return
+    }
+
+    setHasUnsavedChanges(true)
+    setKnockoutPredictions((current) =>
+      current.map((round) => {
+        if (round.title !== roundTitle) {
+          return round
+        }
+
+        const selectedTeams = round.picks
+          .map((pick) => normalizeKnockoutPickLabel(pick))
+          .filter((pick) => pick.length > 0)
+
+        const alreadySelected = selectedTeams.includes(normalizedTeamName)
+        const nextSelectedTeams = selectedTeams.filter((pick) => pick !== normalizedTeamName)
+
+        if (!alreadySelected && nextSelectedTeams.length < round.picks.length) {
+          nextSelectedTeams.push(normalizedTeamName)
+        }
+
+        return {
+          ...round,
+          picks: [...nextSelectedTeams, ...Array.from({ length: round.picks.length - nextSelectedTeams.length }, () => '')],
         }
       }),
     )
@@ -307,6 +333,7 @@ export function useParticipantTips(participant: ParticipantSession | null, isGlo
     onSetScorePreset,
     onChangeGroupPlacement,
     onChangeKnockoutPrediction,
+    onToggleKnockoutPrediction,
     onChangeExtraAnswer,
     onSaveTips,
     onClearTips,
