@@ -17,6 +17,7 @@ type GroupsFixturesCardProps = {
   ) => void
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
   onChangeGroupPlacement: (group: string, index: number, value: string) => void
+  isTouchDevice: boolean
   isSaving: boolean
   isGlobalLockActive: boolean
 }
@@ -30,6 +31,7 @@ export function GroupsFixturesCard({
   onChangeTip,
   onSetScorePreset,
   onChangeGroupPlacement,
+  isTouchDevice,
   isSaving,
   isGlobalLockActive,
 }: GroupsFixturesCardProps) {
@@ -100,10 +102,11 @@ export function GroupsFixturesCard({
                           <span className="spinner-label">Hemma</span>
                           <select
                             className="wheel-select"
-                            value={row.homeScore === '' ? 0 : row.homeScore}
+                            value={row.homeScore === '' ? '' : row.homeScore}
                             disabled={isLocked || isSaving}
-                            onChange={(e) => onChangeTip(row.match, 'homeScore', Number(e.target.value), 'wheel-score')}
+                            onChange={(e) => onChangeTip(row.match, 'homeScore', e.target.value === '' ? '' : Number(e.target.value), 'wheel-score')}
                           >
+                            <option value="">x</option>
                             {Array.from({ length: 11 }, (_, index) => (
                               <option key={`${row.match}-home-wheel-${index}`} value={index}>
                                 {index}
@@ -115,10 +118,11 @@ export function GroupsFixturesCard({
                           <span className="spinner-label">Borta</span>
                           <select
                             className="wheel-select"
-                            value={row.awayScore === '' ? 0 : row.awayScore}
+                            value={row.awayScore === '' ? '' : row.awayScore}
                             disabled={isLocked || isSaving}
-                            onChange={(e) => onChangeTip(row.match, 'awayScore', Number(e.target.value), 'wheel-score')}
+                            onChange={(e) => onChangeTip(row.match, 'awayScore', e.target.value === '' ? '' : Number(e.target.value), 'wheel-score')}
                           >
+                            <option value="">x</option>
                             {Array.from({ length: 11 }, (_, index) => (
                               <option key={`${row.match}-away-wheel-${index}`} value={index}>
                                 {index}
@@ -168,13 +172,25 @@ export function GroupsFixturesCard({
                             type="button"
                             className={row.sign === signOption ? 'segment-button active' : 'segment-button'}
                             disabled={isLocked || isSaving}
-                            onClick={() => onChangeTip(row.match, 'sign', signOption, 'quick-sign')}
+                            onClick={() => {
+                              if (isTouchDevice && row.homeScore === '' && row.awayScore === '') {
+                                onSetScorePreset(row.match, 0, 0, 'quick-score')
+
+                                if (signOption !== 'X') {
+                                  onChangeTip(row.match, 'sign', signOption, 'quick-sign')
+                                }
+
+                                return
+                              }
+
+                              onChangeTip(row.match, 'sign', signOption, 'quick-sign')
+                            }}
                           >
                             {signOption}
                           </button>
                         ))}
                       </div>
-                      <span className={row.status === 'Låst' ? 'status-badge locked' : 'status-badge'}>{row.status}</span>
+                      {row.status === 'Låst' ? <span className="status-badge locked">Låst</span> : null}
                     </div>
                   </div>
                 )
