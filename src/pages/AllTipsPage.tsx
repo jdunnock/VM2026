@@ -33,6 +33,115 @@ function findKnockoutPicks(predictions: KnockoutPredictionRound[] | undefined, r
     return entry?.picks ?? []
 }
 
+function hasCompleteFixtureTips(tips: FixtureTip[] | undefined): boolean {
+    if (!tips || tips.length !== groupStageFixtureTemplates.length) return false
+    return tips.every((tip) => tip.homeScore !== '' && tip.awayScore !== '')
+}
+
+function hasCompleteGroupPlacements(placements: GroupPlacement[] | undefined): boolean {
+    if (!placements || placements.length !== allGroupCodes.length) return false
+    return placements.every((placement) => Array.isArray(placement.picks) && placement.picks.length === 4 && placement.picks.every((pick) => pick.trim() !== ''))
+}
+
+function hasCompleteKnockoutPredictions(predictions: KnockoutPredictionRound[] | undefined): boolean {
+    if (!predictions || predictions.length !== knockoutPredictionTemplates.length) return false
+    return predictions.every((round) => Array.isArray(round.picks) && round.picks.length > 0 && round.picks.every((pick) => pick.trim() !== ''))
+}
+
+function hasCompleteExtraAnswers(answers: ExtraAnswers | undefined, publishedQuestions: AdminQuestion[]): boolean {
+    if (!answers) return publishedQuestions.length === 0
+    return publishedQuestions.every((question) => {
+        const answer = answers[String(question.id)]
+        return typeof answer === 'string' && answer.trim() !== ''
+    })
+}
+
+function hasFullyCompletedTips(participant: AllTipsParticipant, publishedQuestions: AdminQuestion[]): boolean {
+    const tips = participant.tips
+    if (!tips) return false
+
+    return hasCompleteFixtureTips(tips.fixtureTips)
+        && hasCompleteGroupPlacements(tips.groupPlacements)
+        && hasCompleteKnockoutPredictions(tips.knockoutPredictions)
+        && hasCompleteExtraAnswers(tips.extraAnswers, publishedQuestions)
+}
+
+type CompletionProgress = {
+    completed: number
+    total: number
+    percent: number
+}
+
+function getCompletionProgress(participant: AllTipsParticipant, publishedQuestions: AdminQuestion[]): CompletionProgress {
+    const tips = participant.tips
+    if (!tips) {
+        return { completed: 0, total: 0, percent: 0 }
+    }
+
+    const fixtureTotal = groupStageFixtureTemplates.length
+    const fixtureCompleted = groupStageFixtureTemplates.reduce((count, fixture) => {
+        const tip = findTipForFixture(tips.fixtureTips, fixture.id)
+        return tip && tip.homeScore !== '' && tip.awayScore !== '' ? count + 1 : count
+    }, 0)
+
+    const groupPlacementTotal = allGroupCodes.length * 4
+    const groupPlacementCompleted = allGroupCodes.reduce((count, code) => {
+        const picks = findGroupPlacements(tips.groupPlacements, `Grupp ${code}`)
+        return count + picks.filter((pick) => pick.trim() !== '').length
+    }, 0)
+
+    const knockoutTotal = knockoutPredictionTemplates.reduce((count, round) => count + round.picks.length, 0)
+    const knockoutCompleted = knockoutPredictionTemplates.reduce((count, round) => {
+        const picks = findKnockoutPicks(tips.knockoutPredictions, round.title)
+        return count + picks.filter((pick) => pick.trim() !== '').length
+    }, 0)
+
+    const extraTotal = publishedQuestions.length
+    const extraCompleted = publishedQuestions.reduce((count, question) => {
+        const answer = tips.extraAnswers?.[String(question.id)]
+        return typeof answer === 'string' && answer.trim() !== '' ? count + 1 : count
+    }, 0)
+
+    const total = fixtureTotal + groupPlacementTotal + knockoutTotal + extraTotal
+    const completed = fixtureCompleted + groupPlacementCompleted + knockoutCompleted + extraCompleted
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0
+
+    return { completed, total, percent }
+}
+
+function getParticipantHeaderClassName(
+    rowParticipant: AllTipsParticipant,
+    activeParticipantId: number | undefined,
+    phase: 'B' | 'C',
+    publishedQuestions: AdminQuestion[],
+): string {
+    const isOwn = rowParticipant.participantId === activeParticipantId
+    const completionProgress = getCompletionProgress(rowParticipant, publishedQuestions)
+    const isFullyCompleted = phase === 'B' && completionProgress.percent === 100 && hasFullyCompletedTips(rowParticipant, publishedQuestions)
+    let className = isOwn
+        ? 'alltips-col-participant alltips-own-col'
+        : 'alltips-col-participant'
+
+    if (isFullyCompleted) {
+        className += ' alltips-complete-name'
+    }
+
+    return className
+}
+
+function getParticipantHeaderLabel(
+    rowParticipant: AllTipsParticipant,
+    phase: 'B' | 'C',
+    publishedQuestions: AdminQuestion[],
+): string {
+    if (phase !== 'B') {
+        return rowParticipant.name
+    }
+
+    const completionProgress = getCompletionProgress(rowParticipant, publishedQuestions)
+    return `${rowParticipant.name} (${completionProgress.percent}%)`
+}
+
 export function AllTipsPage({
     participant,
     allTipsParticipants,
@@ -40,6 +149,7 @@ export function AllTipsPage({
     results,
     publishedQuestions,
     correctnessData,
+    phase,
 }: {
     participant: ParticipantSession | null
     allTipsParticipants: AllTipsParticipant[]
@@ -47,6 +157,7 @@ export function AllTipsPage({
     results: MatchResult[]
     publishedQuestions: AdminQuestion[]
     correctnessData: CorrectnessData | null
+    phase: 'B' | 'C'
 }) {
     const [activeSection, setActiveSection] = useState<AllTipsSectionTab>('Gruppspel')
 
@@ -92,13 +203,14 @@ export function AllTipsPage({
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className={
-                                                p.participantId === participant?.participantId
-                                                    ? 'alltips-col-participant alltips-own-col'
-                                                    : 'alltips-col-participant'
-                                            }
+                                            className={getParticipantHeaderClassName(
+                                                p,
+                                                participant?.participantId,
+                                                phase,
+                                                publishedQuestions,
+                                            )}
                                         >
-                                            {p.name}
+                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>

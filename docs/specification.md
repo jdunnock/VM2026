@@ -1179,6 +1179,23 @@ Replaces the current approach of deriving knockout teams from `match_results` ro
 
 Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators — no layout changes.
 
+### 7.57 Fas B admin visibility cue on Alla tips / Gruppspel (2026-04-25)
+
+- Added a Phase B-only completion cue to `Alla tips` -> `Gruppspel` participant header row.
+- Added a Phase B-only completion percentage label in the same header row (`Name (NN%)`).
+- When a participant has filled all required prediction sections, their name header turns green:
+	- Gruppspel fixture tips: every match has both scores filled.
+	- Grupplaceringar: all group position picks are filled.
+	- Slutspel: all knockout round picks are filled.
+	- Extrafrågor: all published question answers are filled.
+- Percentage is calculated from total completed picks across all four sections:
+	- Gruppspel: completed matches / 72
+	- Grupplaceringar: completed position picks / 48
+	- Slutspel: completed knockout picks / 62
+	- Extrafrågor: answered published questions / published question count
+- Cue is shown only in Fas B (pre-deadline workflow), to support admin follow-up before lock.
+- No API or backend changes.
+
 #### Implementation order
 
 | Step | Scope | Status |
@@ -1786,8 +1803,21 @@ const scoreFixtureTip = (tip, result) => {
 - **Port:** Railway sets `PORT` env var automatically; server reads it.
 - **Database:** SQLite at `./data/vm2026.db`. Attach a Railway Volume mounted at `./data` to persist across deploys.
 - **Database transfer:** Admin-protected endpoints for uploading/downloading the SQLite file: `POST /api/admin/db-upload` (raw binary body, `application/octet-stream`) and `GET /api/admin/db-download`. After upload, the server automatically reloads the database connection — no restart required.
+- **Production safety:** `server/seed-simulation.js` must not mutate production data by default. When `RAILWAY_ENVIRONMENT=production` or `NODE_ENV=production`, the script exits without changing the database unless `ALLOW_PRODUCTION_SIMULATION=1` is set explicitly.
 - **Required env vars:** `ACCESS_CODE_SALT`, `ADMIN_ACCESS_CODE`, `ADMIN_ACCESS_NAME`, `GLOBAL_DEADLINE`.
 - **Optional env vars:** `CORS_ORIGINS` (not needed when frontend and API share same origin).
+
+### 12.2 Production Backup And Restore
+
+- **RPO target:** 15 minutes during tournament operations. **RTO target:** 10 minutes for full service recovery from a verified backup.
+- **Primary storage:** Railway Volume at `./data`, but the volume alone is not considered a backup.
+- **Automated off-platform backup:** Use `scripts/backup-production-db.js` from GitHub Actions on a schedule. Each run downloads a validated snapshot through `GET /api/admin/db-download`, stores it under `backups/prod/`, writes a manifest JSON, and uploads the files as workflow artifacts.
+- **Backup consistency:** `GET /api/admin/db-download` now creates a temporary snapshot with `PRAGMA wal_checkpoint(FULL)` + `VACUUM INTO`, validates the snapshot with `PRAGMA integrity_check`, reopens the live database, and only then serves the snapshot file. This avoids taking raw `vm2026.db` copies while WAL changes are still pending.
+- **Backup verification:** `scripts/verify-db-backup.js` validates SHA-256, runs `PRAGMA integrity_check`, and records row counts for key tables before a backup is trusted.
+- **Restore safety:** `POST /api/admin/db-upload` now validates the uploaded SQLite file before swap, stores a timestamped `vm2026.pre-restore-*.db` copy of the current live database, performs the file replacement, and reopens the database. If reopen fails, the route attempts rollback from the latest pre-restore copy.
+- **Restore operator flow:** `scripts/restore-production-db.js <backup>` first verifies the selected backup, optionally takes a fresh pre-restore backup from production, uploads the chosen backup, and then checks `/api/startup-status` and `/api/health`.
+- **Drill requirement:** Run a full restore drill at least monthly and after any backup/restore code change. The drill must restore from an off-platform backup copy, not from the live volume.
+- **Fallback manual runbook:** Keep [docs/railway-db-reset-ohjeet.md](/Users/jarmorautiainen/VM2026/docs/railway-db-reset-ohjeet.md) as last-resort instructions, but the primary operating model is the automated backup + verified restore flow.
 
 ## 13. Phase 2 Done Checklist
 
@@ -2018,5 +2048,36 @@ Checklist run date: 2026-03-25
 - **Problem:** On `Lämna tips -> Slutspel`, round pick dropdown/typeahead suggestions could collapse to only a few teams (for example 4) when group placement defaults were empty and only a small number of teams had been manually selected.
 - **Fix:** Build the knockout base suggestion pool from all tournament fixture team names (home/away from fixture templates), then merge any user-picked teams on top. This guarantees full MM team coverage in sextondelsfinal-final pick inputs while still preserving typed custom picks.
 - **Files changed:** `src/utils.ts`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.71 Lämna tips Slutspel uses round-level team toggles instead of text inputs (2026-04-20)
+
+- **Problem:** The `Slutspel` text inputs were awkward on mobile and made team selection slower and more error-prone than necessary.
+- **Fix:** Each knockout round now shows the full available team pool directly as tap-friendly toggle buttons. The UI shows a live selected counter, a round-specific helper message for how many selections are still missing, keeps selected teams in their own active block above the available teams, and blocks further selections once the round limit is full until a previous team is deselected.
+- **Data model impact:** No backend or payload change. The UI still writes to the existing `knockoutPredictions[].picks` arrays, but compacts selected teams automatically because knockout scoring compares round picks as an unordered set.
+- **Mobile behavior:** Small-screen users no longer rely on datalist/typeahead. The selection list collapses to a single-column stack with large tap targets.
+- **Files changed:** `src/hooks/useParticipantTips.ts`, `src/App.tsx`, `src/pages/TipsPage.tsx`, `src/pages/tips/KnockoutRoundsCard.tsx`, `src/styles.css`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.72 Slutspel toggle buttons must be wired through the full render chain (2026-04-20)
+
+- **Problem:** The new Slutspel team buttons could render correctly but do nothing when pressed because `onToggleKnockoutPrediction` was not forwarded from `App` into the `renderPage(...).tips` object.
+- **Fix:** Pass the toggle handler through the final render props object so `TipsPage` and `KnockoutRoundsCard` receive a live state updater in both desktop and mobile views.
+- **Files changed:** `src/App.tsx`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.73 Remove redundant open-state badges from Gruppspel and Extrafrågor cards (2026-04-20)
+
+- **Problem:** `Öppet` / `Öppen` badges were rendered on every open Gruppspel match card and Extra fråga card, but they did not add meaningful information and created unnecessary visual noise.
+- **Fix:** Only render the status badge when an item is actually locked. Open items no longer show a green badge in these two editing views.
+- **Files changed:** `src/pages/tips/GroupsFixturesCard.tsx`, `src/pages/tips/ExtraQuestionsCard.tsx`, `docs/specification.md`.
+- **Validation:** `npm run build`
+
+### 7.74 Mobile Gruppspel draw sign commits visible 0-0 baseline (2026-04-20)
+
+- **Problem:** In mobile `Lämna tips -> Gruppspel`, the spinner controls visually showed `0-0` even when the underlying row state was still empty. If the user then selected `X`, the tip was only stored as a sign pick, which looked like the shown `0-0` draw had failed to save.
+- **Fix:** On touch devices, pressing a sign button on a row with still-empty scores now first commits the visible `0-0` baseline score and then preserves the user-selected sign. This means the score and `1/X/2` can intentionally stay logically inconsistent if the participant wants that.
+- **Scope:** This change is intentionally limited to the mobile Gruppspel flow and only sign actions on rows whose scores are still empty.
+- **Files changed:** `src/pages/TipsPage.tsx`, `src/pages/tips/GroupsFixturesCard.tsx`, `docs/specification.md`.
 - **Validation:** `npm run build`
 
