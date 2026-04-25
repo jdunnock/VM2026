@@ -1181,8 +1181,8 @@ Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators 
 
 ### 7.57 Fas B admin visibility cue on Alla tips / Gruppspel (2026-04-25)
 
-- Added a Phase B-only completion cue to `Alla tips` -> `Gruppspel` participant header row.
-- Added a Phase B-only completion percentage label in participant header rows across all `Alla tips` sections (`Name (NN%)`).
+- Added a completion cue to `Alla tips` participant header rows.
+- Added a completion percentage label in participant header rows across all `Alla tips` sections (`Name (NN%)`).
 - When a participant has filled all required prediction sections, their name header turns green:
 	- Gruppspel fixture tips: every match has both scores filled.
 	- Grupplaceringar: all group position picks are filled.
@@ -1193,7 +1193,7 @@ Fas A UI is designed so Fas B adds only a fetch mechanism and source indicators 
 	- Grupplaceringar: completed position picks / 48
 	- Slutspel: completed knockout picks / 62
 	- Extrafrågor: answered published questions / published question count
-- Cue is shown only in Fas B (pre-deadline workflow), to support admin follow-up before lock.
+- Completion percentages are shown across phases; full-completion highlight is also shown when all required picks are filled.
 - No API or backend changes.
 
 #### Implementation order

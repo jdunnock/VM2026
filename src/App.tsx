@@ -43,6 +43,7 @@ interface RenderPageTipsProps {
   onSetScorePreset: (match: string, home: number, away: number, source?: 'quick-score' | 'fallback-score') => void
   onChangeGroupPlacement: (group: string, index: number, value: string) => void
   onChangeKnockoutPrediction: (roundTitle: string, index: number, value: string) => void
+  onToggleKnockoutPrediction: (roundTitle: string, teamName: string) => void
   onChangeExtraAnswer: (questionId: number, answer: string) => void
   onSaveTips: () => void
   onClearTips: () => void
@@ -109,6 +110,7 @@ function renderPage(
           onSetScorePreset={tips.onSetScorePreset}
           onChangeGroupPlacement={tips.onChangeGroupPlacement}
           onChangeKnockoutPrediction={tips.onChangeKnockoutPrediction}
+          onToggleKnockoutPrediction={tips.onToggleKnockoutPrediction}
           onChangeExtraAnswer={tips.onChangeExtraAnswer}
           onSave={tips.onSaveTips}
           onClear={tips.onClearTips}
@@ -165,7 +167,7 @@ export function App() {
   // Core session and routing hooks
   const { participant, setParticipant, adminSession, setAdminSession, isLoggedIn, setIsLoggedIn } = useSession()
   const { globalDeadlineStr, activePage, setActivePage, isGlobalLockActive, globalDeadlineLabel, effectiveLifecyclePhase, isTrackingPhaseActive, normalizePageForPhase, phaseOverride, setPhaseOverride } = usePhaseRouting()
-  const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel, () => {
+  const { fixtureTips, lastSavedFixtureTips, hasUnsavedChanges, groupPlacements, knockoutPredictions, extraAnswers, isTipsSaving, tipsSaveMessage, myTipsSavedLabel, onChangeTip, onSetScorePreset, onChangeGroupPlacement, onChangeKnockoutPrediction, onToggleKnockoutPrediction, onChangeExtraAnswer, onSaveTips: saveParticipantTips, onClearTips: clearParticipantTips } = useParticipantTips(participant, isGlobalLockActive, globalDeadlineLabel, () => {
     setParticipant(null)
     setIsLoggedIn(false)
   })
@@ -339,6 +341,7 @@ export function App() {
             onSetScorePreset,
             onChangeGroupPlacement,
             onChangeKnockoutPrediction,
+            onToggleKnockoutPrediction,
             onChangeExtraAnswer,
             onSaveTips,
             onClearTips,

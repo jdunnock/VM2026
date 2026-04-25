@@ -112,12 +112,11 @@ function getCompletionProgress(participant: AllTipsParticipant, publishedQuestio
 function getParticipantHeaderClassName(
     rowParticipant: AllTipsParticipant,
     activeParticipantId: number | undefined,
-    phase: 'B' | 'C',
     publishedQuestions: AdminQuestion[],
 ): string {
     const isOwn = rowParticipant.participantId === activeParticipantId
     const completionProgress = getCompletionProgress(rowParticipant, publishedQuestions)
-    const isFullyCompleted = phase === 'B' && completionProgress.percent === 100 && hasFullyCompletedTips(rowParticipant, publishedQuestions)
+    const isFullyCompleted = completionProgress.percent === 100 && hasFullyCompletedTips(rowParticipant, publishedQuestions)
     let className = isOwn
         ? 'alltips-col-participant alltips-own-col'
         : 'alltips-col-participant'
@@ -131,13 +130,8 @@ function getParticipantHeaderClassName(
 
 function getParticipantHeaderLabel(
     rowParticipant: AllTipsParticipant,
-    phase: 'B' | 'C',
     publishedQuestions: AdminQuestion[],
 ): string {
-    if (phase !== 'B') {
-        return rowParticipant.name
-    }
-
     const completionProgress = getCompletionProgress(rowParticipant, publishedQuestions)
     return `${rowParticipant.name} (${completionProgress.percent}%)`
 }
@@ -149,7 +143,6 @@ export function AllTipsPage({
     results,
     publishedQuestions,
     correctnessData,
-    phase,
 }: {
     participant: ParticipantSession | null
     allTipsParticipants: AllTipsParticipant[]
@@ -157,7 +150,6 @@ export function AllTipsPage({
     results: MatchResult[]
     publishedQuestions: AdminQuestion[]
     correctnessData: CorrectnessData | null
-    phase: 'B' | 'C'
 }) {
     const [activeSection, setActiveSection] = useState<AllTipsSectionTab>('Gruppspel')
 
@@ -206,11 +198,10 @@ export function AllTipsPage({
                                             className={getParticipantHeaderClassName(
                                                 p,
                                                 participant?.participantId,
-                                                phase,
                                                 publishedQuestions,
                                             )}
                                         >
-                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
+                                            {getParticipantHeaderLabel(p, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
@@ -292,11 +283,10 @@ export function AllTipsPage({
                                             className={getParticipantHeaderClassName(
                                                 p,
                                                 participant?.participantId,
-                                                phase,
                                                 publishedQuestions,
                                             )}
                                         >
-                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
+                                            {getParticipantHeaderLabel(p, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
@@ -369,11 +359,10 @@ export function AllTipsPage({
                                             className={getParticipantHeaderClassName(
                                                 p,
                                                 participant?.participantId,
-                                                phase,
                                                 publishedQuestions,
                                             )}
                                         >
-                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
+                                            {getParticipantHeaderLabel(p, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
@@ -446,11 +435,10 @@ export function AllTipsPage({
                                             className={getParticipantHeaderClassName(
                                                 p,
                                                 participant?.participantId,
-                                                phase,
                                                 publishedQuestions,
                                             )}
                                         >
-                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
+                                            {getParticipantHeaderLabel(p, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
