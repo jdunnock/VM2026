@@ -289,13 +289,14 @@ export function AllTipsPage({
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className={
-                                                p.participantId === participant?.participantId
-                                                    ? 'alltips-col-participant alltips-own-col'
-                                                    : 'alltips-col-participant'
-                                            }
+                                            className={getParticipantHeaderClassName(
+                                                p,
+                                                participant?.participantId,
+                                                phase,
+                                                publishedQuestions,
+                                            )}
                                         >
-                                            {p.name}
+                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
@@ -365,13 +366,14 @@ export function AllTipsPage({
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className={
-                                                p.participantId === participant?.participantId
-                                                    ? 'alltips-col-participant alltips-own-col'
-                                                    : 'alltips-col-participant'
-                                            }
+                                            className={getParticipantHeaderClassName(
+                                                p,
+                                                participant?.participantId,
+                                                phase,
+                                                publishedQuestions,
+                                            )}
                                         >
-                                            {p.name}
+                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
@@ -441,13 +443,14 @@ export function AllTipsPage({
                                     {allTipsParticipants.map((p) => (
                                         <th
                                             key={p.participantId}
-                                            className={
-                                                p.participantId === participant?.participantId
-                                                    ? 'alltips-col-participant alltips-own-col'
-                                                    : 'alltips-col-participant'
-                                            }
+                                            className={getParticipantHeaderClassName(
+                                                p,
+                                                participant?.participantId,
+                                                phase,
+                                                publishedQuestions,
+                                            )}
                                         >
-                                            {p.name}
+                                            {getParticipantHeaderLabel(p, phase, publishedQuestions)}
                                         </th>
                                     ))}
                                 </tr>
